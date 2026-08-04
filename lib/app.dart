@@ -40,6 +40,61 @@ class GuardianesApp extends ConsumerWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
       routerConfig: router,
+      builder: (context, child) => WideScreenShell(child: child),
+    );
+  }
+}
+
+// ── Adaptación a pantalla ancha (navegador de escritorio) ───────────
+//
+// El producto principal es Android: la tipografía y los targets táctiles
+// se dimensionaron a propósito para un niño de 6-12 años usando el dedo.
+// En un navegador de escritorio ese mismo layout se estira a todo el
+// ancho de la ventana (no hay ni un solo maxWidth finito en lib/), así
+// que los botones y campos acaban midiendo media pantalla.
+//
+// La corrección es adaptativa, no global: por debajo del breakpoint se
+// devuelve el árbol intacto — móvil no cambia en absoluto —, y por
+// encima se encierra en una columna del ancho de un móvil grande,
+// centrada sobre el fondo del tema. Va en el `builder` del MaterialApp
+// para cubrir también diálogos y SnackBars, que se pintan en el Overlay
+// interno y de otro modo se escaparían del límite.
+class WideScreenShell extends StatelessWidget {
+  const WideScreenShell({super.key, required this.child});
+
+  final Widget? child;
+
+  /// Por encima de este ancho dejamos de tratar la ventana como un móvil.
+  static const double wideBreakpoint = 600;
+
+  /// Ancho de la columna en escritorio — el de un móvil grande, que es
+  /// para el que está diseñada cada pantalla.
+  static const double contentWidth = 480;
+
+  @override
+  Widget build(BuildContext context) {
+    final content = child ?? const SizedBox.shrink();
+    if (MediaQuery.sizeOf(context).width < wideBreakpoint) return content;
+
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      child: Center(
+        child: ClipRect(
+          child: SizedBox(
+            width: contentWidth,
+            child: MediaQuery(
+              // Se acota la escala en vez de fijarla: si el usuario tiene
+              // fuentes grandes configuradas en el navegador, se respeta
+              // hasta el techo. Fijar un valor le quitaría esa opción.
+              data: MediaQuery.of(context).copyWith(
+                textScaler: MediaQuery.textScalerOf(context)
+                    .clamp(minScaleFactor: 0.85, maxScaleFactor: 1.1),
+              ),
+              child: content,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

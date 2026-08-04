@@ -36,8 +36,8 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <li><a href="#aventura">Aventura</a></li>
                 <li><a href="#descargar">Descargar</a></li>
             </ul>
-            <a href="#descargar" class="btn btn-sm btn-primary">
-                <i class="fa-solid fa-download"></i> Jugar Ahora
+            <a href="/app/" class="btn btn-sm btn-primary">
+                <i class="fa-solid fa-play"></i> Jugar Ahora
             </a>
         </div>
         <button class="mobile-menu" id="mobile-menu">
@@ -80,7 +80,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                     <a href="#descargar" class="btn btn-primary btn-lg">
                         <i class="fa-brands fa-google-play"></i> Descargar en Android
                     </a>
-                    <a href="#descargar" class="btn btn-secondary glass btn-lg">
+                    <a href="/app/" class="btn btn-secondary glass btn-lg">
                         <i class="fa-solid fa-globe"></i> Jugar en la Web
                     </a>
                 </div>
@@ -231,17 +231,20 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <p class="section-desc">Descarga la app en tu celular o juega directamente desde el navegador. ¡El bosque te espera!</p>
             </div>
             <div class="download-buttons">
-                <a href="#" class="download-card glass">
+                <!-- Sin destino real todavía: no hay APK publicado ni ficha
+                     en Google Play. Se deja como aviso en vez de un enlace
+                     roto; cuando exista la ficha, sustituir por su URL. -->
+                <span class="download-card glass download-card-soon" aria-disabled="true">
                     <i class="fa-brands fa-google-play"></i>
                     <div>
-                        <span class="dl-small">Disponible en</span>
+                        <span class="dl-small">Muy pronto en</span>
                         <span class="dl-big">Google Play</span>
                     </div>
-                </a>
-                <a href="#" class="download-card glass">
+                </span>
+                <a href="/app/" class="download-card glass">
                     <i class="fa-solid fa-globe"></i>
                     <div>
-                        <span class="dl-small">Jugar en</span>
+                        <span class="dl-small">Jugar ahora en</span>
                         <span class="dl-big">Navegador Web</span>
                     </div>
                 </a>

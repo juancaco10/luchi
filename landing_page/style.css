@@ -311,6 +311,11 @@ button { cursor: pointer; border: none; outline: none; font-family: var(--font-b
     box-shadow: 0 15px 40px rgba(0, 255, 194, 0.2);
 }
 .download-card i { font-size: 2.5rem; color: var(--neon-green); }
+/* Tarjeta de "muy pronto": no es un enlace, así que no debe insinuar que
+   se puede pulsar. */
+.download-card-soon { cursor: default; opacity: 0.55; }
+.download-card-soon:hover { transform: none; box-shadow: none; }
+.download-card-soon i { color: var(--text-sec); }
 .dl-small { display: block; font-size: 0.75rem; color: var(--text-sec); font-weight: 600; }
 .dl-big { display: block; font-size: 1.3rem; font-weight: 800; color: var(--text-main); }
 
@@ -365,12 +370,54 @@ button { cursor: pointer; border: none; outline: none; font-family: var(--font-b
 
 @media (max-width: 768px) {
     .nav-links { display: none; }
+    /* Desplegable del menú hamburguesa. Sin esta regla el botón no tenía
+       nada que mostrar: .nav-links queda en display:none y el JS no podía
+       revertirlo. */
+    .nav-links.open {
+        display: flex; flex-direction: column; gap: 0;
+        position: fixed; top: 70px; left: 0; right: 0;
+        padding: 10px 5% 20px;
+        background: rgba(6, 13, 10, 0.97);
+        border-bottom: 1px solid var(--glass-border);
+    }
+    .nav-links.open li { width: 100%; }
+    .nav-links.open a {
+        display: block; padding: 14px 0; font-size: 1rem;
+        border-bottom: 1px solid var(--glass-border);
+    }
+    /* El subrayado flotante del estado activo no encaja en una lista
+       vertical: en móvil basta con el cambio de color. */
+    .nav-links.open a.active::after { display: none; }
+
     .nav-right .btn-sm { display: none; }
-    .mobile-menu { display: block; }
+    .mobile-menu { display: block; cursor: pointer; padding: 8px; }
     .hero-title { font-size: 2rem; }
     .phone-frame { width: 220px; height: 440px; }
     .steps-grid { grid-template-columns: 1fr; }
     .footer-content { flex-direction: column; align-items: center; text-align: center; }
     .footer-cols { flex-direction: column; gap: 30px; align-items: center; }
     .trust-badges { flex-direction: column; align-items: center; gap: 15px; }
+
+    /* Los CTA principales se apilan a ancho completo en vez de quedar
+       cortados: .hero-actions y .download-buttons son flex sin reglas
+       responsive propias. */
+    .hero-actions { flex-direction: column; width: 100%; gap: 12px; }
+    .hero-actions .btn { width: 100%; justify-content: center; }
+    .btn-lg { padding: 14px 24px; font-size: 1rem; }
+    .download-buttons { flex-direction: column; gap: 14px; width: 100%; }
+    .download-card { width: 100%; justify-content: center; padding: 16px 24px; }
+}
+
+/* Móviles estrechos: el diseño no tenía ningún breakpoint por debajo de
+   768px, así que en pantallas de ~360px los títulos y botones se salían. */
+@media (max-width: 480px) {
+    .navbar { padding: 0 4%; }
+    .logo { font-size: .85rem; letter-spacing: 1px; }
+    .logo .accent { font-size: .6rem; }
+    .hero-title { font-size: 1.7rem; }
+    .section-title { font-size: 1.5rem; }
+    .btn { padding: 12px 20px; font-size: .9rem; }
+    .btn-lg { padding: 13px 20px; font-size: .95rem; }
+    .download-card { padding: 14px 18px; }
+    .download-card i { font-size: 2rem; }
 }
