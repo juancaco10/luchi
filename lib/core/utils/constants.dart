@@ -18,6 +18,17 @@ abstract class AppConstants {
     defaultValue: false,
   );
 
+  /// Client ID "Web" del proyecto Firebase (google-services.json,
+  /// oauth_client type=3). No es secreto: un client ID de OAuth viaja en
+  /// el propio cliente (APK/bundle web) por diseño; lo que hay que
+  /// proteger es el lado del servidor, que valida el token contra este
+  /// mismo ID en backend/api/config/database.php (GOOGLE_CLIENT_ID).
+  /// Se usa como serverClientId en Android/iOS (para que el idToken sea
+  /// verificable por el backend) y como clientId en web (donde no hay un
+  /// google-services.json equivalente).
+  static const String googleWebClientId =
+      '246096129662-j68ams9ssh7d4phooq7kufpsume7db07.apps.googleusercontent.com';
+
   static const Duration connectTimeout = Duration(seconds: 10);
   static const Duration receiveTimeout = Duration(seconds: 15);
 

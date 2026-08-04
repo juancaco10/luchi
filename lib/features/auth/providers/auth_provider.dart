@@ -72,6 +72,32 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  /// Intercambia un idToken de Google por la sesión propia del backend.
+  /// El backend valida el token contra Google (firma, aud, email
+  /// verificado) y devuelve exactamente {token, user} — mismo contrato
+  /// que login(), así que no hace falta un AuthState nuevo para esto.
+  Future<bool> loginConGoogle(String idToken) async {
+    state = const AuthLoading();
+
+    try {
+      final response = await _ref.read(apiClientProvider).post(
+        ApiEndpoints.googleLogin,
+        data: {'id_token': idToken},
+      );
+      final data = response.data as Map<String, dynamic>;
+      final user = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      await LocalStorage.instance.saveToken(data['token'] as String);
+      await LocalStorage.instance.saveUser(user.toJson());
+      state = AuthAuthenticated(user);
+      return true;
+    } on DioException catch (e) {
+      state = AuthError(
+        (e.error as AppException?)?.message ?? 'No se pudo iniciar sesión con Google.',
+      );
+      return false;
+    }
+  }
+
   // ── Mock auth (AppConstants.useMockAuth == true, the default until a
   // real backend is deployed — see docs/BACKEND_AUDIT.md). Lets the rest of
   // the app be demoed/tested without a working API. ────────────────────

@@ -17,11 +17,15 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── users ─────────────────────────────────────────────────────────
+-- password_hash es NULL para cuentas de Google (auth_provider='google');
+-- google_sub es el 'sub' del token de Google, único por cuenta de Google.
 CREATE TABLE IF NOT EXISTS users (
   id            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   name          VARCHAR(100)        NOT NULL,
   email         VARCHAR(191)        NOT NULL UNIQUE,
-  password_hash VARCHAR(255)        NOT NULL,
+  google_sub    VARCHAR(255)        NULL UNIQUE,
+  auth_provider VARCHAR(20)         NOT NULL DEFAULT 'password',
+  password_hash VARCHAR(255)        NULL,
   points        INT UNSIGNED        NOT NULL DEFAULT 0,
   level         TINYINT UNSIGNED    NOT NULL DEFAULT 1,
   avatar_url    VARCHAR(500)        NULL,

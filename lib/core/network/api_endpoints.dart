@@ -3,6 +3,7 @@ abstract class ApiEndpoints {
   // ── Auth ─────────────────────────────────────────────────────
   static const String register = '/register';
   static const String login = '/login';
+  static const String googleLogin = '/auth/google';
   static const String me = '/me';
 
   // ── Education ────────────────────────────────────────────────

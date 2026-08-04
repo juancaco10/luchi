@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
+import '../data/google_auth_service.dart';
+import '../widgets/google_sign_in_button.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/firefly_background.dart';
 
@@ -20,11 +24,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
+  bool _googleLoading = false;
+  StreamSubscription<String>? _googleWebSub;
+
+  @override
+  void initState() {
+    super.initState();
+    GoogleAuthService.instance.ensureInitialized();
+    if (kIsWeb) {
+      // En web el idToken no llega como resultado de un tap propio: el
+      // usuario interactúa con el botón que Google renderiza dentro de
+      // GoogleSignInButton, y el resultado se escucha aquí.
+      _googleWebSub = GoogleAuthService.instance.idTokenOnWebSignIn.listen(
+        _submitGoogleIdToken,
+        onError: (Object e) => _mostrarErrorGoogle(),
+      );
+    }
+  }
 
   @override
   void dispose() {
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
+    _googleWebSub?.cancel();
     super.dispose();
   }
 
@@ -39,14 +61,46 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  // ── Accesos aún sin backend ──────────────────────────────────────
-  // El servidor (backend/api/routes/users.php) solo expone POST /register,
-  // POST /login, GET /me y DELETE /me. No hay OAuth, ni cuenta de invitado,
-  // ni recuperación de contraseña. La UI existe ya para no rehacerla luego;
-  // cada método queda listo para enchufar la llamada real.
+  // ── Google ─────────────────────────────────────────────────────
+  // Android/iOS/desktop: authenticate() es una llamada directa. En web el
+  // botón se renderiza inline más abajo y el resultado llega por el
+  // stream suscrito en initState — este método solo cubre el primer caso.
+  Future<void> _loginConGoogle() async {
+    setState(() => _googleLoading = true);
+    try {
+      final idToken = await GoogleAuthService.instance.signInInteractive();
+      if (idToken == null) return; // el usuario canceló el selector
+      await _submitGoogleIdToken(idToken);
+    } catch (_) {
+      _mostrarErrorGoogle();
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
 
-  // TODO: requiere google_sign_in + endpoint POST /auth/google en el backend.
-  void _loginConGoogle() => _proximamente('Entrar con Google');
+  Future<void> _submitGoogleIdToken(String idToken) async {
+    final ok =
+        await ref.read(authProvider.notifier).loginConGoogle(idToken);
+    if (ok && mounted) context.go('/home');
+  }
+
+  void _mostrarErrorGoogle() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+        content: Text(
+          'No se pudo conectar con Google. Inténtalo de nuevo.',
+          style: TextStyle(fontFamily: 'Nunito'),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ));
+  }
+
+  // ── Accesos aún sin backend ──────────────────────────────────────
+  // El servidor (backend/api/routes/users.php) expone POST /register,
+  // POST /login, POST /auth/google, GET /me y DELETE /me. Faltan invitado
+  // y recuperación de contraseña; la UI existe ya para no rehacerla luego.
 
   // TODO: requiere endpoint de sesión anónima (o un usuario local sin sync).
   void _entrarComoInvitado() => _proximamente('Entrar como invitado');
@@ -129,21 +183,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 28),
 
-                  // ── Accesos rápidos (aún sin backend) ─────────────
-                  _OutlinedAction(
-                    label: 'Continuar con Google',
-                    onTap: _loginConGoogle,
-                    leading: Text(
-                      'G',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.primary,
-                      ),
-                    ),
-                    filled: true,
-                  ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                  // ── Google ─────────────────────────────────────────
+                  // En web, Google exige su propio botón (política de
+                  // marca): no es sustituible por _OutlinedAction. En el
+                  // resto de plataformas sí es nuestro botón, con spinner
+                  // mientras se resuelve el selector de cuenta nativo.
+                  if (kIsWeb)
+                    Center(child: buildWebGoogleButton())
+                        .animate(delay: 100.ms)
+                        .fadeIn()
+                        .slideY(begin: 0.15, end: 0)
+                  else
+                    _OutlinedAction(
+                      label: _googleLoading
+                          ? 'Conectando…'
+                          : 'Continuar con Google',
+                      onTap: _googleLoading ? null : _loginConGoogle,
+                      leading: _googleLoading
+                          ? SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: context.colors.primary,
+                              ),
+                            )
+                          : Text(
+                              'G',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: context.colors.primary,
+                              ),
+                            ),
+                      filled: true,
+                    ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
 
                   const SizedBox(height: 12),
 
@@ -331,7 +406,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 class _OutlinedAction extends StatelessWidget {
   final String label;
   final Widget leading;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final bool filled;
 
   const _OutlinedAction({
@@ -346,6 +421,7 @@ class _OutlinedAction extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      enabled: onTap != null,
       child: Material(
         color: filled ? context.colors.surface : Colors.transparent,
         borderRadius: BorderRadius.circular(16),
