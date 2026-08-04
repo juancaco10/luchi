@@ -1,38 +1,18 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:logger/logger.dart';
 import '../utils/constants.dart';
 import '../storage/local_storage.dart';
 
+/// Thin wrapper around Dio. Built once by [apiClientProvider] so it can be
+/// injected — and, in tests, replaced by overriding [dioProvider] with a
+/// mock adapter instead of hitting the network. No more `ApiClient.instance`
+/// singleton: every caller reads it from Riverpod.
 class ApiClient {
-  static ApiClient? _instance;
-  late final Dio _dio;
-  final _logger = Logger();
+  ApiClient(this._dio);
 
-  ApiClient._() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: AppConstants.baseUrl,
-        connectTimeout: AppConstants.connectTimeout,
-        receiveTimeout: AppConstants.receiveTimeout,
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-      ),
-    );
-
-    _dio.interceptors.addAll([
-      _AuthInterceptor(),
-      _LoggingInterceptor(_logger),
-      _ErrorInterceptor(),
-    ]);
-  }
-
-  static ApiClient get instance => _instance ??= ApiClient._();
-
+  final Dio _dio;
   Dio get dio => _dio;
-
-  // ── Convenience Methods ───────────────────────────────────────
 
   Future<Response<T>> get<T>(
     String path, {
@@ -57,6 +37,34 @@ class ApiClient {
     Options? options,
   }) => _dio.delete<T>(path, options: options);
 }
+
+Dio _buildDio() {
+  final dio = Dio(
+    BaseOptions(
+      baseUrl: AppConstants.baseUrl,
+      connectTimeout: AppConstants.connectTimeout,
+      receiveTimeout: AppConstants.receiveTimeout,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+    ),
+  );
+
+  dio.interceptors.addAll([
+    _AuthInterceptor(),
+    _LoggingInterceptor(Logger()),
+    _ErrorInterceptor(),
+  ]);
+
+  return dio;
+}
+
+final dioProvider = Provider<Dio>((ref) => _buildDio());
+
+final apiClientProvider = Provider<ApiClient>(
+  (ref) => ApiClient(ref.watch(dioProvider)),
+);
 
 // ── Auth Token Injection ──────────────────────────────────────────
 
@@ -97,33 +105,31 @@ class _LoggingInterceptor extends Interceptor {
 }
 
 // ── Global Error Handling ─────────────────────────────────────────
-
+//
+// This interceptor's only job is to turn a DioException into an
+// AppException with a message worth showing a child. It does NOT decide
+// whether the session ends.
+//
+// It used to call `LocalStorage.instance.clearToken()` on *any* 401,
+// which meant a single failed request on any screen (a flaky connection,
+// a backend hiccup) silently logged the user out mid-lesson — confirmed
+// on-device: opening "Nivel 1" while the token happened to be stale threw
+// the child back to the login screen with no explanation. See CLAUDE.md.
+//
+// There is currently no session-check call (no `GET /me`) anywhere in the
+// app — `ApiEndpoints.me` is only ever used for `DELETE` (delete account).
+// So there is no call site today where "the session is definitely dead"
+// can be inferred from a bare 401 fired from who-knows-which screen.
+// Ending a session belongs to the call site that actually depends on auth
+// state — login/register failure, or `deleteAccount()`, which already
+// handles its own error path. If a real session-validation endpoint is
+// added later, its call site should call `authProvider.notifier.logout()`
+// explicitly in its `catch`, the same way `deleteAccount()` does today.
 class _ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    String message;
-    switch (err.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.receiveTimeout:
-        message = 'Tiempo de conexión agotado. Verifica tu internet.';
-        break;
-      case DioExceptionType.connectionError:
-        message = 'Sin conexión a internet.';
-        break;
-      case DioExceptionType.badResponse:
-        final code = err.response?.statusCode;
-        if (code == 401) {
-          message = 'Sesión expirada. Inicia sesión de nuevo.';
-          LocalStorage.instance.clearToken();
-        } else if (code == 422) {
-          message = 'Datos inválidos.';
-        } else {
-          message = 'Error del servidor ($code).';
-        }
-        break;
-      default:
-        message = 'Error inesperado. Intenta de nuevo.';
-    }
+    final message = _backendMessage(err.response?.data) ?? _fallbackMessage(err);
+
     handler.reject(
       DioException(
         requestOptions: err.requestOptions,
@@ -132,6 +138,35 @@ class _ErrorInterceptor extends Interceptor {
         error: AppException(message, err.response?.statusCode),
       ),
     );
+  }
+
+  /// The backend already returns `{"error": "texto legible en español"}`
+  /// on failure (see docs/BACKEND_AUDIT.md) — use it instead of a generic
+  /// "Error del servidor (400)." that throws away exactly the information
+  /// the child needs (e.g. "Correo y contraseña son requeridos").
+  String? _backendMessage(dynamic data) {
+    if (data is Map && data['error'] is String) {
+      final msg = data['error'] as String;
+      return msg.isEmpty ? null : msg;
+    }
+    return null;
+  }
+
+  String _fallbackMessage(DioException err) {
+    switch (err.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'Tiempo de conexión agotado. Verifica tu internet.';
+      case DioExceptionType.connectionError:
+        return 'Sin conexión a internet.';
+      case DioExceptionType.badResponse:
+        final code = err.response?.statusCode;
+        if (code == 401) return 'No autorizado. Inicia sesión de nuevo.';
+        if (code == 422) return 'Datos inválidos.';
+        return 'Error del servidor ($code).';
+      default:
+        return 'Error inesperado. Intenta de nuevo.';
+    }
   }
 }
 

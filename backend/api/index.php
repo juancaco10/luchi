@@ -4,6 +4,30 @@
  * Hostinger-compatible single entry point
  */
 
+// ── Never leak a PHP error/stack trace into what the client expects to be
+// JSON. Every route that fails on purpose already calls jsonError(), which
+// returns {"error": "..."}. This is the fallback for the failures nobody
+// wrote a jsonError() for — a DB hiccup, an unexpected null, etc. Without
+// it, a fatal error prints HTML (or nothing) instead of JSON, and the
+// Flutter client's error interceptor — which reads response.data['error'] —
+// has nothing to read.
+ini_set('display_errors', '0');
+error_reporting(E_ALL);
+
+set_exception_handler(function (Throwable $e): void {
+    error_log('[luchi-api] uncaught: ' . $e);
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=UTF-8');
+        http_response_code(500);
+    }
+    echo json_encode(['error' => 'Error inesperado del servidor.']);
+    exit;
+});
+
+set_error_handler(function (int $severity, string $message, string $file, int $line): bool {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
+
 require_once __DIR__ . '/config/database.php';
 
 // ── CORS Headers ──────────────────────────────────────────────────

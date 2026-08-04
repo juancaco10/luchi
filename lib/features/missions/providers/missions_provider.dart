@@ -43,14 +43,16 @@ class MissionsState {
 // ── Notifier ──────────────────────────────────────────────────────
 
 class MissionsNotifier extends StateNotifier<MissionsState> {
-  MissionsNotifier() : super(const MissionsState()) {
+  MissionsNotifier(this._ref) : super(const MissionsState()) {
     loadMissions();
   }
+
+  final Ref _ref;
 
   Future<void> loadMissions() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>(
+      final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
         ApiEndpoints.missions,
       );
       final List data = response.data!['missions'] as List;
@@ -88,7 +90,7 @@ class MissionsNotifier extends StateNotifier<MissionsState> {
 
     // Call API (best-effort, no rollback on failure)
     try {
-      await ApiClient.instance.post(
+      await _ref.read(apiClientProvider).post(
         ApiEndpoints.completeMission,
         data: {'mission_id': missionId},
       );
@@ -105,7 +107,7 @@ class MissionsNotifier extends StateNotifier<MissionsState> {
 // ── Providers ─────────────────────────────────────────────────────
 
 final missionsProvider = StateNotifierProvider<MissionsNotifier, MissionsState>(
-  (ref) => MissionsNotifier(),
+  (ref) => MissionsNotifier(ref),
 );
 
 final missionByIdProvider = Provider.family<MissionModel?, String>((ref, id) {

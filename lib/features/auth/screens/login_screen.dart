@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../../../widgets/custom_button.dart';
@@ -28,7 +29,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   Future<void> _login() async {
-    // if (!_formKey.currentState!.validate()) return; // Bypass temporal
+    if (!_formKey.currentState!.validate()) return;
     final ok = await ref.read(authProvider.notifier).login(
           _emailCtrl.text.trim(),
           _passwordCtrl.text,
@@ -45,7 +46,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     final error = authState is AuthError ? authState.message : null;
 
-    return Scaffold(
+    // Esta pantalla está diseñada solo en oscuro (fondo forzado más abajo).
+    // Sin fijar el tema aquí, los TextFormField pedían su color de relleno
+    // al tema activo del sistema — en claro, un fondo casi blanco bajo un
+    // texto casi blanco (color: AppColors.textPrimary, fijado a mano más
+    // abajo), prácticamente ilegible. La migración real a que esta pantalla
+    // respete el tema claro/oscuro del usuario es trabajo de la Fase 2;
+    // esto es el mínimo para que se pueda leer lo que se escribe hoy.
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
         children: [
@@ -236,6 +246,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

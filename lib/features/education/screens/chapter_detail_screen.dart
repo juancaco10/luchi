@@ -94,7 +94,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
     });
 
     try {
-      await ApiClient.instance.post(
+      await ref.read(apiClientProvider).post(
         ApiEndpoints.completeChapter,
         data: {'chapter_id': chapter.id},
       );

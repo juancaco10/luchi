@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../../../widgets/custom_button.dart';
@@ -32,7 +33,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 
   Future<void> _register() async {
-    // if (!_formKey.currentState!.validate()) return; // Bypass temporal
+    if (!_formKey.currentState!.validate()) return;
     final ok = await ref.read(authProvider.notifier).register(
           _nameCtrl.text.trim(),
           _emailCtrl.text.trim(),
@@ -48,7 +49,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final error = authState is AuthError ? authState.message : null;
 
 
-    return Scaffold(
+    // Ver login_screen.dart: misma corrección de contraste mínima hasta
+    // que la Fase 2 migre esta pantalla a respetar el tema real.
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
       backgroundColor: AppColors.background,
       body: Container(
         decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
@@ -229,6 +234,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
+      ),
       ),
     );
   }

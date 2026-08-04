@@ -9,9 +9,11 @@ import '../../../core/utils/constants.dart';
 // ── Auth Notifier ─────────────────────────────────────────────────
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthInitial()) {
+  AuthNotifier(this._ref) : super(const AuthInitial()) {
     _checkSession();
   }
+
+  final Ref _ref;
 
   void _checkSession() {
     final userData = LocalStorage.instance.getUser();
@@ -30,7 +32,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      final response = await ApiClient.instance.post(
+      final response = await _ref.read(apiClientProvider).post(
         ApiEndpoints.login,
         data: {'email': email, 'password': password},
       );
@@ -54,7 +56,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
 
     try {
-      final response = await ApiClient.instance.post(
+      final response = await _ref.read(apiClientProvider).post(
         ApiEndpoints.register,
         data: {'name': name, 'email': email, 'password': password},
       );
@@ -123,7 +125,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = const AuthLoading();
     try {
       if (!AppConstants.useMockAuth) {
-        await ApiClient.instance.delete(ApiEndpoints.me);
+        await _ref.read(apiClientProvider).delete(ApiEndpoints.me);
       }
     } catch (_) {
       final user = LocalStorage.instance.getUser();
@@ -159,7 +161,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
 // ── Providers ─────────────────────────────────────────────────────
 
 final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
-  (ref) => AuthNotifier(),
+  (ref) => AuthNotifier(ref),
 );
 
 final currentUserProvider = Provider<UserModel?>((ref) {

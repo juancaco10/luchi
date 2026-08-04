@@ -31,14 +31,16 @@ class ChaptersState {
 // ── Notifier ──────────────────────────────────────────────────────
 
 class ChaptersNotifier extends StateNotifier<ChaptersState> {
-  ChaptersNotifier() : super(const ChaptersState()) {
+  ChaptersNotifier(this._ref) : super(const ChaptersState()) {
     loadChapters();
   }
+
+  final Ref _ref;
 
   Future<void> loadChapters() async {
     state = state.copyWith(isLoading: true, error: null);
     try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>(
+      final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
         ApiEndpoints.chapters,
       );
       final List data = response.data!['chapters'] as List;
@@ -90,7 +92,7 @@ int _getOrder(int id, List<ChapterModel> chapters) =>
 // ── Providers ─────────────────────────────────────────────────────
 
 final chaptersProvider = StateNotifierProvider<ChaptersNotifier, ChaptersState>(
-  (ref) => ChaptersNotifier(),
+  (ref) => ChaptersNotifier(ref),
 );
 
 final chapterByIdProvider = Provider.family<ChapterModel?, String>((ref, id) {

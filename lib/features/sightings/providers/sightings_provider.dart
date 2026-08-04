@@ -31,14 +31,16 @@ class SightingsState {
 }
 
 class SightingsNotifier extends StateNotifier<SightingsState> {
-  SightingsNotifier() : super(const SightingsState()) {
+  SightingsNotifier(this._ref) : super(const SightingsState()) {
     loadSightings();
   }
+
+  final Ref _ref;
 
   Future<void> loadSightings() async {
     state = state.copyWith(isLoading: true);
     try {
-      final response = await ApiClient.instance.get<Map<String, dynamic>>(
+      final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
         ApiEndpoints.mySightings,
       );
       final List data = response.data!['sightings'] as List;
@@ -73,7 +75,7 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
     );
 
     try {
-      await ApiClient.instance.post(
+      await _ref.read(apiClientProvider).post(
         ApiEndpoints.sightings,
         data: {
           'lat': lat,
@@ -105,5 +107,5 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
 
 final sightingsProvider =
     StateNotifierProvider<SightingsNotifier, SightingsState>(
-  (ref) => SightingsNotifier(),
+  (ref) => SightingsNotifier(ref),
 );

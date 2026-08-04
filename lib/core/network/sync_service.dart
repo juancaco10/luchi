@@ -16,6 +16,11 @@ class SyncService {
   }
 
   void start() {
+    // Antes solo se sincronizaba al *cambiar* de conectividad: si la app
+    // arrancaba ya con internet y quedaban avistamientos pendientes de la
+    // sesión anterior, nunca se drenaban hasta el siguiente cambio de red.
+    _syncPending();
+
     _sub = Connectivity().onConnectivityChanged.listen((result) {
       // result is a List<ConnectivityResult> in newer versions of connectivity_plus
       if (result is List<ConnectivityResult>) {
@@ -36,18 +41,18 @@ class SyncService {
     _isSyncing = true;
 
     try {
-      final pending = LocalStorage.instance.getPendingSightings();
+      final pending = LocalStorage.instance.getPendingSightingsWithKeys();
       if (pending.isEmpty) return;
 
       bool anySuccess = false;
 
-      // Important: if we remove items we should update the storage. 
-      // It's safer to clear the box and re-insert the failed ones.
-      final List<Map<String, dynamic>> failed = [];
-
-      for (final sighting in pending) {
+      // Borrado por clave individual tras cada éxito: si la app muere a
+      // mitad de la sincronización, solo se pierden reintentos, no
+      // avistamientos ya subidos ni los que aún no se intentaron.
+      for (final entry in pending.entries) {
+        final sighting = entry.value;
         try {
-          await ApiClient.instance.post(
+          await _ref.read(apiClientProvider).post(
             ApiEndpoints.sightings,
             data: {
               'lat': sighting['lat'],
@@ -58,15 +63,11 @@ class SyncService {
               'location_name': sighting['location_name'],
             },
           );
+          await LocalStorage.instance.removePendingSighting(entry.key);
           anySuccess = true;
         } catch (_) {
-          failed.add(sighting);
+          // Se queda en la caja para el próximo intento.
         }
-      }
-
-      await LocalStorage.instance.clearPendingSightings();
-      for (final f in failed) {
-        await LocalStorage.instance.queueSighting(f);
       }
 
       if (anySuccess) {

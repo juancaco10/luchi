@@ -66,7 +66,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     initialLocation: '/splash',
     refreshListenable: refresh,
     redirect: (context, state) {
-      final isLoggedIn = LocalStorage.instance.isLoggedIn;
+      // Fuente de verdad: authProvider, no LocalStorage leído directamente.
+      // Antes el redirect comprobaba LocalStorage.instance.isLoggedIn por su
+      // cuenta, así que un logout disparado en otro sitio (p. ej. el
+      // interceptor de red) podía dejar el storage y el authProvider
+      // divergentes hasta la siguiente navegación. refreshListenable ya
+      // escucha authProvider (ver _AuthRouterRefresh) para forzar una
+      // re-evaluación inmediata; aquí solo hace falta leerlo.
+      final isLoggedIn = ref.read(authProvider) is AuthAuthenticated;
       final onboardingDone = LocalStorage.instance.onboardingDone;
       final goingTo = state.matchedLocation;
 
@@ -78,22 +85,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         return '/onboarding';
       }
 
-      // Redirect to login if not authenticated and trying to access protected pages
-      final protectedRoutes = [
-        '/home', '/chapters', '/missions', '/profile', '/settings',
-        '/sightings', '/map', '/game',
-      ];
-      final isProtected = protectedRoutes.any(
-        (r) => goingTo.startsWith(r),
-      );
+      // Allowlist de rutas públicas en vez de una lista de rutas protegidas
+      // aparte del árbol de GoRoute: si se añade una ruta nueva y se olvida
+      // registrarla aquí, con la lista de protegidas quedaba pública por
+      // defecto (falla insegura); con la allowlist queda protegida por
+      // defecto (falla segura).
+      const publicRoutes = {'/splash', '/onboarding', '/login', '/register'};
+      final isPublic = publicRoutes.contains(goingTo);
 
-      if (!isLoggedIn && isProtected) return '/login';
+      if (!isLoggedIn && !isPublic) return '/login';
       if (isLoggedIn && (goingTo == '/login' || goingTo == '/register')) {
         return '/home';
       }
 
       return null;
     },
+    errorBuilder: (context, state) => Scaffold(
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            'Página no encontrada: ${state.uri}',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    ),
     routes: [
     GoRoute(
       path: '/splash',

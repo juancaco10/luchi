@@ -44,8 +44,9 @@ backend/database/schema.sql
 
 ## Lógica de negocio incompleta
 
-- `awardBadgesIfEarned()` solo evalúa `condition_type === 'points'`. Las insignias seedeadas de tipo misiones/avistamientos/capítulos en `schema.sql` **nunca pueden desbloquearse**. (Fase 1 del plan de corrección global lo toca.)
-- `POST /sightings` suma +20 puntos pero no llama a la recalculación de nivel ni de insignias (a diferencia de `/complete-chapter`, que sí lo hace) → un usuario puede subir de nivel por avistamientos sin que el backend lo refleje hasta la siguiente acción que sí recalcule.
+**Corregido desde la revisión anterior** (ambos puntos de esta sección estaban desactualizados):
+- `awardBadgesIfEarned()` (`lib/gamification.php`) ya evalúa los cuatro `condition_type` sembrados en `schema.sql` (`points`, `missions`, `chapters`, `sightings`), no solo `points`.
+- `POST /sightings` sí llama a `syncUserProgress()` tras sumar los +20 puntos (`routes/sightings.php:58`), igual que `/complete-chapter`.
 - Los mensajes de error no tienen un formato 100% consistente entre routers — el cliente Flutter (Fase 1 del plan) empezará a mostrar `error` del backend directamente, así que cualquier endpoint que no devuelva `{"error": "..."}` en fallo se verá como un mensaje crudo en la UI.
 
 ## Rendimiento / escalabilidad

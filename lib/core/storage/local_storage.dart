@@ -106,16 +106,27 @@ class LocalStorage {
   }
 
   // ── Offline Sighting Queue ───────────────────────────────────
+  // `Box.add()` uses Hive's own auto-incrementing integer keys, so two
+  // sightings queued in the same millisecond can't collide and silently
+  // overwrite each other the way a `DateTime.now()`-derived string key did.
   Future<void> queueSighting(Map<String, dynamic> sighting) async {
-    final key = DateTime.now().millisecondsSinceEpoch.toString();
-    await sightingsBox.put(key, sighting);
+    await sightingsBox.add(sighting);
   }
 
-  List<Map<String, dynamic>> getPendingSightings() {
-    return sightingsBox.values
-        .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
+  /// Keyed view of the queue, so a failed sync can delete just the entries
+  /// that succeeded instead of clearing the whole box and re-inserting the
+  /// ones that failed — that clear-then-reinsert had a window where an app
+  /// kill between the two steps lost every pending sighting.
+  Map<dynamic, Map<String, dynamic>> getPendingSightingsWithKeys() {
+    return sightingsBox.toMap().map(
+          (key, value) => MapEntry(key, Map<String, dynamic>.from(value as Map)),
+        );
   }
+
+  List<Map<String, dynamic>> getPendingSightings() =>
+      getPendingSightingsWithKeys().values.toList();
+
+  Future<void> removePendingSighting(dynamic key) => sightingsBox.delete(key);
 
   Future<void> clearPendingSightings() => sightingsBox.clear();
 
