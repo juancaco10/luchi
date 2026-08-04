@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
@@ -54,9 +54,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor,
       body: Container(
-        decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+        decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
@@ -66,10 +66,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 // Back button
                 IconButton(
                   onPressed: () => context.go('/login'),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                      color: AppColors.textSecondary),
+                  icon: Icon(Icons.arrow_back_ios_new_rounded,
+                      color: context.text.bodyMedium?.color),
                   style: IconButton.styleFrom(
-                    backgroundColor: AppColors.cardSurface,
+                    backgroundColor: context.firefly.cardSurface,
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12)),
                   ),
@@ -77,25 +77,25 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
                 const SizedBox(height: 24),
 
-                const Text(
+                Text(
                   'Únete como\nGuardián 🪲',
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
+                    color: context.colors.onSurface,
                     height: 1.2,
                   ),
                 ).animate(delay: 100.ms).fadeIn().slideY(begin: -0.2, end: 0),
 
                 const SizedBox(height: 8),
 
-                const Text(
+                Text(
                   'Crea tu cuenta gratuita y empieza a proteger las luciérnagas.',
                   style: TextStyle(
                     fontFamily: 'Nunito',
                     fontSize: 15,
-                    color: AppColors.textSecondary,
+                    color: context.text.bodyMedium?.color,
                     height: 1.5,
                   ),
                 ).animate(delay: 150.ms).fadeIn(),
@@ -106,18 +106,18 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.error.withOpacity(0.1),
+                      color: context.colors.error.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.error.withOpacity(0.4)),
+                      border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
                     ),
                     child: Row(children: [
-                      const Icon(Icons.error_outline_rounded,
-                          color: AppColors.errorLight, size: 20),
+                      Icon(Icons.error_outline_rounded,
+                          color: context.colors.error, size: 20),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(error,
-                            style: const TextStyle(
-                                color: AppColors.errorLight,
+                            style: TextStyle(
+                                color: context.colors.error,
                                 fontFamily: 'Nunito',
                                 fontSize: 14)),
                       ),
@@ -166,7 +166,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             _obscurePassword
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined,
-                            color: AppColors.textMuted,
+                            color: context.text.bodySmall?.color,
                             size: 20,
                           ),
                           onPressed: () => setState(
@@ -202,10 +202,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Text(
+                          Text(
                             '¿Ya tienes cuenta? ',
                             style: TextStyle(
-                                color: AppColors.textSecondary,
+                                color: context.text.bodyMedium?.color,
                                 fontFamily: 'Nunito',
                                 fontSize: 14),
                           ),
@@ -215,10 +215,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               padding: EdgeInsets.zero,
                               minimumSize: Size.zero,
                             ),
-                            child: const Text(
+                            child: Text(
                               'Inicia sesión',
                               style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: context.colors.primary,
                                   fontFamily: 'Nunito',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700),
@@ -253,10 +253,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       controller: controller,
       keyboardType: keyboardType,
       obscureText: obscureText,
-      style: const TextStyle(color: AppColors.textPrimary, fontFamily: 'Nunito'),
+      style: TextStyle(color: context.colors.onSurface, fontFamily: 'Nunito'),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: AppColors.textSecondary, size: 20),
+        prefixIcon: Icon(icon, color: context.text.bodyMedium?.color, size: 20),
         suffixIcon: suffixIcon,
       ),
       validator: validator,

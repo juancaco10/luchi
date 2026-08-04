@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
@@ -56,12 +56,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Background gradient
           Container(
-            decoration: const BoxDecoration(gradient: AppColors.backgroundGradient),
+            decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
           ),
 
           SafeArea(
@@ -78,14 +78,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryGlow,
+                          color: context.firefly.glow,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                          border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
                         ),
                         child: const Text('🪲', style: TextStyle(fontSize: 28)),
                       ),
                       const SizedBox(width: 16),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -94,7 +94,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               fontFamily: 'Nunito',
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: context.colors.onSurface,
                             ),
                           ),
                           Text(
@@ -102,7 +102,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 14,
-                              color: AppColors.textSecondary,
+                              color: context.text.bodyMedium?.color,
                             ),
                           ),
                         ],
@@ -117,20 +117,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.1),
+                        color: context.colors.error.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.error.withOpacity(0.4)),
+                        border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.error_outline_rounded,
-                              color: AppColors.errorLight, size: 20),
+                          Icon(Icons.error_outline_rounded,
+                              color: context.colors.error, size: 20),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               error,
-                              style: const TextStyle(
-                                color: AppColors.errorLight,
+                              style: TextStyle(
+                                color: context.colors.error,
                                 fontFamily: 'Nunito',
                                 fontSize: 14,
                               ),
@@ -151,12 +151,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextFormField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(
-                              color: AppColors.textPrimary, fontFamily: 'Nunito'),
-                          decoration: const InputDecoration(
+                          style: TextStyle(
+                              color: context.colors.onSurface, fontFamily: 'Nunito'),
+                          decoration: InputDecoration(
                             labelText: 'Correo electrónico',
                             prefixIcon: Icon(Icons.email_outlined,
-                                color: AppColors.textSecondary, size: 20),
+                                color: context.text.bodyMedium?.color, size: 20),
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) return 'Campo requerido';
@@ -171,18 +171,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         TextFormField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
-                          style: const TextStyle(
-                              color: AppColors.textPrimary, fontFamily: 'Nunito'),
+                          style: TextStyle(
+                              color: context.colors.onSurface, fontFamily: 'Nunito'),
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded,
-                                color: AppColors.textSecondary, size: 20),
+                            prefixIcon: Icon(Icons.lock_outline_rounded,
+                                color: context.text.bodyMedium?.color, size: 20),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                color: AppColors.textMuted,
+                                color: context.text.bodySmall?.color,
                                 size: 20,
                               ),
                               onPressed: () => setState(
@@ -211,10 +211,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            const Text(
+                            Text(
                               '¿No tienes cuenta? ',
                               style: TextStyle(
-                                color: AppColors.textSecondary,
+                                color: context.text.bodyMedium?.color,
                                 fontFamily: 'Nunito',
                                 fontSize: 14,
                               ),
@@ -226,10 +226,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 minimumSize: Size.zero,
                                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Regístrate',
                                 style: TextStyle(
-                                  color: AppColors.primary,
+                                  color: context.colors.primary,
                                   fontFamily: 'Nunito',
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,

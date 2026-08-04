@@ -24,5 +24,12 @@ linter:
     # avoid_print: false  # Uncomment to disable the `avoid_print` rule
     # prefer_single_quotes: true  # Uncomment to enable the `prefer_single_quotes` rule
 
+    # `flutter_lints` no incluye esta por defecto. Se activó para la
+    # migración de AppColors a FireflyColors/ColorScheme (Fase 2 del plan
+    # de corrección global, ya completada — AppColors se borró). Se deja
+    # activada porque sigue siendo útil: sin ella, marcar algo @Deprecated
+    # en este mismo paquete no genera ningún warning en sus puntos de uso.
+    deprecated_member_use_from_same_package: true
+
 # Additional information about this file can be found at
 # https://dart.dev/guides/language/analysis-options

@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -27,7 +27,7 @@ class SettingsScreen extends ConsumerWidget {
     );
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -38,17 +38,17 @@ class SettingsScreen extends ConsumerWidget {
                 children: [
                   IconButton(
                     onPressed: () => context.go('/profile'),
-                    icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                        color: AppColors.textSecondary, size: 20),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: context.text.bodyMedium?.color, size: 20),
                   ),
                   const SizedBox(width: 4),
-                  const Text(
+                  Text(
                     'Configuración',
                     style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: context.colors.onSurface,
                     ),
                   ),
                 ],
@@ -65,14 +65,14 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       _SettingsTile(
                         icon: Icons.person_outline_rounded,
-                        iconColor: AppColors.accent,
+                        iconColor: context.firefly.accent,
                         title: 'Nombre',
                         subtitle: user?.name ?? '—',
                         delay: 100,
                       ),
                       _SettingsTile(
                         icon: Icons.email_outlined,
-                        iconColor: AppColors.secondary,
+                        iconColor: context.colors.secondary,
                         title: 'Correo',
                         subtitle: user?.email ?? '—',
                         delay: 150,
@@ -90,14 +90,14 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       _SettingsTile(
                         icon: Icons.info_outline_rounded,
-                        iconColor: AppColors.accent,
+                        iconColor: context.firefly.accent,
                         title: 'Versión',
                         subtitle: versionStr,
                         delay: 300,
                       ),
                       _SettingsTile(
                         icon: Icons.privacy_tip_outlined,
-                        iconColor: AppColors.textMuted,
+                        iconColor: context.text.bodySmall?.color ?? Colors.grey,
                         title: 'Política de privacidad',
                         subtitle: 'Cómo protegemos tus datos',
                         delay: 350,
@@ -112,7 +112,7 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       _SettingsTile(
                         icon: Icons.favorite_outline_rounded,
-                        iconColor: AppColors.errorLight,
+                        iconColor: context.colors.error,
                         title: 'Sobre el proyecto',
                         subtitle:
                             'Guardianes de las Luciérnagas — Proyecto educativo ambiental',
@@ -130,25 +130,25 @@ class SettingsScreen extends ConsumerWidget {
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.07),
+                        color: context.colors.error.withValues(alpha: 0.07),
                         borderRadius:
                             BorderRadius.circular(AppConstants.borderRadius),
                         border: Border.all(
-                            color: AppColors.error.withOpacity(0.25)),
+                            color: context.colors.error.withValues(alpha: 0.25)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.logout_rounded,
-                              color: AppColors.errorLight, size: 20),
-                          SizedBox(width: 10),
+                              color: context.colors.error, size: 20),
+                          const SizedBox(width: 10),
                           Text(
                             'Cerrar sesión',
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.errorLight,
+                              color: context.colors.error,
                             ),
                           ),
                         ],
@@ -166,20 +166,20 @@ class SettingsScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: Colors.transparent,
                         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-                        border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                        border: Border.all(color: context.colors.error.withValues(alpha: 0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.delete_forever_rounded, color: AppColors.error, size: 20),
-                          SizedBox(width: 10),
+                          Icon(Icons.delete_forever_rounded, color: context.colors.error, size: 20),
+                          const SizedBox(width: 10),
                           Text(
                             'Borrar mi cuenta',
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 15,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.error,
+                              color: context.colors.error,
                             ),
                           ),
                         ],
@@ -198,7 +198,7 @@ class SettingsScreen extends ConsumerWidget {
   void _confirmLogout(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -209,23 +209,23 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             const Text('👋', style: TextStyle(fontSize: 48)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '¿Cerrar sesión?',
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: context.colors.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Tu progreso está guardado de forma segura.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.text.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 28),
@@ -246,7 +246,7 @@ class SettingsScreen extends ConsumerWidget {
                       if (context.mounted) context.go('/login');
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
+                      backgroundColor: context.colors.error,
                     ),
                     child: const Text('Salir'),
                   ),
@@ -262,7 +262,7 @@ class SettingsScreen extends ConsumerWidget {
   void _confirmDeleteAccount(BuildContext context, WidgetRef ref) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: AppColors.surface,
+      backgroundColor: context.colors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -273,23 +273,23 @@ class SettingsScreen extends ConsumerWidget {
           children: [
             const Text('⚠️', style: TextStyle(fontSize: 48)),
             const SizedBox(height: 16),
-            const Text(
+            Text(
               '¿Borrar cuenta?',
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: context.colors.onSurface,
               ),
             ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Esta acción es permanente y se perderá todo tu progreso y avistamientos.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.text.bodyMedium?.color,
               ),
             ),
             const SizedBox(height: 28),
@@ -314,7 +314,7 @@ class SettingsScreen extends ConsumerWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: const Text('Error al borrar la cuenta. Verifica tu conexión.', style: TextStyle(fontFamily: 'Nunito')),
-                              backgroundColor: AppColors.error,
+                              backgroundColor: context.colors.error,
                               behavior: SnackBarBehavior.floating,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
@@ -323,7 +323,7 @@ class SettingsScreen extends ConsumerWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.error,
+                      backgroundColor: context.colors.error,
                     ),
                     child: const Text('Borrar'),
                   ),
@@ -340,22 +340,22 @@ class SettingsScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.surface,
+        backgroundColor: context.colors.surface,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.cardRadius)),
-        title: const Text(
+        title: Text(
           'Guardianes de las Luciérnagas 🪲',
           style: TextStyle(
               fontFamily: 'Nunito',
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
+              color: context.colors.onSurface,
               fontSize: 18),
         ),
         content: Text(
           'Versión $versionStr\n\nUna aplicación educativa para niños sobre la conservación de las luciérnagas y el cuidado del medio ambiente nocturno.\n\nDesarrollada con ❤️ para un futuro más luminoso.',
-          style: const TextStyle(
+          style: TextStyle(
               fontFamily: 'Nunito',
-              color: AppColors.textSecondary,
+              color: context.text.bodyMedium?.color,
               fontSize: 14,
               height: 1.6),
         ),
@@ -385,20 +385,20 @@ class _SettingsSection extends StatelessWidget {
       children: [
         Text(
           title.toUpperCase(),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Nunito',
             fontSize: 11,
             fontWeight: FontWeight.w800,
-            color: AppColors.textMuted,
+            color: context.text.bodySmall?.color,
             letterSpacing: 1.2,
           ),
         ),
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.cardSurface,
+            color: context.firefly.cardSurface,
             borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-            border: Border.all(color: AppColors.border),
+            border: Border.all(color: context.firefly.cardBorder),
           ),
           child: Column(
             children: children.asMap().entries.map((e) {
@@ -410,7 +410,7 @@ class _SettingsSection extends StatelessWidget {
                     Divider(
                       height: 1,
                       indent: 56,
-                      color: AppColors.divider,
+                      color: Theme.of(context).dividerTheme.color,
                     ),
                 ],
               );
@@ -467,19 +467,19 @@ class _SettingsTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
+                      color: context.colors.onSurface,
                     ),
                   ),
                   Text(
                     subtitle,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 12,
-                      color: AppColors.textMuted,
+                      color: context.text.bodySmall?.color,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -489,8 +489,8 @@ class _SettingsTile extends StatelessWidget {
             ),
             if (trailing != null) trailing!,
             if (trailing == null && onTap != null)
-              const Icon(Icons.arrow_forward_ios_rounded,
-                  color: AppColors.textMuted, size: 14),
+              Icon(Icons.arrow_forward_ios_rounded,
+                  color: context.text.bodySmall?.color, size: 14),
           ],
         ),
       ),

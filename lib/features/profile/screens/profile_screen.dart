@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/profile_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -33,7 +33,7 @@ class ProfileScreen extends ConsumerWidget {
     final isSmallScreen = mediaQuery.size.width < 360;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const FireflyBackground(count: 10, intensity: 0.3),
@@ -49,24 +49,24 @@ class ProfileScreen extends ConsumerWidget {
                       children: [
                         IconButton(
                           onPressed: () => context.go('/home'),
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                              color: AppColors.textSecondary, size: 20),
+                          icon: Icon(Icons.arrow_back_ios_new_rounded,
+                              color: context.text.bodyMedium?.color, size: 20),
                         ),
                         const SizedBox(width: 4),
-                        const Text(
+                        Text(
                           'Mi perfil',
                           style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 22,
                             fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
+                            color: context.colors.onSurface,
                           ),
                         ),
                         const Spacer(),
                         IconButton(
                           onPressed: () => context.go('/settings'),
-                          icon: const Icon(Icons.settings_outlined,
-                              color: AppColors.textSecondary),
+                          icon: Icon(Icons.settings_outlined,
+                              color: context.text.bodyMedium?.color),
                         ),
                       ],
                     ).animate().fadeIn(duration: 400.ms),
@@ -84,9 +84,9 @@ class ProfileScreen extends ConsumerWidget {
                           width: isSmallScreen ? 80 : 96,
                           height: isSmallScreen ? 80 : 96,
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            gradient: context.firefly.primaryGradient,
                             shape: BoxShape.circle,
-                            boxShadow: AppColors.primaryGlowShadow,
+                            boxShadow: context.firefly.glowShadow,
                           ),
                           child: Center(
                             child: Text(
@@ -97,7 +97,7 @@ class ProfileScreen extends ConsumerWidget {
                                 fontFamily: 'Nunito',
                                 fontSize: isSmallScreen ? 36 : 42,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textOnPrimary,
+                                color: context.colors.onPrimary,
                               ),
                             ),
                           ),
@@ -116,21 +116,21 @@ class ProfileScreen extends ConsumerWidget {
                           fit: BoxFit.scaleDown,
                           child: Text(
                             user?.name ?? 'Juan',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: context.colors.onSurface,
                             ),
                           ),
                         ).animate(delay: 100.ms).fadeIn(),
 
                         Text(
                           user?.email ?? '',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 13,
-                            color: AppColors.textMuted,
+                            color: context.text.bodySmall?.color,
                           ),
                         ).animate(delay: 150.ms).fadeIn(),
                       ],
@@ -153,7 +153,7 @@ class ProfileScreen extends ConsumerWidget {
                         borderRadius:
                             BorderRadius.circular(AppConstants.cardRadius),
                         border: Border.all(
-                            color: AppColors.primary.withValues(alpha: 0.2)),
+                            color: context.colors.primary.withValues(alpha: 0.2)),
                       ),
                       child: Column(
                         children: [
@@ -165,7 +165,7 @@ class ProfileScreen extends ConsumerWidget {
                                   value: '${user?.points ?? 0}',
                                   label: 'Puntos',
                                   emoji: '⚡',
-                                  color: AppColors.primary,
+                                  color: context.colors.primary,
                                   isSmallScreen: isSmallScreen,
                                 ),
                               ),
@@ -179,7 +179,7 @@ class ProfileScreen extends ConsumerWidget {
                                   value: 'Nv.${user?.level ?? 1}',
                                   label: user?.levelName ?? 'Observador',
                                   emoji: '🌟',
-                                  color: AppColors.secondary,
+                                  color: context.colors.secondary,
                                   isSmallScreen: isSmallScreen,
                                 ),
                               ),
@@ -194,21 +194,21 @@ class ProfileScreen extends ConsumerWidget {
                                   'Siguiente: $nextLevelName',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Nunito',
                                     fontSize: 12,
-                                    color: AppColors.textSecondary,
+                                    color: context.text.bodyMedium?.color,
                                   ),
                                 ),
                               ),
                               if (nextPts != null)
                                 Text(
                                   '$nextPts pts',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontFamily: 'Nunito',
                                     fontSize: 12,
                                     fontWeight: FontWeight.bold,
-                                    color: AppColors.secondary,
+                                    color: context.colors.secondary,
                                   ),
                                 ),
                             ],
@@ -231,7 +231,7 @@ class ProfileScreen extends ConsumerWidget {
                           emoji: '🎯',
                           value: '${missions.completedCount}',
                           label: 'Misiones',
-                          color: AppColors.primary,
+                          color: context.colors.primary,
                           isSmallScreen: isSmallScreen,
                         ),
                         const SizedBox(width: 10),
@@ -240,7 +240,7 @@ class ProfileScreen extends ConsumerWidget {
                           value:
                               '${chapters.chapters.where((c) => c.isCompleted).length}',
                           label: 'Capítulos',
-                          color: AppColors.accent,
+                          color: context.firefly.accent,
                           isSmallScreen: isSmallScreen,
                         ),
                         const SizedBox(width: 10),
@@ -248,7 +248,7 @@ class ProfileScreen extends ConsumerWidget {
                           emoji: '✨',
                           value: '${sightings.sightings.length}',
                           label: 'Avistam.',
-                          color: AppColors.secondary,
+                          color: context.colors.secondary,
                           isSmallScreen: isSmallScreen,
                         ),
                       ],
@@ -260,13 +260,13 @@ class ProfileScreen extends ConsumerWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-                    child: const Text(
+                    child: Text(
                       '🏅 Mis insignias',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: context.colors.onSurface,
                       ),
                     ),
                   ).animate(delay: 350.ms).fadeIn(),
@@ -341,11 +341,11 @@ class _StatBubble extends StatelessWidget {
           fit: BoxFit.scaleDown,
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Nunito',
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.textMuted,
+              color: context.text.bodySmall?.color,
             ),
           ),
         ),
@@ -398,10 +398,10 @@ class _MiniStat extends StatelessWidget {
               fit: BoxFit.scaleDown,
               child: Text(
                 label,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 10.5,
-                  color: AppColors.textMuted,
+                  color: context.text.bodySmall?.color,
                 ),
               ),
             ),
@@ -424,16 +424,16 @@ class _BadgeCard extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       decoration: BoxDecoration(
         color: unlocked
-            ? AppColors.primary.withValues(alpha: 0.1)
-            : AppColors.cardSurface,
+            ? context.colors.primary.withValues(alpha: 0.1)
+            : context.firefly.cardSurface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: unlocked
-              ? AppColors.primary.withValues(alpha: 0.35)
-              : AppColors.border,
+              ? context.colors.primary.withValues(alpha: 0.35)
+              : context.firefly.cardBorder,
           width: unlocked ? 1.5 : 1,
         ),
-        boxShadow: unlocked ? AppColors.primaryGlowShadow : null,
+        boxShadow: unlocked ? context.firefly.glowShadow : null,
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -456,7 +456,7 @@ class _BadgeCard extends StatelessWidget {
                   fontSize: 10.5,
                   height: 1.15,
                   fontWeight: FontWeight.w700,
-                  color: unlocked ? AppColors.textPrimary : AppColors.textMuted,
+                  color: unlocked ? context.colors.onSurface : context.text.bodySmall?.color,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -468,14 +468,14 @@ class _BadgeCard extends StatelessWidget {
               margin: const EdgeInsets.only(top: 2),
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
               decoration: BoxDecoration(
-                color: AppColors.secondaryGlow,
+                color: context.firefly.greenGlow,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
+              child: Text(
                 '✓',
                 style: TextStyle(
                   fontSize: 9.5,
-                  color: AppColors.secondary,
+                  color: context.colors.secondary,
                   fontWeight: FontWeight.w900,
                 ),
               ),

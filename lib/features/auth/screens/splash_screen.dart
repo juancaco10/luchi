@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/storage/local_storage.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -56,7 +56,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Starry background gradient
@@ -106,12 +106,12 @@ class _SplashScreenState extends State<SplashScreen>
                           borderRadius: BorderRadius.circular(34),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primary.withOpacity(0.5),
+                              color: context.colors.primary.withValues(alpha: 0.5),
                               blurRadius: 40,
                               spreadRadius: 8,
                             ),
                             BoxShadow(
-                              color: AppColors.secondary.withOpacity(0.3),
+                              color: context.colors.secondary.withValues(alpha: 0.3),
                               blurRadius: 70,
                               spreadRadius: 15,
                             ),
@@ -122,10 +122,10 @@ class _SplashScreenState extends State<SplashScreen>
                           child: Image.asset(
                             'assets/images/app_logo.png',
                             fit: BoxFit.cover,
-                            errorBuilder: (ctx, err, stack) => const Icon(
+                            errorBuilder: (ctx, err, stack) => Icon(
                               Icons.local_fire_department_rounded,
                               size: 80,
-                              color: AppColors.primary,
+                              color: context.colors.primary,
                             ),
                           ),
                         ),
@@ -144,7 +144,7 @@ class _SplashScreenState extends State<SplashScreen>
                       // App name
                       ShaderMask(
                         shaderCallback: (bounds) =>
-                            AppColors.primaryGradient.createShader(bounds),
+                            context.firefly.primaryGradient.createShader(bounds),
                         child: const Text(
                           'Luchi',
                           textAlign: TextAlign.center,
@@ -171,8 +171,8 @@ class _SplashScreenState extends State<SplashScreen>
                             margin: const EdgeInsets.symmetric(horizontal: 4),
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: AppColors.primaryLight,
+                            decoration: BoxDecoration(
+                              color: context.colors.primary,
                               shape: BoxShape.circle,
                             ),
                           )
@@ -193,13 +193,13 @@ class _SplashScreenState extends State<SplashScreen>
                       const SizedBox(height: 36),
 
                       // Tagline
-                      const Text(
+                      Text(
                         'Protegemos la magia de la noche 🌙',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           fontSize: 13,
-                          color: AppColors.textMuted,
+                          color: context.text.bodySmall?.color,
                           letterSpacing: 0.5,
                         ),
                       )

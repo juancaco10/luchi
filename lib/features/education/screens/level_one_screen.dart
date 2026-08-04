@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../providers/chapters_provider.dart';
@@ -354,14 +354,14 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
         backgroundColor: const Color(0xFF131929),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(24),
-          side: const BorderSide(color: AppColors.primary, width: 2),
+          side: BorderSide(color: ctx.colors.primary, width: 2),
         ),
         title: Column(
           children: [
             Text(passed ? '🎉 ¡Felicidades!' : '💪 ¡Casi lo logras!',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
-                  color: AppColors.primary,
+                  color: ctx.colors.primary,
                   fontWeight: FontWeight.w800,
                   fontSize: 22,
                 )),
@@ -375,11 +375,11 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
           children: [
             Text(
               'Puntaje Final: $_score Puntos',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 18,
                 fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
+                color: ctx.colors.onSurface,
               ),
             ),
             const SizedBox(height: 12),
@@ -388,10 +388,10 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                   ? '¡Has demostrado ser un auténtico Guardián de las Luciérnagas!'
                   : 'Luchi confía en ti. ¡Inténtalo de nuevo para repasar!',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: ctx.text.bodyMedium?.color,
               ),
             ),
           ],
@@ -402,11 +402,11 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
               Navigator.pop(ctx);
               context.go('/home');
             },
-            child: const Text('Salir', style: TextStyle(color: AppColors.textMuted)),
+            child: Text('Salir', style: TextStyle(color: ctx.text.bodySmall?.color)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: ctx.colors.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -439,18 +439,18 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
     final q = _questions[_currentIndex];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
+          icon: Icon(Icons.close_rounded, color: context.colors.onSurface),
           onPressed: () {
             _timer?.cancel();
             context.go('/home');
           },
         ),
-        title: const Row(
+        title: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text('🎮 Juega con Luchi',
@@ -458,7 +458,7 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                   fontFamily: 'Nunito',
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.primary,
+                  color: context.colors.primary,
                 )),
           ],
         ),
@@ -470,7 +470,7 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
               children: List.generate(3, (i) {
                 return Icon(
                   i < _lives ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                  color: i < _lives ? AppColors.error : AppColors.textMuted,
+                  color: i < _lives ? context.colors.error : context.text.bodySmall?.color,
                   size: 20,
                 );
               }),
@@ -488,9 +488,9 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('Pregunta ${_currentIndex + 1}/10',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
-                        color: AppColors.textSecondary,
+                        color: context.text.bodyMedium?.color,
                         fontWeight: FontWeight.w700,
                       )),
                   if (_streak > 1)
@@ -511,9 +511,9 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                           )),
                     ),
                   Text('$_score pts',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
-                        color: AppColors.primary,
+                        color: context.colors.primary,
                         fontWeight: FontWeight.w800,
                         fontSize: 16,
                       )),
@@ -528,9 +528,9 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                 child: LinearProgressIndicator(
                   value: _timeLeft / q.timerSeconds,
                   minHeight: 8,
-                  backgroundColor: AppColors.cardSurface,
+                  backgroundColor: context.firefly.cardSurface,
                   valueColor: AlwaysStoppedAnimation<Color>(
-                    _timeLeft < 10 ? AppColors.error : AppColors.primary,
+                    _timeLeft < 10 ? context.colors.error : context.colors.primary,
                   ),
                 ),
               ),
@@ -543,20 +543,20 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: AppColors.cardGradient,
+                    gradient: context.firefly.cardGradient,
                     borderRadius:
                         BorderRadius.circular(AppConstants.cardRadius),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                    border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
                   ),
                   child: Center(
                     child: Text(
                       q.text,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: context.colors.onSurface,
                         height: 1.4,
                       ),
                     ),
@@ -572,19 +572,19 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                   final idx = e.key;
                   final optText = e.value;
 
-                  Color btnBg = AppColors.cardSurface;
-                  Color borderCol = AppColors.border;
-                  Color textCol = AppColors.textSecondary;
+                  Color btnBg = context.firefly.cardSurface;
+                  Color borderCol = context.firefly.cardBorder;
+                  Color? textCol = context.text.bodyMedium?.color;
 
                   if (_isAnswered) {
                     if (idx == q.correctShuffledIndex) {
-                      btnBg = AppColors.success.withOpacity(0.2);
-                      borderCol = AppColors.success;
-                      textCol = AppColors.successLight;
+                      btnBg = context.firefly.success.withValues(alpha: 0.2);
+                      borderCol = context.firefly.success;
+                      textCol = context.firefly.success;
                     } else if (idx == _selectedIndex) {
-                      btnBg = AppColors.error.withOpacity(0.2);
-                      borderCol = AppColors.error;
-                      textCol = AppColors.errorLight;
+                      btnBg = context.colors.error.withValues(alpha: 0.2);
+                      borderCol = context.colors.error;
+                      textCol = context.colors.error;
                     }
                   }
 
@@ -645,9 +645,9 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                 Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.12),
+                    color: context.colors.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+                    border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
                   ),
                   child: Row(
                     children: [
@@ -656,11 +656,11 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
                       Expanded(
                         child: Text(
                           q.explanation,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.textPrimary,
+                            color: context.colors.onSurface,
                           ),
                         ),
                       ),
@@ -672,7 +672,7 @@ class _LevelOneScreenState extends ConsumerState<LevelOneScreen> {
 
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: context.colors.primary,
                     minimumSize: const Size(double.infinity, 50),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),

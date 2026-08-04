@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import '../core/theme/app_colors.dart';
+import '../core/theme/firefly_colors.dart';
 
 /// Full-screen reward overlay shown when completing missions/chapters.
 /// Fades in with a celebration animation and auto-dismisses.
@@ -18,7 +18,7 @@ class RewardOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Container(
-        color: Colors.black.withOpacity(0.75),
+        color: Colors.black.withValues(alpha: 0.75),
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -39,11 +39,11 @@ class RewardOverlay extends StatelessWidget {
               // Message
               Text(
                 message,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 28,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: context.colors.onSurface,
                 ),
               ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.3, end: 0),
 
@@ -54,9 +54,9 @@ class RewardOverlay extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 28, vertical: 14),
                 decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
+                  gradient: context.firefly.primaryGradient,
                   borderRadius: BorderRadius.circular(30),
-                  boxShadow: AppColors.primaryGlowShadow,
+                  boxShadow: context.firefly.glowShadow,
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -65,11 +65,11 @@ class RewardOverlay extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       '+$points puntos',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textOnPrimary,
+                        color: context.colors.onPrimary,
                       ),
                     ),
                   ],
@@ -88,10 +88,10 @@ class RewardOverlay extends StatelessWidget {
 
               Text(
                 '¡Sigue protegiendo las luciérnagas! 🪲',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 14,
-                  color: AppColors.textSecondary,
+                  color: context.text.bodyMedium?.color,
                 ),
               ).animate(delay: 500.ms).fadeIn(),
             ],

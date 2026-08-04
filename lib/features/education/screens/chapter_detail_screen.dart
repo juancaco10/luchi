@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:video_player/video_player.dart';
 import 'package:chewie/chewie.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../models/chapter_model.dart';
 import '../providers/chapters_provider.dart';
@@ -45,6 +45,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
       Uri.parse(chapter.videoUrl),
     );
     await _videoController!.initialize();
+    if (!mounted) return;
 
     _chewieController = ChewieController(
       videoPlayerController: _videoController!,
@@ -52,7 +53,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
       autoPlay: false,
       looping: false,
       showControls: true,
-      placeholder: Container(color: AppColors.cardSurface),
+      placeholder: Container(color: context.firefly.cardSurface),
     );
 
     _videoController!.addListener(_videoListener);
@@ -114,14 +115,14 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
     final chapter = ref.watch(chapterByIdProvider(widget.chapterId));
 
     if (chapter == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: Center(child: Text('Capítulo no encontrado')),
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: const Center(child: Text('Capítulo no encontrado')),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           CustomScrollView(
@@ -130,7 +131,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
               SliverAppBar(
                 expandedHeight: 220,
                 pinned: true,
-                backgroundColor: AppColors.background,
+                backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 leading: IconButton(
                   onPressed: () => context.go('/chapters'),
                   icon: Container(
@@ -147,10 +148,10 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                   background: _videoInitialized
                       ? Chewie(controller: _chewieController!)
                       : Container(
-                          color: AppColors.cardSurface,
-                          child: const Center(
+                          color: context.firefly.cardSurface,
+                          child: Center(
                             child: CircularProgressIndicator(
-                              color: AppColors.primary,
+                              color: context.colors.primary,
                             ),
                           ),
                         ),
@@ -169,7 +170,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           decoration: BoxDecoration(
-                            gradient: AppColors.primaryGradient,
+                            gradient: context.firefly.primaryGradient,
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Row(
@@ -180,11 +181,11 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                               const SizedBox(width: 4),
                               Text(
                                 '+${chapter.pointsReward} puntos',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontFamily: 'Nunito',
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: AppColors.textOnPrimary,
+                                  color: context.colors.onPrimary,
                                 ),
                               ),
                             ],
@@ -196,16 +197,16 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: AppColors.secondaryGlow,
+                              color: context.firefly.greenGlow,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: const Text(
+                            child: Text(
                               '✓ Completado',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: AppColors.secondary,
+                                color: context.colors.secondary,
                               ),
                             ),
                           ),
@@ -217,11 +218,11 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
 
                     Text(
                       chapter.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 26,
                         fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
+                        color: context.colors.onSurface,
                       ),
                     ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.2, end: 0),
 
@@ -229,10 +230,10 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
 
                     Text(
                       chapter.description,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 16,
-                        color: AppColors.textSecondary,
+                        color: context.text.bodyMedium?.color,
                         height: 1.6,
                       ),
                     ).animate(delay: 150.ms).fadeIn(),
@@ -241,13 +242,13 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
 
                     // ── Facts ──────────────────────────────────────
                     if (chapter.facts.isNotEmpty) ...[
-                      const Text(
+                      Text(
                         '💡 Datos curiosos',
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          color: context.colors.onSurface,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -268,21 +269,21 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.cardSurface,
+                          color: context.firefly.cardSurface,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.border),
+                          border: Border.all(color: context.firefly.cardBorder),
                         ),
-                        child: const Row(
+                        child: Row(
                           children: [
-                            Icon(Icons.play_circle_fill_rounded, color: AppColors.primary),
-                            SizedBox(width: 12),
+                            Icon(Icons.play_circle_fill_rounded, color: context.colors.primary),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: Text(
                                 'Mira el video completo para desbloquear el siguiente nivel.',
                                 style: TextStyle(
                                   fontFamily: 'Nunito',
                                   fontSize: 14,
-                                  color: AppColors.textSecondary,
+                                  color: context.text.bodyMedium?.color,
                                 ),
                               ),
                             ),
@@ -323,30 +324,30 @@ class _FactCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.accentGlow,
+        color: context.firefly.accentGlow,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        border: Border.all(color: AppColors.accent.withOpacity(0.3)),
+        border: Border.all(color: context.firefly.accent.withValues(alpha: 0.3)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '${index + 1}.',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Nunito',
               fontSize: 15,
               fontWeight: FontWeight.w700,
-              color: AppColors.accentLight,
+              color: context.firefly.accent,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               fact,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 14,
-                color: AppColors.textSecondary,
+                color: context.text.bodyMedium?.color,
                 height: 1.5,
               ),
             ),

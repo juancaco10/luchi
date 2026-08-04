@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/chapters_provider.dart';
 import '../../../widgets/firefly_background.dart';
@@ -15,7 +15,7 @@ class ChaptersListScreen extends ConsumerWidget {
     final state = ref.watch(chaptersProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const FireflyBackground(count: 8, intensity: 0.3),
@@ -29,11 +29,11 @@ class ChaptersListScreen extends ConsumerWidget {
                     children: [
                       IconButton(
                         onPressed: () => context.go('/home'),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textSecondary, size: 20),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                            color: context.text.bodyMedium?.color, size: 20),
                       ),
                       const SizedBox(width: 8),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -42,7 +42,7 @@ class ChaptersListScreen extends ConsumerWidget {
                               fontFamily: 'Nunito',
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: context.colors.onSurface,
                             ),
                           ),
                           Text(
@@ -50,7 +50,7 @@ class ChaptersListScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              color: context.text.bodyMedium?.color,
                             ),
                           ),
                         ],
@@ -64,9 +64,9 @@ class ChaptersListScreen extends ConsumerWidget {
                 // Chapters list
                 Expanded(
                   child: state.isLoading
-                      ? const Center(
+                      ? Center(
                           child: CircularProgressIndicator(
-                            color: AppColors.primary,
+                            color: context.colors.primary,
                           ),
                         )
                       : ListView.builder(
@@ -127,14 +127,14 @@ class _ChapterCard extends StatelessWidget {
                 ? const LinearGradient(
                     colors: [Color(0xFF0D2A1A), Color(0xFF131929)],
                   )
-                : AppColors.cardGradient,
+                : context.firefly.cardGradient,
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(
               color: isDone
-                  ? AppColors.secondary.withOpacity(0.3)
+                  ? context.colors.secondary.withValues(alpha: 0.3)
                   : isLocked
-                      ? AppColors.border.withOpacity(0.5)
-                      : AppColors.border,
+                      ? context.firefly.cardBorder.withValues(alpha: 0.5)
+                      : context.firefly.cardBorder,
               width: 1,
             ),
           ),
@@ -146,33 +146,33 @@ class _ChapterCard extends StatelessWidget {
                 height: 52,
                 decoration: BoxDecoration(
                   color: isDone
-                      ? AppColors.secondaryGlow
+                      ? context.firefly.greenGlow
                       : isLocked
-                          ? AppColors.cardSurfaceLight.withOpacity(0.5)
-                          : AppColors.accentGlow,
+                          ? context.firefly.cardSurface.withValues(alpha: 0.5)
+                          : context.firefly.accentGlow,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isDone
-                        ? AppColors.secondary.withOpacity(0.4)
+                        ? context.colors.secondary.withValues(alpha: 0.4)
                         : isLocked
-                            ? AppColors.border.withOpacity(0.3)
-                            : AppColors.accent.withOpacity(0.4),
+                            ? context.firefly.cardBorder.withValues(alpha: 0.3)
+                            : context.firefly.accent.withValues(alpha: 0.4),
                   ),
                 ),
                 child: Center(
                   child: isLocked
-                      ? const Icon(Icons.lock_rounded,
-                          color: AppColors.textMuted, size: 22)
+                      ? Icon(Icons.lock_rounded,
+                          color: context.text.bodySmall?.color, size: 22)
                       : isDone
-                          ? const Icon(Icons.check_rounded,
-                              color: AppColors.secondary, size: 26)
+                          ? Icon(Icons.check_rounded,
+                              color: context.colors.secondary, size: 26)
                           : Text(
                               '${index + 1}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.accentLight,
+                                color: context.firefly.accent,
                               ),
                             ),
                 ),
@@ -192,8 +192,8 @@ class _ChapterCard extends StatelessWidget {
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: isLocked
-                            ? AppColors.textMuted
-                            : AppColors.textPrimary,
+                            ? context.text.bodySmall?.color
+                            : context.colors.onSurface,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -205,10 +205,10 @@ class _ChapterCard extends StatelessWidget {
                         const SizedBox(width: 3),
                         Text(
                           '+${chapter.pointsReward} pts',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 12,
-                            color: AppColors.primaryLight,
+                            color: context.colors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -218,15 +218,15 @@ class _ChapterCard extends StatelessWidget {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.secondaryGlow,
+                              color: context.firefly.greenGlow,
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: const Text(
+                            child: Text(
                               '✓ Completado',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 11,
-                                color: AppColors.secondary,
+                                color: context.colors.secondary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -239,8 +239,8 @@ class _ChapterCard extends StatelessWidget {
               ),
 
               if (!isLocked)
-                const Icon(Icons.arrow_forward_ios_rounded,
-                    color: AppColors.textMuted, size: 14),
+                Icon(Icons.arrow_forward_ios_rounded,
+                    color: context.text.bodySmall?.color, size: 14),
             ],
           ),
         ),

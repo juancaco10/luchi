@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/sightings_provider.dart';
 
@@ -19,7 +19,7 @@ class MapScreen extends ConsumerWidget {
     const defaultCenter = LatLng(-34.6037, -58.3816); // Buenos Aires
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           FlutterMap(
@@ -28,7 +28,7 @@ class MapScreen extends ConsumerWidget {
                   ? LatLng(sightings.first.lat, sightings.first.lng)
                   : defaultCenter,
               initialZoom: sightings.isNotEmpty ? 12.0 : 4.0,
-              backgroundColor: AppColors.background,
+              backgroundColor: Theme.of(context).scaffoldBackgroundColor,
             ),
             children: [
               // Dark tile layer
@@ -74,23 +74,23 @@ class MapScreen extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: AppColors.surface.withOpacity(0.92),
+                    color: context.colors.surface.withValues(alpha: 0.92),
                     borderRadius:
                         BorderRadius.circular(AppConstants.borderRadius),
-                    border: Border.all(color: AppColors.border),
+                    border: Border.all(color: context.firefly.cardBorder),
                   ),
                   child: Row(
                     children: [
                       IconButton(
                         onPressed: () => context.go('/home'),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textSecondary, size: 18),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                            color: context.text.bodyMedium?.color, size: 18),
                         style: IconButton.styleFrom(
                             padding: EdgeInsets.zero,
                             minimumSize: const Size(32, 32)),
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -100,7 +100,7 @@ class MapScreen extends ConsumerWidget {
                                 fontFamily: 'Nunito',
                                 fontSize: 16,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: context.colors.onSurface,
                               ),
                             ),
                             Text(
@@ -108,7 +108,7 @@ class MapScreen extends ConsumerWidget {
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: context.text.bodyMedium?.color,
                               ),
                             ),
                           ],
@@ -118,16 +118,16 @@ class MapScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryGlow,
+                          color: context.firefly.glow,
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
                           '✨ ${sightings.length}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontFamily: 'Nunito',
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
+                            color: context.colors.primary,
                           ),
                         ),
                       ),
@@ -144,8 +144,8 @@ class MapScreen extends ConsumerWidget {
             right: 20,
             child: FloatingActionButton.extended(
               onPressed: () => context.go('/sightings/new'),
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textOnPrimary,
+              backgroundColor: context.colors.primary,
+              foregroundColor: context.colors.onPrimary,
               icon: const Text('✨', style: TextStyle(fontSize: 18)),
               label: const Text(
                 'Registrar',
@@ -165,32 +165,32 @@ class MapScreen extends ConsumerWidget {
                 margin: const EdgeInsets.all(40),
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: AppColors.surface.withOpacity(0.9),
+                  color: context.colors.surface.withValues(alpha: 0.9),
                   borderRadius: BorderRadius.circular(AppConstants.cardRadius),
-                  border: Border.all(color: AppColors.border),
+                  border: Border.all(color: context.firefly.cardBorder),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('🗺️', style: TextStyle(fontSize: 48)),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'Aún no hay avistamientos',
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: context.colors.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       '¡Sé el primero en registrar una luciérnaga en tu zona!',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontFamily: 'Nunito',
                         fontSize: 14,
-                        color: AppColors.textSecondary,
+                        color: context.text.bodyMedium?.color,
                         height: 1.5,
                       ),
                     ),
@@ -222,13 +222,13 @@ class _SightingMarker extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: isPending
-            ? AppColors.warning.withOpacity(0.9)
-            : AppColors.primary.withOpacity(0.9),
+            ? context.firefly.warning.withValues(alpha: 0.9)
+            : context.colors.primary.withValues(alpha: 0.9),
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: (isPending ? AppColors.warning : AppColors.primary)
-                .withOpacity(0.5),
+            color: (isPending ? context.firefly.warning : context.colors.primary)
+                .withValues(alpha: 0.5),
             blurRadius: 15,
             spreadRadius: 2,
           ),
@@ -242,11 +242,11 @@ class _SightingMarker extends StatelessWidget {
             if (quantity > 1)
               Text(
                 'x$quantity',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 9,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textOnPrimary,
+                  color: context.colors.onPrimary,
                 ),
               ),
           ],

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/missions_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -42,16 +42,16 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
     final mission = ref.watch(missionByIdProvider(widget.missionId));
 
     if (mission == null) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
+      return Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Center(
             child: Text('Misión no encontrada',
-                style: TextStyle(color: AppColors.textPrimary))),
+                style: TextStyle(color: context.colors.onSurface))),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           SafeArea(
@@ -66,12 +66,12 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: AppColors.cardSurface,
+                        color: context.firefly.cardSurface,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border),
+                        border: Border.all(color: context.firefly.cardBorder),
                       ),
-                      child: const Icon(Icons.arrow_back_ios_new_rounded,
-                          color: AppColors.textSecondary, size: 18),
+                      child: Icon(Icons.arrow_back_ios_new_rounded,
+                          color: context.text.bodyMedium?.color, size: 18),
                     ),
                     style: IconButton.styleFrom(padding: EdgeInsets.zero),
                   ),
@@ -85,15 +85,15 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                       height: 120,
                       decoration: BoxDecoration(
                         gradient: mission.isCompleted
-                            ? AppColors.greenGradient
-                            : AppColors.primaryGradient,
+                            ? context.firefly.greenGradient
+                            : context.firefly.primaryGradient,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
                             color: (mission.isCompleted
-                                    ? AppColors.secondary
-                                    : AppColors.primary)
-                                .withOpacity(0.35),
+                                    ? context.colors.secondary
+                                    : context.colors.primary)
+                                .withValues(alpha: 0.35),
                             blurRadius: 40,
                             spreadRadius: 5,
                           ),
@@ -124,13 +124,13 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                           horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
                         color: mission.type.name == 'daily'
-                            ? AppColors.accentGlow
-                            : AppColors.primaryGlow,
+                            ? context.firefly.accentGlow
+                            : context.firefly.glow,
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
                           color: mission.type.name == 'daily'
-                              ? AppColors.accent.withOpacity(0.4)
-                              : AppColors.primary.withOpacity(0.4),
+                              ? context.firefly.accent.withValues(alpha: 0.4)
+                              : context.colors.primary.withValues(alpha: 0.4),
                         ),
                       ),
                       child: Text(
@@ -142,8 +142,8 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: mission.type.name == 'daily'
-                              ? AppColors.accentLight
-                              : AppColors.primaryLight,
+                              ? context.firefly.accent
+                              : context.colors.primary,
                         ),
                       ),
                     ),
@@ -155,11 +155,11 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                   Text(
                     mission.title,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 26,
                       fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                      color: context.colors.onSurface,
                       height: 1.2,
                     ),
                   )
@@ -173,10 +173,10 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                   Text(
                     mission.description,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: 'Nunito',
                       fontSize: 16,
-                      color: AppColors.textSecondary,
+                      color: context.text.bodyMedium?.color,
                       height: 1.6,
                     ),
                   ).animate(delay: 200.ms).fadeIn(),
@@ -189,7 +189,7 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                       icon: '📋',
                       title: '¿Cómo hacerlo?',
                       content: mission.howTo!,
-                      color: AppColors.accent,
+                      color: context.firefly.accent,
                       delay: 250,
                     ),
                     const SizedBox(height: 14),
@@ -201,7 +201,7 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                       icon: '💡',
                       title: '¿Por qué importa?',
                       content: mission.tip!,
-                      color: AppColors.secondary,
+                      color: context.colors.secondary,
                       delay: 300,
                     ),
                     const SizedBox(height: 14),
@@ -218,32 +218,32 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                       label: '¡Misión cumplida!',
                       onPressed: _complete,
                       icon: Icons.check_circle_rounded,
-                      gradient: AppColors.greenGradient,
+                      gradient: context.firefly.greenGradient,
                     ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3, end: 0)
                   else
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
-                        color: AppColors.secondaryGlow,
+                        color: context.firefly.greenGlow,
                         borderRadius:
                             BorderRadius.circular(AppConstants.buttonRadius),
                         border: Border.all(
-                            color: AppColors.secondary.withOpacity(0.3)),
+                            color: context.colors.secondary.withValues(alpha: 0.3)),
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.check_circle_rounded,
-                              color: AppColors.secondary),
-                          SizedBox(width: 10),
+                              color: context.colors.secondary),
+                          const SizedBox(width: 10),
                           Text(
                             '¡Misión completada!',
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.secondary,
+                              color: context.colors.secondary,
                             ),
                           ),
                         ],
@@ -310,10 +310,10 @@ class _InfoBlock extends StatelessWidget {
           const SizedBox(height: 10),
           Text(
             content,
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Nunito',
               fontSize: 14,
-              color: AppColors.textSecondary,
+              color: context.text.bodyMedium?.color,
               height: 1.6,
             ),
           ),
@@ -333,7 +333,7 @@ class _PointsRewardCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: context.firefly.primaryGradient,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
       ),
       child: Row(
@@ -343,11 +343,11 @@ class _PointsRewardCard extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '+$points puntos al completar',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: 'Nunito',
               fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: AppColors.textOnPrimary,
+              color: context.colors.onPrimary,
             ),
           ),
         ],

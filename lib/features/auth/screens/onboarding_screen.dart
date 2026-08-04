@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../widgets/custom_button.dart';
 
@@ -23,7 +23,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       subtitle:
           'Las luciérnagas son mágicas y necesitan tu ayuda. Juntos podemos proteger su hogar.',
       gradient: [Color(0xFF1A2440), Color(0xFF0B0F1A)],
-      accentColor: AppColors.primary,
     ),
     _OnboardingPage(
       emoji: '📖',
@@ -31,7 +30,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       subtitle:
           'Descubre capítulos llenos de curiosidades sobre las luciérnagas y el ecosistema nocturno.',
       gradient: [Color(0xFF0F2030), Color(0xFF0B0F1A)],
-      accentColor: AppColors.accent,
     ),
     _OnboardingPage(
       emoji: '🌿',
@@ -39,7 +37,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       subtitle:
           'Gana puntos haciendo acciones reales: apaga luces innecesarias, evita pesticidas y observa la naturaleza.',
       gradient: [Color(0xFF0A2010), Color(0xFF0B0F1A)],
-      accentColor: AppColors.secondary,
     ),
     _OnboardingPage(
       emoji: '✨',
@@ -47,9 +44,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       subtitle:
           'Anota dónde viste luciérnagas. Tu información ayuda a científicos a mapear su hábitat.',
       gradient: [Color(0xFF1A1530), Color(0xFF0B0F1A)],
-      accentColor: AppColors.primaryLight,
     ),
   ];
+
+  List<Color> _accentColors(BuildContext context) => [
+        context.colors.primary,
+        context.firefly.accent,
+        context.colors.secondary,
+        context.colors.primary,
+      ];
 
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
@@ -77,7 +80,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           // Page content
@@ -86,7 +89,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onPageChanged: (i) => setState(() => _currentPage = i),
             itemCount: _pages.length,
             itemBuilder: (context, index) {
-              return _OnboardingPageWidget(page: _pages[index]);
+              return _OnboardingPageWidget(
+                page: _pages[index],
+                accentColor: _accentColors(context)[index],
+              );
             },
           ),
 
@@ -118,8 +124,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 8,
                         decoration: BoxDecoration(
                           color: i == _currentPage
-                              ? _pages[_currentPage].accentColor
-                              : AppColors.border,
+                              ? _accentColors(context)[_currentPage]
+                              : context.firefly.cardBorder,
                           borderRadius: BorderRadius.circular(4),
                         ),
                       ),
@@ -136,8 +142,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     onPressed: _nextPage,
                     gradient: LinearGradient(
                       colors: [
-                        _pages[_currentPage].accentColor,
-                        _pages[_currentPage].accentColor.withOpacity(0.7),
+                        _accentColors(context)[_currentPage],
+                        _accentColors(context)[_currentPage].withOpacity(0.7),
                       ],
                     ),
                   ),
@@ -146,9 +152,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 12),
                     TextButton(
                       onPressed: _finish,
-                      child: const Text(
+                      child: Text(
                         'Saltar',
-                        style: TextStyle(color: AppColors.textMuted),
+                        style: TextStyle(color: context.text.bodySmall?.color),
                       ),
                     ),
                   ],
@@ -166,8 +172,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
 class _OnboardingPageWidget extends StatelessWidget {
   final _OnboardingPage page;
+  final Color accentColor;
 
-  const _OnboardingPageWidget({required this.page});
+  const _OnboardingPageWidget({required this.page, required this.accentColor});
 
   @override
   Widget build(BuildContext context) {
@@ -200,14 +207,14 @@ class _OnboardingPageWidget extends StatelessWidget {
                         height: 130,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          color: page.accentColor.withOpacity(0.1),
+                          color: accentColor.withOpacity(0.1),
                           border: Border.all(
-                            color: page.accentColor.withOpacity(0.3),
+                            color: accentColor.withOpacity(0.3),
                             width: 2,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: page.accentColor.withOpacity(0.25),
+                              color: accentColor.withOpacity(0.25),
                               blurRadius: 40,
                               spreadRadius: 8,
                             ),
@@ -236,7 +243,7 @@ class _OnboardingPageWidget extends StatelessWidget {
                             fontFamily: 'Nunito',
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: page.accentColor,
+                            color: accentColor,
                             letterSpacing: -0.5,
                           ),
                         ),
@@ -247,11 +254,11 @@ class _OnboardingPageWidget extends StatelessWidget {
                       Text(
                         page.subtitle,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: 'Nunito',
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
+                          color: context.text.bodyMedium?.color,
                           height: 1.5,
                         ),
                       ).animate(delay: 350.ms).fadeIn().slideY(begin: 0.3, end: 0),
@@ -277,13 +284,11 @@ class _OnboardingPage {
   final String title;
   final String subtitle;
   final List<Color> gradient;
-  final Color accentColor;
 
   const _OnboardingPage({
     required this.emoji,
     required this.title,
     required this.subtitle,
     required this.gradient,
-    required this.accentColor,
   });
 }

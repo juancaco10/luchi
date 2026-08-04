@@ -1,6 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
+import '../core/theme/firefly_colors.dart';
 
 /// Animated floating firefly particle background.
 /// Lightweight — uses a single CustomPainter + AnimationController.
@@ -24,6 +24,8 @@ class _FireflyBackgroundState extends State<FireflyBackground>
   late List<_Firefly> _fireflies;
   final _rnd = Random();
 
+  bool _generated = false;
+
   @override
   void initState() {
     super.initState();
@@ -31,11 +33,18 @@ class _FireflyBackgroundState extends State<FireflyBackground>
       vsync: this,
       duration: const Duration(seconds: 6),
     )..repeat();
+  }
 
-    _fireflies = List.generate(
-      widget.count,
-      (_) => _Firefly.random(_rnd),
-    );
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_generated) {
+      _generated = true;
+      _fireflies = List.generate(
+        widget.count,
+        (_) => _Firefly.random(_rnd, context.colors.secondary, context.colors.primary),
+      );
+    }
   }
 
   @override
@@ -81,7 +90,7 @@ class _Firefly {
     required this.color,
   });
 
-  factory _Firefly.random(Random rnd) {
+  factory _Firefly.random(Random rnd, Color secondary, Color primary) {
     // Mix golden and green fireflies
     final isGreen = rnd.nextBool();
     return _Firefly(
@@ -91,7 +100,7 @@ class _Firefly {
       speed: 0.3 + rnd.nextDouble() * 0.8,
       phase: rnd.nextDouble() * 2 * pi,
       driftRadius: 15 + rnd.nextDouble() * 30,
-      color: isGreen ? AppColors.secondary : AppColors.primary,
+      color: isGreen ? secondary : primary,
     );
   }
 }

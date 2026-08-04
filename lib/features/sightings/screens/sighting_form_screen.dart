@@ -3,7 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/sightings_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
@@ -116,7 +116,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(msg, style: const TextStyle(fontFamily: 'Nunito')),
-        backgroundColor: AppColors.cardSurface,
+        backgroundColor: context.firefly.cardSurface,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -128,7 +128,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
     final isSubmitting = ref.watch(sightingsProvider).isSubmitting;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           SafeArea(
@@ -147,17 +147,17 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                           icon: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: AppColors.cardSurface,
+                              color: context.firefly.cardSurface,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: AppColors.border),
+                              border: Border.all(color: context.firefly.cardBorder),
                             ),
-                            child: const Icon(Icons.arrow_back_ios_new_rounded,
-                                color: AppColors.textSecondary, size: 18),
+                            child: Icon(Icons.arrow_back_ios_new_rounded,
+                                color: context.text.bodyMedium?.color, size: 18),
                           ),
                           style: IconButton.styleFrom(padding: EdgeInsets.zero),
                         ),
                         const SizedBox(width: 12),
-                        const Column(
+                        Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
@@ -166,7 +166,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                                 fontFamily: 'Nunito',
                                 fontSize: 20,
                                 fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
+                                color: context.colors.onSurface,
                               ),
                             ),
                             Text(
@@ -174,7 +174,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 12,
-                                color: AppColors.textSecondary,
+                                color: context.text.bodyMedium?.color,
                               ),
                             ),
                           ],
@@ -190,9 +190,9 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                         width: 100,
                         height: 100,
                         decoration: BoxDecoration(
-                          color: AppColors.primaryGlow,
+                          color: context.firefly.glow,
                           shape: BoxShape.circle,
-                          boxShadow: AppColors.primaryGlowShadow,
+                          boxShadow: context.firefly.glowShadow,
                         ),
                         child: const Center(
                           child: Text('✨', style: TextStyle(fontSize: 52)),
@@ -218,14 +218,14 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                         Expanded(
                           child: TextFormField(
                             controller: _locationCtrl,
-                            style: const TextStyle(
-                                color: AppColors.textPrimary,
+                            style: TextStyle(
+                                color: context.colors.onSurface,
                                 fontFamily: 'Nunito',
                                 fontSize: 13),
-                            decoration: const InputDecoration(
+                            decoration: InputDecoration(
                               hintText: 'Lat, Lng o nombre del lugar',
                               prefixIcon: Icon(Icons.location_on_outlined,
-                                  color: AppColors.textSecondary, size: 18),
+                                  color: context.text.bodyMedium?.color, size: 18),
                             ),
                             onChanged: (v) {
                               // Try to parse manual lat,lng
@@ -247,12 +247,12 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                         ElevatedButton.icon(
                           onPressed: _locating ? null : _getLocation,
                           icon: _locating
-                              ? const SizedBox(
+                              ? SizedBox(
                                   width: 16,
                                   height: 16,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    color: AppColors.textOnPrimary,
+                                    color: context.colors.onPrimary,
                                   ),
                                 )
                               : const Icon(Icons.gps_fixed_rounded, size: 18),
@@ -271,21 +271,21 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 8),
                         decoration: BoxDecoration(
-                          color: AppColors.secondaryGlow,
+                          color: context.firefly.greenGlow,
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.check_circle_rounded,
-                                color: AppColors.secondary, size: 16),
+                            Icon(Icons.check_circle_rounded,
+                                color: context.colors.secondary, size: 16),
                             const SizedBox(width: 6),
                             Text(
                               'Ubicación: ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 12,
-                                color: AppColors.secondary,
+                                color: context.colors.secondary,
                               ),
                             ),
                           ],
@@ -315,8 +315,8 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                     TextFormField(
                       controller: _notesCtrl,
                       maxLines: 3,
-                      style: const TextStyle(
-                          color: AppColors.textPrimary, fontFamily: 'Nunito'),
+                      style: TextStyle(
+                          color: context.colors.onSurface, fontFamily: 'Nunito'),
                       decoration: const InputDecoration(
                         hintText:
                             'Ej: Las vi cerca del río, había muchas entre los arbustos...',
@@ -366,11 +366,11 @@ class _SectionLabel extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: 'Nunito',
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
+            color: context.colors.onSurface,
           ),
         ),
       ],
@@ -399,19 +399,19 @@ class _QuantitySelector extends StatelessWidget {
           children: [
             Text(
               '$quantity',
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 36,
                 fontWeight: FontWeight.w800,
-                color: AppColors.primary,
+                color: context.colors.primary,
               ),
             ),
-            const Text(
+            Text(
               'luciérnaga(s)',
               style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 12,
-                color: AppColors.textMuted,
+                color: context.text.bodySmall?.color,
               ),
             ),
           ],
@@ -434,13 +434,13 @@ class _QuantitySelector extends StatelessWidget {
                       horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: quantity == v
-                        ? AppColors.primaryGlow
-                        : AppColors.cardSurface,
+                        ? context.firefly.glow
+                        : context.firefly.cardSurface,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(
                       color: quantity == v
-                          ? AppColors.primary.withOpacity(0.4)
-                          : AppColors.border,
+                          ? context.colors.primary.withValues(alpha: 0.4)
+                          : context.firefly.cardBorder,
                     ),
                   ),
                   child: Text(
@@ -450,8 +450,8 @@ class _QuantitySelector extends StatelessWidget {
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                       color: quantity == v
-                          ? AppColors.primary
-                          : AppColors.textMuted,
+                          ? context.colors.primary
+                          : context.text.bodySmall?.color,
                     ),
                   ),
                 ),
@@ -478,15 +478,15 @@ class _QtyButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: onTap != null ? AppColors.cardSurfaceLight : AppColors.cardSurface,
+          color: onTap != null ? context.firefly.cardSurface : context.firefly.cardSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: onTap != null ? AppColors.borderLight : AppColors.border,
+            color: onTap != null ? context.firefly.cardBorder : context.firefly.cardBorder,
           ),
         ),
         child: Icon(
           icon,
-          color: onTap != null ? AppColors.textPrimary : AppColors.textMuted,
+          color: onTap != null ? context.colors.onSurface : context.text.bodySmall?.color,
           size: 20,
         ),
       ),

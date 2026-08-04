@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
+import '../core/theme/firefly_colors.dart';
 
 /// Compact points display badge
 class PointsDisplay extends StatelessWidget {
@@ -16,11 +16,11 @@ class PointsDisplay extends StatelessWidget {
         vertical: compact ? 5 : 8,
       ),
       decoration: BoxDecoration(
-        gradient: AppColors.primaryGradient,
+        gradient: context.firefly.primaryGradient,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primary.withOpacity(0.25),
+            color: context.colors.primary.withValues(alpha: 0.25),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -37,7 +37,7 @@ class PointsDisplay extends StatelessWidget {
               fontFamily: 'Nunito',
               fontSize: compact ? 13 : 15,
               fontWeight: FontWeight.w800,
-              color: AppColors.textOnPrimary,
+              color: context.colors.onPrimary,
             ),
           ),
         ],

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
+import '../core/theme/firefly_colors.dart';
 import '../core/utils/constants.dart';
 
 /// Primary action button with gradient, loading state, and optional icon.
@@ -8,7 +8,7 @@ class AppButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
-  final LinearGradient? gradient;
+  final Gradient? gradient;
   final double? width;
 
   const AppButton({
@@ -23,7 +23,7 @@ class AppButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final grad = gradient ?? AppColors.primaryGradient;
+    final grad = gradient ?? context.firefly.primaryGradient;
 
     return SizedBox(
       width: width ?? double.infinity,
@@ -37,7 +37,7 @@ class AppButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
             boxShadow: [
               BoxShadow(
-                color: (grad.colors.first).withOpacity(0.3),
+                color: (grad.colors.first).withValues(alpha: 0.3),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
               ),
@@ -53,13 +53,13 @@ class AppButton extends StatelessWidget {
               highlightColor: Colors.white10,
               child: Center(
                 child: isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            AppColors.textOnPrimary,
+                            context.colors.onPrimary,
                           ),
                         ),
                       )
@@ -67,16 +67,16 @@ class AppButton extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (icon != null) ...[
-                            Icon(icon, color: AppColors.textOnPrimary, size: 20),
+                            Icon(icon, color: context.colors.onPrimary, size: 20),
                             const SizedBox(width: 8),
                           ],
                           Text(
                             label,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textOnPrimary,
+                              color: context.colors.onPrimary,
                               letterSpacing: 0.3,
                             ),
                           ),

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../models/mission_model.dart';
 import '../providers/missions_provider.dart';
@@ -16,7 +16,7 @@ class MissionsScreen extends ConsumerWidget {
     final state = ref.watch(missionsProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
           const FireflyBackground(count: 8, intensity: 0.25),
@@ -31,11 +31,11 @@ class MissionsScreen extends ConsumerWidget {
                     children: [
                       IconButton(
                         onPressed: () => context.go('/home'),
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: AppColors.textSecondary, size: 20),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                            color: context.text.bodyMedium?.color, size: 20),
                       ),
                       const SizedBox(width: 4),
-                      const Column(
+                      Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -44,7 +44,7 @@ class MissionsScreen extends ConsumerWidget {
                               fontFamily: 'Nunito',
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
+                              color: context.colors.onSurface,
                             ),
                           ),
                           Text(
@@ -52,7 +52,7 @@ class MissionsScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 13,
-                              color: AppColors.textSecondary,
+                              color: context.text.bodyMedium?.color,
                             ),
                           ),
                         ],
@@ -66,16 +66,16 @@ class MissionsScreen extends ConsumerWidget {
                 // Progress summary
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: _buildProgressSummary(state),
+                  child: _buildProgressSummary(context, state),
                 ),
 
                 const SizedBox(height: 20),
 
                 Expanded(
                   child: state.isLoading
-                      ? const Center(
+                      ? Center(
                           child: CircularProgressIndicator(
-                              color: AppColors.primary))
+                              color: context.colors.primary))
                       : ListView(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 4),
@@ -136,7 +136,7 @@ class MissionsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressSummary(MissionsState state) {
+  Widget _buildProgressSummary(BuildContext context, MissionsState state) {
     final done = state.completedCount;
     final total = state.missions.length;
     final progress = total > 0 ? done / total : 0.0;
@@ -144,9 +144,9 @@ class MissionsScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: AppColors.cardGradient,
+        gradient: context.firefly.cardGradient,
         borderRadius: BorderRadius.circular(AppConstants.borderRadius),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: context.firefly.cardBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -156,20 +156,20 @@ class MissionsScreen extends ConsumerWidget {
             children: [
               Text(
                 '$done de $total misiones',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.textSecondary,
+                  color: context.text.bodyMedium?.color,
                 ),
               ),
               Text(
                 '${(progress * 100).toInt()}%',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
+                  color: context.colors.primary,
                 ),
               ),
             ],
@@ -180,8 +180,8 @@ class MissionsScreen extends ConsumerWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8,
-              backgroundColor: AppColors.border,
-              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+              backgroundColor: context.firefly.cardBorder,
+              valueColor: AlwaysStoppedAnimation<Color>(context.colors.primary),
             ),
           ),
         ],
@@ -209,19 +209,19 @@ class _SectionHeader extends StatelessWidget {
           children: [
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: context.colors.onSurface,
               ),
             ),
             Text(
               subtitle,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: 'Nunito',
                 fontSize: 12,
-                color: AppColors.textMuted,
+                color: context.text.bodySmall?.color,
               ),
             ),
           ],
@@ -250,12 +250,12 @@ class _MissionListCard extends StatelessWidget {
               ? const LinearGradient(
                   colors: [Color(0xFF0D2A1A), Color(0xFF131929)],
                 )
-              : AppColors.missionGradient,
+              : context.firefly.missionGradient,
           borderRadius: BorderRadius.circular(AppConstants.cardRadius),
           border: Border.all(
             color: mission.isCompleted
-                ? AppColors.secondary.withOpacity(0.25)
-                : AppColors.border,
+                ? context.colors.secondary.withValues(alpha: 0.25)
+                : context.firefly.cardBorder,
           ),
         ),
         child: Row(
@@ -266,8 +266,8 @@ class _MissionListCard extends StatelessWidget {
               height: 52,
               decoration: BoxDecoration(
                 color: mission.isCompleted
-                    ? AppColors.secondaryGlow
-                    : AppColors.primaryGlow,
+                    ? context.firefly.greenGlow
+                    : context.firefly.glow,
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Center(
@@ -292,8 +292,8 @@ class _MissionListCard extends StatelessWidget {
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: mission.isCompleted
-                          ? AppColors.textMuted
-                          : AppColors.textPrimary,
+                          ? context.text.bodySmall?.color
+                          : context.colors.onSurface,
                       decoration: mission.isCompleted
                           ? TextDecoration.lineThrough
                           : null,
@@ -312,8 +312,8 @@ class _MissionListCard extends StatelessWidget {
                           fontFamily: 'Nunito',
                           fontSize: 12,
                           color: mission.isCompleted
-                              ? AppColors.textMuted
-                              : AppColors.primaryLight,
+                              ? context.text.bodySmall?.color
+                              : context.colors.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -328,7 +328,7 @@ class _MissionListCard extends StatelessWidget {
               mission.isCompleted
                   ? Icons.check_circle_rounded
                   : Icons.arrow_forward_ios_rounded,
-              color: mission.isCompleted ? AppColors.secondary : AppColors.textMuted,
+              color: mission.isCompleted ? context.colors.secondary : context.text.bodySmall?.color,
               size: mission.isCompleted ? 22 : 14,
             ),
           ],
