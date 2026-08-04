@@ -6,6 +6,7 @@ import '../../../core/theme/firefly_colors.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/firefly_background.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -38,71 +39,139 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  // ── Accesos aún sin backend ──────────────────────────────────────
+  // El servidor (backend/api/routes/users.php) solo expone POST /register,
+  // POST /login, GET /me y DELETE /me. No hay OAuth, ni cuenta de invitado,
+  // ni recuperación de contraseña. La UI existe ya para no rehacerla luego;
+  // cada método queda listo para enchufar la llamada real.
+
+  // TODO: requiere google_sign_in + endpoint POST /auth/google en el backend.
+  void _loginConGoogle() => _proximamente('Entrar con Google');
+
+  // TODO: requiere endpoint de sesión anónima (o un usuario local sin sync).
+  void _entrarComoInvitado() => _proximamente('Entrar como invitado');
+
+  // TODO: requiere POST /forgot-password + envío de correo desde el backend.
+  void _recuperarPassword() => _proximamente('Recuperar contraseña');
+
+  void _proximamente(String queFalta) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            '$queFalta estará disponible pronto',
+            style: const TextStyle(fontFamily: 'Nunito'),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
-
     final error = authState is AuthError ? authState.message : null;
 
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
-          // Background gradient
+          // Fondo: degradado de marca + luciérnagas animadas.
           Container(
             decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
           ),
+          const FireflyBackground(count: 22, intensity: 0.6),
 
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 16),
 
-                  // Header
+                  // ── Logo ──────────────────────────────────────────
+                  Image.asset(
+                    'assets/images/luchi_logo.png',
+                    height: 120,
+                    errorBuilder: (c, e, s) => Text(
+                      'Luchi',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 48,
+                        fontWeight: FontWeight.w900,
+                        color: context.colors.primary,
+                      ),
+                    ),
+                  ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    'Bienvenido de nuevo',
+                    textAlign: TextAlign.center,
+                    style: context.text.headlineLarge?.copyWith(fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Aprende jugando',
+                    style: context.text.bodyMedium,
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: 56,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: context.colors.primary,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Accesos rápidos (aún sin backend) ─────────────
+                  _OutlinedAction(
+                    label: 'Continuar con Google',
+                    onTap: _loginConGoogle,
+                    leading: Text(
+                      'G',
+                      style: TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: context.colors.primary,
+                      ),
+                    ),
+                    filled: true,
+                  ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
+
+                  const SizedBox(height: 12),
+
+                  _OutlinedAction(
+                    label: 'Entrar como invitado',
+                    onTap: _entrarComoInvitado,
+                    leading: Icon(Icons.person_outline_rounded,
+                        size: 20, color: context.colors.primary),
+                  ).animate(delay: 150.ms).fadeIn().slideY(begin: 0.15, end: 0),
+
+                  const SizedBox(height: 20),
+
+                  // ── Separador ─────────────────────────────────────
                   Row(
                     children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: context.firefly.glow,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: context.colors.primary.withValues(alpha: 0.3)),
-                        ),
-                        child: const Text('🪲', style: TextStyle(fontSize: 28)),
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 12),
+                        child: Text('o continúa con tu correo',
+                            style: context.text.bodySmall),
                       ),
-                      const SizedBox(width: 16),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Bienvenido de vuelta',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.onSurface,
-                            ),
-                          ),
-                          Text(
-                            'Inicia sesión para continuar',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 14,
-                              color: context.text.bodyMedium?.color,
-                            ),
-                          ),
-                        ],
-                      ),
+                      const Expanded(child: Divider()),
                     ],
-                  ).animate().fadeIn(duration: 500.ms).slideY(begin: -0.2, end: 0),
+                  ),
 
-                  const SizedBox(height: 48),
+                  const SizedBox(height: 20),
 
-                  // Error banner
+                  // ── Banner de error del backend ───────────────────
                   if (error != null) ...[
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -132,12 +201,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Form
+                  // ── Formulario ────────────────────────────────────
                   Form(
                     key: _formKey,
                     child: Column(
                       children: [
-                        // Email
                         TextFormField(
                           controller: _emailCtrl,
                           keyboardType: TextInputType.emailAddress,
@@ -145,19 +213,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               color: context.colors.onSurface, fontFamily: 'Nunito'),
                           decoration: InputDecoration(
                             labelText: 'Correo electrónico',
+                            hintText: 'ejemplo@correo.com',
                             prefixIcon: Icon(Icons.email_outlined,
-                                color: context.text.bodyMedium?.color, size: 20),
+                                color: context.colors.primary, size: 20),
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) return 'Campo requerido';
                             if (!v.contains('@')) return 'Correo inválido';
                             return null;
                           },
-                        ).animate(delay: 100.ms).fadeIn().slideX(begin: -0.1, end: 0),
+                        ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.1, end: 0),
 
                         const SizedBox(height: 16),
 
-                        // Password
                         TextFormField(
                           controller: _passwordCtrl,
                           obscureText: _obscurePassword,
@@ -166,8 +234,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           decoration: InputDecoration(
                             labelText: 'Contraseña',
                             prefixIcon: Icon(Icons.lock_outline_rounded,
-                                color: context.text.bodyMedium?.color, size: 20),
+                                color: context.colors.primary, size: 20),
                             suffixIcon: IconButton(
+                              tooltip: _obscurePassword
+                                  ? 'Mostrar contraseña'
+                                  : 'Ocultar contraseña',
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_outlined
@@ -184,30 +255,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             if (v.length < 6) return 'Mínimo 6 caracteres';
                             return null;
                           },
-                        ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.1, end: 0),
+                        ).animate(delay: 250.ms).fadeIn().slideX(begin: -0.1, end: 0),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 8),
 
-                        // Login button
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: _recuperarPassword,
+                            child: Text(
+                              '¿Olvidaste tu contraseña?',
+                              style: TextStyle(
+                                fontFamily: 'Nunito',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: context.colors.primary,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
                         AppButton(
                           label: 'Iniciar sesión',
+                          icon: Icons.arrow_forward_rounded,
                           onPressed: isLoading ? null : _login,
                           isLoading: isLoading,
                         ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
 
                         const SizedBox(height: 20),
 
-                        // Register link
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               '¿No tienes cuenta? ',
-                              style: TextStyle(
-                                color: context.text.bodyMedium?.color,
-                                fontFamily: 'Nunito',
-                                fontSize: 14,
-                              ),
+                              style: context.text.bodyMedium,
                             ),
                             TextButton(
                               onPressed: () => context.go('/register'),
@@ -236,6 +320,70 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Botón secundario con borde, usado por los accesos que aún no tienen
+/// backend. `filled` lo pinta sobre la superficie del tema (Google en el
+/// mockup va sobre fondo claro); sin él queda transparente.
+class _OutlinedAction extends StatelessWidget {
+  final String label;
+  final Widget leading;
+  final VoidCallback onTap;
+  final bool filled;
+
+  const _OutlinedAction({
+    required this.label,
+    required this.leading,
+    required this.onTap,
+    this.filled = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: filled ? context.colors.surface : Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            width: double.infinity,
+            constraints: const BoxConstraints(minHeight: 52),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: filled
+                    ? context.firefly.cardBorder
+                    : context.colors.primary.withValues(alpha: 0.5),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                leading,
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontFamily: 'Nunito',
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: context.colors.onSurface,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

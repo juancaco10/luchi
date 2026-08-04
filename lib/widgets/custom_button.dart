@@ -25,9 +25,12 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final grad = gradient ?? context.firefly.primaryGradient;
 
-    return SizedBox(
-      width: width ?? double.infinity,
-      height: 56,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: width ?? double.infinity,
+        maxWidth: width ?? double.infinity,
+        minHeight: 56,
+      ),
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 200),
         opacity: onPressed == null ? 0.5 : 1.0,
