@@ -33,7 +33,7 @@ class RecentSightings extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 140,
+          height: 152,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: 4,
