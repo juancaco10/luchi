@@ -7,7 +7,7 @@ abstract class AppConstants {
   /// the placeholder as a safe default for local development against mocks.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://yourdomain.com/api',
+    defaultValue: 'https://dimgrey-dove-703529.hostingersite.com/api',
   );
 
   /// When true (the default while no real backend is configured), auth uses

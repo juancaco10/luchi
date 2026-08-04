@@ -2,9 +2,11 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
+import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../data/google_auth_service.dart';
@@ -128,9 +130,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState is AuthLoading;
     final error = authState is AuthError ? authState.message : null;
 
-    return Scaffold(
-      body: Stack(
-        children: [
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Builder(
+        builder: (context) {
+          return AnnotatedRegion<SystemUiOverlayStyle>(
+            value: SystemUiOverlayStyle.light.copyWith(
+              statusBarIconBrightness: Brightness.light,
+              statusBarBrightness: Brightness.dark,
+            ),
+            child: Scaffold(
+              body: Stack(
+                children: [
           // Fondo: degradado de marca + luciérnagas animadas.
           Container(
             decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
@@ -139,15 +150,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
           SafeArea(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+              padding: const EdgeInsets.only(left: 28, right: 28, top: 4, bottom: 24),
               child: Column(
                 children: [
-                  const SizedBox(height: 16),
-
                   // ── Logo ──────────────────────────────────────────
                   Image.asset(
                     'assets/images/luchi_logo.png',
-                    height: 120,
+                    height: 160,
                     errorBuilder: (c, e, s) => Text(
                       'Luchi',
                       style: TextStyle(
@@ -183,51 +192,50 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 28),
 
-                  // ── Google ─────────────────────────────────────────
-                  // En web, Google exige su propio botón (política de
-                  // marca): no es sustituible por _OutlinedAction. En el
-                  // resto de plataformas sí es nuestro botón, con spinner
-                  // mientras se resuelve el selector de cuenta nativo.
-                  if (kIsWeb)
-                    Center(child: buildWebGoogleButton())
-                        .animate(delay: 100.ms)
-                        .fadeIn()
-                        .slideY(begin: 0.15, end: 0)
-                  else
-                    _OutlinedAction(
-                      label: _googleLoading
-                          ? 'Conectando…'
-                          : 'Continuar con Google',
-                      onTap: _googleLoading ? null : _loginConGoogle,
-                      leading: _googleLoading
-                          ? SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: context.colors.primary,
-                              ),
-                            )
-                          : Text(
-                              'G',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: context.colors.primary,
-                              ),
-                            ),
-                      filled: true,
-                    ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
-
-                  const SizedBox(height: 12),
-
-                  _OutlinedAction(
-                    label: 'Entrar como invitado',
-                    onTap: _entrarComoInvitado,
-                    leading: Icon(Icons.person_outline_rounded,
-                        size: 20, color: context.colors.primary),
-                  ).animate(delay: 150.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                  // ── Botones Rápidos ─────────────────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: kIsWeb
+                            ? Center(child: buildWebGoogleButton())
+                                .animate(delay: 100.ms)
+                                .fadeIn()
+                                .slideY(begin: 0.15, end: 0)
+                            : _OutlinedAction(
+                                label: _googleLoading ? '...' : 'Google',
+                                onTap: _googleLoading ? null : _loginConGoogle,
+                                leading: _googleLoading
+                                    ? SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: context.colors.primary,
+                                        ),
+                                      )
+                                    : Text(
+                                        'G',
+                                        style: TextStyle(
+                                          fontFamily: 'Nunito',
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w900,
+                                          color: context.colors.primary,
+                                        ),
+                                      ),
+                                filled: true,
+                              ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _OutlinedAction(
+                          label: 'Invitado',
+                          onTap: _entrarComoInvitado,
+                          leading: Icon(Icons.person_outline_rounded,
+                              size: 20, color: context.colors.primary),
+                        ).animate(delay: 150.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                      ),
+                    ],
+                  ),
 
                   const SizedBox(height: 20),
 
@@ -390,15 +398,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+                ], // Column children
+              ), // Column
+            ), // SingleChildScrollView
+          ), // SafeArea
+        ], // Stack children
+      ), // Stack
+    ), // Scaffold
+  ); // AnnotatedRegion
+}, // builder function
+), // Builder
+); // Theme
+} // build()
+} // _LoginScreenState
 
 /// Botón secundario con borde, usado por los accesos que aún no tienen
 /// backend. `filled` lo pinta sobre la superficie del tema (Google en el

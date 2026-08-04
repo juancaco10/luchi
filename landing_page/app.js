@@ -1,5 +1,5 @@
 /**
- * Landing "Guardianes de las Luciérnagas".
+ * Landing "Luchi".
  *
  * Este archivo contenía por error el JS de otro proyecto (un catálogo de
  * anime): buscaba ids como #grid-trending o #search-input que no existen

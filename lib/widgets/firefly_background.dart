@@ -31,8 +31,8 @@ class _FireflyBackgroundState extends State<FireflyBackground>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
-    )..repeat();
+      duration: const Duration(days: 365),
+    )..forward();
   }
 
   @override
@@ -58,14 +58,18 @@ class _FireflyBackgroundState extends State<FireflyBackground>
     return IgnorePointer(
       child: AnimatedBuilder(
         animation: _controller,
-        builder: (_, __) => CustomPaint(
-          size: MediaQuery.of(context).size,
-          painter: _FireflyPainter(
-            _fireflies,
-            _controller.value,
-            widget.intensity,
-          ),
-        ),
+        builder: (_, __) {
+          final elapsed = _controller.lastElapsedDuration?.inMicroseconds ?? 0;
+          final t = elapsed / 1000000.0;
+          return CustomPaint(
+            size: MediaQuery.of(context).size,
+            painter: _FireflyPainter(
+              _fireflies,
+              t,
+              widget.intensity,
+            ),
+          );
+        },
       ),
     );
   }
@@ -115,7 +119,9 @@ class _FireflyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final ff in fireflies) {
-      final progress = (t * ff.speed + ff.phase) % 1.0;
+      // t is real time in seconds. We divide by 6 to match the previous 6-second loop speed.
+      final scaledT = t / 6.0;
+      final progress = scaledT * ff.speed + ff.phase;
       final angle = progress * 2 * pi;
 
       // Drift in a small circle + upward float
@@ -126,8 +132,7 @@ class _FireflyPainter extends CustomPainter {
 
       // Flicker: blink with varying frequency per firefly
       final flicker =
-          (sin(progress * pi * 2 * (2 + ff.speed * 3) + ff.phase) + 1) /
-              2;
+          (sin(progress * pi * 2 * (2 + ff.speed * 3) + ff.phase) + 1) / 2;
       final alpha = (intensity * flicker * 200).toInt().clamp(0, 255);
 
       if (alpha < 5) continue;

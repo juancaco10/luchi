@@ -79,6 +79,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<bool> loginConGoogle(String idToken) async {
     state = const AuthLoading();
 
+    if (AppConstants.useMockAuth) {
+      return _mockLogin('google@luciernagas.com');
+    }
+
     try {
       final response = await _ref.read(apiClientProvider).post(
         ApiEndpoints.googleLogin,

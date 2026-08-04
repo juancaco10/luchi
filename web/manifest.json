@@ -1,10 +1,10 @@
 {
-    "name": "Guardianes de las Luciérnagas",
+    "name": "Luchi — Guardianes de las Luciérnagas",
     "short_name": "Luchi",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0B0F1A",
-    "theme_color": "#00FFC2",
+    "theme_color": "#F5D020",
     "description": "Proyecto educativo ambiental",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,

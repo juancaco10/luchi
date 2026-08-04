@@ -9,7 +9,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardianes de las Luciérnagas — Protege la Luz del Bosque</title>
+    <title>Luchi — Protege la Luz del Bosque</title>
     <meta name="description" content="Una aventura educativa para niños donde aprenderás a proteger las luciérnagas y el ecosistema nocturno. Disponible en Android y Web.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
     <nav class="navbar glass">
         <div class="nav-left">
             <a href="#" class="logo">
-                <span class="logo-icon">🪲</span> GUARDIANES <span class="accent">DE LAS LUCIÉRNAGAS</span>
+                <span class="logo-icon">🪲</span> LUCHI
             </a>
         </div>
         <div class="nav-right">
@@ -262,7 +262,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
     <footer class="footer glass">
         <div class="footer-content">
             <div class="footer-brand">
-                <div class="footer-logo">🪲 GUARDIANES DE LAS LUCIÉRNAGAS</div>
+                <div class="footer-logo">🪲 LUCHI</div>
                 <p class="footer-tagline">Protegiendo la luz del bosque, una misión a la vez.</p>
             </div>
             <div class="footer-cols">
@@ -274,7 +274,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 </div>
                 <div class="footer-col">
                     <h4>Legal</h4>
-                    <a href="api/privacidad.html">Política de Privacidad</a>
+                    <a href="privacidad.html">Política de Privacidad</a>
                     <a href="#">Términos de Uso</a>
                     <a href="#">Contacto</a>
                 </div>
@@ -290,7 +290,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
             </div>
         </div>
         <div class="footer-copy">
-            &copy; 2026 Guardianes de las Luciérnagas. Todos los derechos reservados. Desarrollado con ❤️ para un futuro más luminoso.
+            &copy; 2026 Luchi. Todos los derechos reservados. Desarrollado con ❤️ para un futuro más luminoso.
         </div>
     </footer>
 
