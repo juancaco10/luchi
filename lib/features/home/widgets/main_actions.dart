@@ -1,22 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
-import '../../../../core/theme/theme_provider.dart';
 
-class MainActions extends ConsumerWidget {
+class MainActions extends StatelessWidget {
   const MainActions({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Expanded(
           child: _ActionCard(
             title: 'Jugar',
-            icon: Icons.sports_esports_rounded,
-            color: const Color(0xFFF5D020),
+            icon: 'assets/images/icon_jugar_3d.png',
+            background: 'assets/images/card_bg_jugar.png',
+            fallbackIcon: Icons.sports_esports_rounded,
+            fallbackColor: const Color(0xFFF5D020),
             onTap: () => context.go('/game/level-1'),
           ),
         ),
@@ -24,8 +23,10 @@ class MainActions extends ConsumerWidget {
         Expanded(
           child: _ActionCard(
             title: 'Capítulos',
-            icon: Icons.menu_book_rounded,
-            color: const Color(0xFF72E26E),
+            icon: 'assets/images/icon_aprender_3d.png',
+            background: 'assets/images/card_bg_aprender.png',
+            fallbackIcon: Icons.menu_book_rounded,
+            fallbackColor: const Color(0xFF72E26E),
             onTap: () => context.go('/chapters'),
           ),
         ),
@@ -33,8 +34,10 @@ class MainActions extends ConsumerWidget {
         Expanded(
           child: _ActionCard(
             title: 'Mapa',
-            icon: Icons.map_rounded,
-            color: const Color(0xFF43D8FF),
+            icon: 'assets/images/icon_explorar_3d.png',
+            background: 'assets/images/card_bg_explorar.png',
+            fallbackIcon: Icons.map_rounded,
+            fallbackColor: const Color(0xFF43D8FF),
             onTap: () => context.go('/map'),
           ),
         ),
@@ -43,68 +46,73 @@ class MainActions extends ConsumerWidget {
   }
 }
 
-class _ActionCard extends ConsumerWidget {
+class _ActionCard extends StatelessWidget {
   final String title;
-  final IconData icon;
-  final Color color;
+  final String icon;
+  final String background;
+  final IconData fallbackIcon;
+  final Color fallbackColor;
   final VoidCallback onTap;
 
   const _ActionCard({
     required this.title,
     required this.icon,
-    required this.color,
+    required this.background,
+    required this.fallbackIcon,
+    required this.fallbackColor,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 100,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          color: isDark ? Colors.white.withValues(alpha: 0.03) : color.withValues(alpha: 0.1),
-          border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.1) : color.withValues(alpha: 0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            if (!isDark)
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: title,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 124,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
               BoxShadow(
-                color: color.withValues(alpha: 0.2),
+                color: fallbackColor.withValues(alpha: 0.25),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20),
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: color.withValues(alpha: 0.2),
-                  ),
-                  child: Icon(icon, color: color, size: 28),
+                Image.asset(
+                  background,
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => Container(color: fallbackColor.withValues(alpha: 0.15)),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontFamily: 'Nunito',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: isDark ? Colors.white : const Color(0xFF2C3E50),
-                  ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      icon,
+                      width: 44,
+                      height: 44,
+                      errorBuilder: (c, e, s) => Icon(fallbackIcon, color: fallbackColor, size: 32),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontFamily: 'Nunito',
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF2C1B00),
+                        shadows: [Shadow(color: Colors.white38, blurRadius: 2)],
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/theme_provider.dart';
+import '../../../../core/theme/firefly_colors.dart';
 
 class HomeHeader extends ConsumerWidget {
   final String userName;
@@ -16,67 +17,73 @@ class HomeHeader extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode = ref.watch(themeProvider);
-    final isDark = themeMode == ThemeMode.dark;
-    
+    ref.watch(themeProvider); // rebuild al cambiar de tema
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Logo Image
+            // Logo
             Image.asset(
               'assets/images/luchi_logo.png',
-              height: 56,
+              height: 80,
               errorBuilder: (c, e, s) => Text(
                 'Luchi 🪲',
                 style: TextStyle(
                   fontFamily: 'Nunito',
-                  fontSize: 28,
+                  fontSize: 32,
                   fontWeight: FontWeight.w900,
-                  color: isDark ? const Color(0xFF7CFFB2) : const Color(0xFF438A3C),
+                  color: context.colors.primary,
                 ),
               ),
             ),
-            
+
             // Actions Right
             Row(
               children: [
                 _iconButton(
-                  isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded, 
-                  isDark, 
-                  onTap: () => ref.read(themeProvider.notifier).toggleTheme()
+                  context,
+                  context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  semanticLabel: context.isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+                  onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
                 ),
                 const SizedBox(width: 8),
-                _iconButton(Icons.notifications_none_rounded, isDark),
+                _iconButton(context, Icons.notifications_none_rounded, semanticLabel: 'Notificaciones'),
                 const SizedBox(width: 8),
-                
+
                 // Avatar
-                GestureDetector(
-                  onTap: () => context.go('/profile'),
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: isDark ? const Color(0xFF7CFFB2) : const Color(0xFF438A3C), width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark ? const Color(0xFF7CFFB2).withValues(alpha: 0.3) : Colors.black12,
-                          blurRadius: 10,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(22),
-                      child: Image.asset(
-                        'assets/images/avatar_mateo.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (c, e, s) => const CircleAvatar(
-                          backgroundColor: Color(0xFF1E2D4A),
-                          child: Text('👦', style: TextStyle(fontSize: 20)),
+                Semantics(
+                  button: true,
+                  label: 'Ir a tu perfil',
+                  child: GestureDetector(
+                    onTap: () => context.go('/profile'),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: context.colors.primary, width: 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.isDark
+                                ? context.colors.primary.withValues(alpha: 0.3)
+                                : Colors.black12,
+                            blurRadius: 10,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: Image.asset(
+                          'assets/images/avatar_mateo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => CircleAvatar(
+                            backgroundColor: context.firefly.cardSurface,
+                            child: const Text('👦', style: TextStyle(fontSize: 20)),
+                          ),
                         ),
                       ),
                     ),
@@ -87,25 +94,21 @@ class HomeHeader extends ConsumerWidget {
           ],
         ),
         const SizedBox(height: 16),
-        
+
         // Welcome Text
         Text(
           '¡Hola, $userName! 👋',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(
-            fontWeight: FontWeight.w900,
-          ),
+          style: context.text.displaySmall?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
-        
+
         // Badge
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF7CFFB2).withValues(alpha: 0.15) : const Color(0xFF438A3C).withValues(alpha: 0.1),
+            color: context.colors.primary.withValues(alpha: context.isDark ? 0.15 : 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isDark ? const Color(0xFF7CFFB2).withValues(alpha: 0.5) : const Color(0xFF438A3C).withValues(alpha: 0.3),
-            ),
+            border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -118,7 +121,7 @@ class HomeHeader extends ConsumerWidget {
                   fontFamily: 'Nunito',
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
-                  color: isDark ? const Color(0xFF7CFFB2) : const Color(0xFF2B5B26),
+                  color: context.colors.primary,
                 ),
               ),
             ],
@@ -128,20 +131,31 @@ class HomeHeader extends ConsumerWidget {
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.15, end: 0);
   }
 
-  Widget _iconButton(IconData icon, bool isDark, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-          shape: BoxShape.circle,
-          boxShadow: [
-            if (!isDark)
-              const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-          ],
+  Widget _iconButton(
+    BuildContext context,
+    IconData icon, {
+    required String semanticLabel,
+    VoidCallback? onTap,
+  }) {
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 48,
+          height: 48,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: context.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              if (!context.isDark)
+                const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+            ],
+          ),
+          child: Icon(icon, color: context.colors.onSurface, size: 22),
         ),
-        child: Icon(icon, color: isDark ? Colors.white : const Color(0xFF2C3E50), size: 20),
       ),
     );
   }
