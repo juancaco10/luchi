@@ -3,7 +3,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
-import '../../../core/theme/app_theme.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../../../widgets/custom_button.dart';
@@ -48,13 +47,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     final isLoading = authState is AuthLoading;
     final error = authState is AuthError ? authState.message : null;
 
-
-    // Ver login_screen.dart: misma corrección de contraste mínima hasta
-    // que la Fase 2 migre esta pantalla a respetar el tema real.
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Scaffold(
-      backgroundColor: AppTheme.darkTheme.scaffoldBackgroundColor,
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
         child: SafeArea(
@@ -234,7 +228,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             ),
           ),
         ),
-      ),
       ),
     );
   }

@@ -36,12 +36,12 @@ Fuera de `lib/`: `backend/` (API PHP/MySQL, ver `docs/BACKEND_AUDIT.md`), `asset
 3. Si la llamada falla (hoy siempre falla: `baseUrl` es un placeholder) → leer la última caché de Hive.
 4. Si la caché está vacía (primer arranque) → `ChapterModel.getMockChapters()` / `MissionModel.getMockMissions()`.
 
-`sightings_provider.dart` solo tiene escritura: `LocalStorage.queueSighting()` guarda en `sightings_box` como cola offline, pero **nada la drena** hoy (gap conocido, ver plan Fase 5).
+`sightings_provider.dart` escribe con `LocalStorage.queueSighting()` en `sightings_box` como cola offline; `lib/core/network/sync_service.dart` la drena al arrancar y al reconectar (arreglado en Fase 1) — no solo al cambiar de conectividad como antes.
 
 ## Estado y navegación
 
 - **Riverpod**, sin codegen: `StateNotifierProvider` por feature (`authProvider`, `chaptersProvider`, `missionsProvider`, `sightingsProvider`), más `Provider.family` para lookup por id (`chapterByIdProvider`, `missionByIdProvider`) y `Provider`s derivados (`currentUserProvider`, `profileProvider`).
-- **GoRouter** declarativo en `lib/app.dart`. Guard global (`redirect`) lee `LocalStorage.instance.isLoggedIn` / `.onboardingDone` de forma síncrona. Rutas protegidas: `/home /chapters /missions /profile /sightings /map`. El router es un `final` de nivel superior sin `refreshListenable`, por lo que **no reacciona a cambios de sesión en caliente** (logout no fuerza redirect hasta la siguiente navegación) — ver plan Fase 1.
+- **GoRouter** declarativo en `lib/app.dart`. Guard global (`redirect`) lee `authProvider` (no `LocalStorage` directo, arreglado en Fase 1) contra una allowlist fail-safe de rutas públicas (`/splash /onboarding /login /register`) — cualquier ruta no listada exige sesión. `refreshListenable` (`_AuthRouterRefresh`) escucha `authProvider` y fuerza una re-evaluación inmediata en logout, no solo en la siguiente navegación.
 
 ### Rutas
 
