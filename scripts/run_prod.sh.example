@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Copiar a scripts/run_prod.sh (gitignorado) y ajustar el dominio real.
+# No commitear scripts/run_prod.sh — es lo que evita que el dominio de
+# producción vuelva a quedar hardcodeado en constants.dart.
+set -euo pipefail
+
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://dimgrey-dove-703529.hostingersite.com/api \
+  --dart-define=USE_MOCK_AUTH=false

@@ -18,7 +18,9 @@ flutter run
 flutter build apk --release --analyze-size
 ```
 
-No hay CI configurado todavía (ver Fase 7 del plan de mejoras). No hay tests todavía — al añadir código nuevo, añade test si el patrón ya existe en el repo; si no existe, no bloquees por eso pero no reduzcas cobertura existente.
+Build contra el backend real: `flutter build apk --dart-define=API_BASE_URL=<dominio real>/api --dart-define=USE_MOCK_AUTH=false` (o `scripts/run_prod.sh`, local y gitignorado — copiar desde `scripts/run_prod.sh.example`). Sin esos `--dart-define` la app usa el placeholder `https://yourdomain.com/api` y falla toda llamada de red.
+
+No hay CI configurado todavía (ver Fase 4 del plan de corrección global). No hay tests todavía — al añadir código nuevo, añade test si el patrón ya existe en el repo; si no existe, no bloquees por eso pero no reduzcas cobertura existente.
 
 ## Convenciones de estructura
 
@@ -32,13 +34,12 @@ Feature-first: cada feature vive en `lib/features/<nombre>/` con subcarpetas `mo
 
 ## Zonas frágiles — leer antes de tocar
 
-- **Auth es un mock.** `lib/features/auth/providers/auth_provider.dart` no llama a la API: genera un usuario fijo y guarda `'mock_token_123'`. No asumas que el login real funciona hasta que se implemente la Fase 1 del plan de mejoras.
-- **El backend PHP no arranca tal cual está** (error de sintaxis fatal en `backend/api/index.php` + función duplicada). Por decisión de proyecto, el backend **no se toca desde este repo Flutter** salvo que se indique explícitamente; ver auditoría completa en `docs/BACKEND_AUDIT.md`.
-- **`AppConstants.baseUrl` es un placeholder** (`https://yourdomain.com/api`). Todas las llamadas de red fallan hoy y el cliente cae a caché Hive o a datos mock (`getMockChapters()`, `getMockMissions()`).
-- **`.env` se empaqueta como asset de Flutter** (`pubspec.yaml` → `assets:`). Hoy solo tiene placeholders, pero **nunca pongas un secreto real ahí** — cualquier cosa en `assets/` viaja dentro del APK/bundle web y es extraíble.
-- **La cola offline de avistamientos no se drena.** `LocalStorage.queueSighting()` escribe en Hive pero no hay ningún lugar que llame a `getPendingSightings()`/`clearPendingSightings()` — ver Fase 5 del plan.
-- **Dependencias declaradas sin usar**: `lottie`, `cached_network_image`, `flutter_svg`, `shimmer`, `flutter_dotenv`, `connectivity_plus`. Antes de añadir una función que "ya debería estar cubierta por X", comprueba si X se usa de verdad.
-- El proyecto **no es un repositorio git todavía** (`git init` pendiente).
+- **Auth ya no es mock por defecto.** `AppConstants.useMockAuth` es `false` de forma predeterminada: `lib/features/auth/providers/auth_provider.dart` llama a la API real salvo que se pase `--dart-define=USE_MOCK_AUTH=true`. El backend en Hostinger responde (verificado con `curl` y en dispositivo real).
+- **El interceptor de errores cierra sesión en cualquier 401** (`lib/core/network/api_client.dart`, `_ErrorInterceptor`) — bug confirmado: abrir un capítulo con sesión expirada expulsa al login sin aviso y descarta el mensaje real del backend. Es el primer punto de la Fase 1 del plan de corrección global; no repetir el patrón "401 ⇒ clearToken()" en código nuevo mientras no esté arreglado.
+- **El backend PHP sí arranca** (`php -l backend/api/index.php` limpio) y tiene rate limiting de login, `DELETE /me`, y el mapa comunitario deshabilitado (`410`) por privacidad — `docs/BACKEND_AUDIT.md` estaba desactualizado y ya no describe el estado real. Sigue siendo cierto que el backend **no se toca desde este repo Flutter** salvo instrucción explícita.
+- **`AppConstants.baseUrl` es un placeholder** (`https://yourdomain.com/api`) otra vez — nunca hardcodear el dominio real aquí; se inyecta por `--dart-define=API_BASE_URL=...` (ver sección Comandos).
+- **La cola offline de avistamientos SÍ se drena.** `lib/core/network/sync_service.dart` llama a `getPendingSightings()`/`clearPendingSightings()` al detectar conectividad. Pendiente (Fase 1 del plan): también sincronizar al arrancar con red ya disponible, no solo al cambiar de estado.
+- El proyecto **ya es un repositorio git** (`main`, remoto `github.com/juancaco10/luchi`).
 
 ## Gamificación (fuente de verdad: `constants.dart`)
 

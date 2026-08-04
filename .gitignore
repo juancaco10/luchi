@@ -46,6 +46,8 @@ app.*.map.json
 
 # Secrets / local config — never commit real values
 .env
+backend/api/.env
+scripts/run_prod.sh
 backend/api/config/database.php
 android/local.properties
 android/key.properties
