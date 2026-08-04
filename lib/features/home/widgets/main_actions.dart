@@ -17,7 +17,7 @@ class MainActions extends ConsumerWidget {
             title: 'Jugar',
             icon: Icons.sports_esports_rounded,
             color: const Color(0xFFF5D020),
-            onTap: () => context.go('/level-one'),
+            onTap: () => context.go('/game/level-1'),
           ),
         ),
         const SizedBox(width: 12),
