@@ -1,0 +1,67 @@
+<?php
+/**
+ * Router — Guardianes de las Luciérnagas API
+ * Hostinger-compatible single entry point
+ */
+
+require_once __DIR__ . '/config/database.php';
+
+// ── CORS Headers ──────────────────────────────────────────────────
+// The Android app does not need CORS at all; only the Flutter web build
+// does, and only from our own origin. ALLOWED_ORIGINS is defined in
+// config/database.php — never widen this back to '*' on an authenticated API.
+$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($origin !== '' && in_array($origin, ALLOWED_ORIGINS, true)) {
+    header('Access-Control-Allow-Origin: ' . $origin);
+    header('Vary: Origin');
+}
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+header('Content-Type: application/json; charset=UTF-8');
+
+// Handle preflight
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
+    exit;
+}
+
+// ── Parse route ───────────────────────────────────────────────────
+// Strip the script's directory prefix (e.g. '/api' when deployed at
+// public_html/api/index.php). Must be a prefix removal, not str_replace,
+// which would delete every occurrence anywhere in the URI.
+$requestUri = $_SERVER['REQUEST_URI'] ?? '/';
+$scriptName = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
+
+$path = $requestUri;
+if ($scriptName !== '' && str_starts_with($path, $scriptName)) {
+    $path = substr($path, strlen($scriptName));
+}
+$path   = parse_url($path, PHP_URL_PATH) ?? '/';
+$path   = '/' . trim($path, '/');
+$method = $_SERVER['REQUEST_METHOD'];
+
+// ── Test Endpoint (Safe) ──────────────────────────────────────────
+if ($path === '/test-db' && $method === 'GET') {
+    try {
+        $db = getDB();
+        http_response_code(200);
+        echo json_encode(['status' => 'success', 'message' => '¡Conexión a la base de datos exitosa!']);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['status' => 'error', 'message' => 'Error de conexión. Revisa database.php']);
+    }
+    exit;
+}
+
+// ── Shared helpers ────────────────────────────────────────────────
+require_once __DIR__ . '/lib/gamification.php';
+
+// ── Routes ────────────────────────────────────────────────────────
+require_once __DIR__ . '/routes/users.php';
+require_once __DIR__ . '/routes/chapters.php';
+require_once __DIR__ . '/routes/missions.php';
+require_once __DIR__ . '/routes/sightings.php';
+
+// 404 fallback
+http_response_code(404);
+echo json_encode(['error' => 'Ruta no encontrada', 'path' => $path]);
