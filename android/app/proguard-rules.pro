@@ -14,3 +14,8 @@
 
 # Keep model classes used for Hive/JSON (de)serialization
 -keep class com.guardianes.luciernagas.** { *; }
+
+# Ignore missing Play Core classes when not using deferred components
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**

@@ -184,16 +184,36 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: Column(
                   children: [
                     // ── Logo ──────────────────────────────────────────
-                    Image.asset(
-                      'assets/images/logo_luchi.png',
+                    // Misma imagen e igual tratamiento (recorte redondeado +
+                    // brillo) que el splash, para que icono, splash y esta
+                    // primera pantalla se vean como una sola marca.
+                    Container(
+                      width: 130,
                       height: 130,
-                      errorBuilder: (c, e, s) => Text(
-                        'Luchi',
-                        style: TextStyle(
-                          fontFamily: 'Nunito',
-                          fontSize: 48,
-                          fontWeight: FontWeight.w900,
-                          color: context.colors.primary,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(30),
+                        boxShadow: [
+                          BoxShadow(
+                            color: context.colors.primary.withValues(alpha: 0.4),
+                            blurRadius: 30,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(30),
+                        child: Image.asset(
+                          'assets/images/app_logo.png',
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) => Text(
+                            'Luchi',
+                            style: TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 48,
+                              fontWeight: FontWeight.w900,
+                              color: context.colors.primary,
+                            ),
+                          ),
                         ),
                       ),
                   ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
