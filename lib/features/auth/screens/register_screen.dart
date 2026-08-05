@@ -112,18 +112,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ),
                     ).animate().fadeIn(),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 10),
 
                     // ── Logo ──────────────────────────────────────────
                     Center(
                       child: Container(
-                        width: 180,
-                        height: 180,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                        ),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(30),
+                        height: 120, // Reduce layout footprint
+                        alignment: Alignment.center,
+                        child: Transform.scale(
+                          scale: 1.9, // Visually enlarge the logo without pushing content down
                           child: Image.asset(
                             'assets/images/logo_luchi.png',
                             fit: BoxFit.contain,
@@ -143,7 +140,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
                     ),
 
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 4),
 
                     Center(
                       child: Text(

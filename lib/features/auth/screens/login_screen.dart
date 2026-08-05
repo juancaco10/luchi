@@ -188,13 +188,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // brillo) que el splash, para que icono, splash y esta
                     // primera pantalla se vean como una sola marca.
                     Container(
-                      width: 180,
-                      height: 180,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(30),
+                      height: 120, // Reduce layout footprint
+                      alignment: Alignment.center,
+                      child: Transform.scale(
+                        scale: 1.9, // Visually enlarge the logo without pushing content down
                         child: Image.asset(
                           'assets/images/logo_luchi.png',
                           fit: BoxFit.contain,
@@ -211,7 +208,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                   ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 4),
 
                   Text(
                     'Bienvenido de nuevo',
