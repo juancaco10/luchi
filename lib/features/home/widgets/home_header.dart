@@ -28,7 +28,7 @@ class HomeHeader extends ConsumerWidget {
             // Logo
             Image.asset(
               'assets/images/logo_luchi.png',
-              height: isSmallScreen ? 45 : 60,
+              height: isSmallScreen ? 55 : 75,
               errorBuilder: (c, e, s) => Text(
                 'Luchi 🪲',
                 style: TextStyle(

@@ -47,23 +47,33 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           // Content
-          SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    HomeHeader(userName: userName, isSmallScreen: isSmallScreen),
-                    const SizedBox(height: 12),
-                    const ProgressCard(completedChapters: 2, totalChapters: 5), // Mock data for now
-                    const SizedBox(height: 12),
-                    const MainActions(),
-                    const SizedBox(height: 12),
-                    const RecentSightings(),
-                    const SizedBox(height: 12),
-                  ],
+          // Envuelto en Positioned.fill (no bastaba con que fuera el único
+          // hijo "normal" del Stack): con contenido corto, un Stack con un
+          // hijo no-posicionado se encoge a la altura de ese contenido en
+          // vez de llenar el body del Scaffold, dejando un hueco de color
+          // liso entre el final del scroll y el menú inferior — ahí es
+          // donde se veía que el fondo no llegaba abajo. Con todos los
+          // hijos posicionados, el Stack pasa a ocupar siempre el alto
+          // disponible completo, tenga el contenido la altura que tenga.
+          Positioned.fill(
+            child: SafeArea(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      HomeHeader(userName: userName, isSmallScreen: isSmallScreen),
+                      const SizedBox(height: 12),
+                      const ProgressCard(completedChapters: 2, totalChapters: 5), // Mock data for now
+                      const SizedBox(height: 12),
+                      const MainActions(),
+                      const SizedBox(height: 12),
+                      const RecentSightings(),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
             ),

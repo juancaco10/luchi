@@ -12,7 +12,6 @@ class HomeBottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: context.colors.surface,
-        border: Border(top: BorderSide(color: context.firefly.cardBorder)),
       ),
       child: SafeArea(
         child: Padding(
@@ -27,19 +26,22 @@ class HomeBottomNav extends StatelessWidget {
                 isActive: navigationShell.currentIndex == 0,
                 onTap: () => navigationShell.goBranch(0, initialLocation: navigationShell.currentIndex == 0),
               ),
-              _buildNavItem(
-                context,
-                icon: Icons.menu_book_rounded,
-                label: 'Aprender',
-                isActive: navigationShell.currentIndex == 1,
-                onTap: () => navigationShell.goBranch(1, initialLocation: navigationShell.currentIndex == 1),
-              ),
+              // Orden visual pedido: Home, Jugar, Aprender, Explorar,
+              // Opciones. El índice de rama (1=Aprender/chapters,
+              // 2=Jugar/game) no cambia, solo el orden en que se dibujan.
               _buildNavItem(
                 context,
                 icon: Icons.sports_esports_rounded,
                 label: 'Jugar',
                 isActive: navigationShell.currentIndex == 2,
                 onTap: () => navigationShell.goBranch(2, initialLocation: navigationShell.currentIndex == 2),
+              ),
+              _buildNavItem(
+                context,
+                icon: Icons.menu_book_rounded,
+                label: 'Aprender',
+                isActive: navigationShell.currentIndex == 1,
+                onTap: () => navigationShell.goBranch(1, initialLocation: navigationShell.currentIndex == 1),
               ),
               _buildNavItem(
                 context,
