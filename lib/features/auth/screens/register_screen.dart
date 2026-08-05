@@ -117,26 +117,26 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     // ── Logo ──────────────────────────────────────────
                     Center(
                       child: Container(
-                        width: 80,
-                        height: 80,
+                        width: 180,
+                        height: 180,
                         decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(30),
                           boxShadow: [
                             BoxShadow(
-                              color: context.colors.primary.withValues(alpha: 0.4),
-                              blurRadius: 20,
-                              spreadRadius: 2,
+                              color: context.colors.primary.withValues(alpha: 0.15),
+                              blurRadius: 10,
+                              spreadRadius: 1,
                             ),
                           ],
                         ),
                         child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(30),
                           child: Image.asset(
-                            'assets/images/app_logo.png',
-                            fit: BoxFit.cover,
+                            'assets/images/logo_luchi.png',
+                            fit: BoxFit.contain,
                             errorBuilder: (c, e, s) => Center(
                               child: Text(
-                                'L',
+                                'Luchi',
                                 style: TextStyle(
                                   fontFamily: 'Nunito',
                                   fontSize: 32,

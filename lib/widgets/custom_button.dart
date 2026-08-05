@@ -25,6 +25,11 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final grad = gradient ?? context.firefly.primaryGradient;
 
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final textColor = isLight ? Colors.black : context.colors.onPrimary;
+    final iconColor = isLight ? Colors.black : context.colors.onPrimary;
+    final borderColor = isLight ? Colors.black : Colors.transparent;
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         minWidth: width ?? double.infinity,
@@ -38,6 +43,7 @@ class AppButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: grad,
             borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            border: Border.all(color: borderColor, width: 2),
             boxShadow: [
               BoxShadow(
                 color: (grad.colors.first).withValues(alpha: 0.3),
@@ -62,7 +68,7 @@ class AppButton extends StatelessWidget {
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
                           valueColor: AlwaysStoppedAnimation<Color>(
-                            context.colors.onPrimary,
+                            iconColor,
                           ),
                         ),
                       )
@@ -70,7 +76,7 @@ class AppButton extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           if (icon != null) ...[
-                            Icon(icon, color: context.colors.onPrimary, size: 20),
+                            Icon(icon, color: iconColor, size: 20),
                             const SizedBox(width: 8),
                           ],
                           Text(
@@ -78,8 +84,8 @@ class AppButton extends StatelessWidget {
                             style: TextStyle(
                               fontFamily: 'Nunito',
                               fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.onPrimary,
+                              fontWeight: FontWeight.w900,
+                              color: textColor,
                               letterSpacing: 0.3,
                             ),
                           ),

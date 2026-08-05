@@ -99,9 +99,9 @@ abstract class LightPalette {
 
   static const Color accent = Color(0xFF5B8BF5);
 
-  static const Color textPrimary = Color(0xFF2C3E50);
-  static const Color textSecondary = Color(0xFF5A6B8A);
-  static const Color textMuted = Color(0xFF8F9FB9);
+  static const Color textPrimary = Color(0xFF000000);
+  static const Color textSecondary = Color(0xFF000000);
+  static const Color textMuted = Color(0xFF000000);
   static const Color textOnPrimary = Color(0xFFFFFFFF);
 
   static const Color success = Color(0xFF4CAF50);
