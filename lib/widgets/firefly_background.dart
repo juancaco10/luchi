@@ -76,21 +76,47 @@ class _FireflyBackgroundState extends State<FireflyBackground>
 }
 
 class _Firefly {
-  final double startX;
-  final double startY;
+  // Ancla alejada de los bordes (15%-85% del lienzo): el recorrido amplio
+  // se dibuja alrededor de este punto, así nunca queda una luciérnaga
+  // "pegada" a un borde con su trayecto medio cortado por el límite de la
+  // pantalla — el problema real del diseño anterior (órbita diminuta fija
+  // alrededor de un punto que podía caer cerca del borde).
+  final double anchorX;
+  final double anchorY;
+
+  // Amplitud del recorrido amplio, como fracción del ancho/alto — cada
+  // luciérnaga cubre una porción real de la pantalla, no un punto fijo.
+  final double ampX;
+  final double ampY;
+
+  // Periodo (segundos) del recorrido amplio: un poco más lento que antes
+  // ("desacelera un poco"), y con dos periodos distintos por eje para que
+  // el camino sea una curva orgánica, no una elipse perfecta y repetitiva.
+  final double periodX;
+  final double periodY;
+
+  // Bamboleo rápido superpuesto, en píxeles — el aleteo fino de una
+  // luciérnaga real dentro de su vuelo amplio.
+  final double wobbleAmp;
+  final double wobblePeriod;
+
   final double size;
-  final double speed;
   final double phase;
-  final double driftRadius;
+  final double flickerSpeed;
   final Color color;
 
   _Firefly({
-    required this.startX,
-    required this.startY,
+    required this.anchorX,
+    required this.anchorY,
+    required this.ampX,
+    required this.ampY,
+    required this.periodX,
+    required this.periodY,
+    required this.wobbleAmp,
+    required this.wobblePeriod,
     required this.size,
-    required this.speed,
     required this.phase,
-    required this.driftRadius,
+    required this.flickerSpeed,
     required this.color,
   });
 
@@ -98,12 +124,17 @@ class _Firefly {
     // Mix golden and green fireflies
     final isGreen = rnd.nextBool();
     return _Firefly(
-      startX: rnd.nextDouble(),
-      startY: rnd.nextDouble(),
+      anchorX: 0.15 + rnd.nextDouble() * 0.7,
+      anchorY: 0.15 + rnd.nextDouble() * 0.7,
+      ampX: 0.22 + rnd.nextDouble() * 0.14,
+      ampY: 0.16 + rnd.nextDouble() * 0.12,
+      periodX: 34 + rnd.nextDouble() * 26,
+      periodY: 28 + rnd.nextDouble() * 24,
+      wobbleAmp: 10 + rnd.nextDouble() * 14,
+      wobblePeriod: 4 + rnd.nextDouble() * 4,
       size: 1.5 + rnd.nextDouble() * 3.5,
-      speed: 0.3 + rnd.nextDouble() * 0.8,
       phase: rnd.nextDouble() * 2 * pi,
-      driftRadius: 15 + rnd.nextDouble() * 30,
+      flickerSpeed: 0.25 + rnd.nextDouble() * 0.65, // antes 0.3–0.8: un poco más lento
       color: isGreen ? secondary : primary,
     );
   }
@@ -119,20 +150,24 @@ class _FireflyPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     for (final ff in fireflies) {
-      // t is real time in seconds. We divide by 6 to match the previous 6-second loop speed.
-      final scaledT = t / 6.0;
-      final progress = scaledT * ff.speed + ff.phase;
-      final angle = progress * 2 * pi;
+      // Recorrido amplio: dos armónicos por eje (periodo largo + un
+      // bamboleo corto) alrededor del ancla. Es continuo para siempre —
+      // sin salto ni reinicio — así que nunca se "corta" visualmente.
+      final cx = ff.anchorX * size.width +
+          sin(t / ff.periodX * 2 * pi + ff.phase) * ff.ampX * size.width +
+          sin(t / ff.wobblePeriod * 2 * pi + ff.phase * 1.7) * ff.wobbleAmp;
+      final cy = ff.anchorY * size.height +
+          cos(t / ff.periodY * 2 * pi + ff.phase * 1.3) * ff.ampY * size.height +
+          cos(t / (ff.wobblePeriod * 1.3) * 2 * pi + ff.phase * 0.6) *
+              ff.wobbleAmp *
+              0.6;
 
-      // Drift in a small circle + upward float
-      final cx = ff.startX * size.width +
-          sin(angle * 2.3) * ff.driftRadius;
-      final cy = ff.startY * size.height +
-          cos(angle * 1.7) * ff.driftRadius * 0.6;
-
-      // Flicker: blink with varying frequency per firefly
+      // Flicker: blink with varying frequency per firefly (misma forma que
+      // antes, solo con flickerSpeed ligeramente más bajo — "un poquito
+      // nomás" más lento, no un cambio brusco de ritmo).
+      final progress = t / 6.0 * ff.flickerSpeed + ff.phase;
       final flicker =
-          (sin(progress * pi * 2 * (2 + ff.speed * 3) + ff.phase) + 1) / 2;
+          (sin(progress * pi * 2 * (2 + ff.flickerSpeed * 3) + ff.phase) + 1) / 2;
       final alpha = (intensity * flicker * 200).toInt().clamp(0, 255);
 
       if (alpha < 5) continue;

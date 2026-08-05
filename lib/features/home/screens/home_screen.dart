@@ -7,6 +7,7 @@ import '../widgets/home_header.dart';
 import '../widgets/progress_card.dart';
 import '../widgets/main_actions.dart';
 import '../widgets/recent_sightings.dart';
+import '../../../../widgets/firefly_background.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -46,6 +47,11 @@ class HomeScreen extends ConsumerWidget {
               ),
             ),
           ),
+          // Partículas de fondo — mismo estilo ambiental que login/
+          // register/onboarding, en dark y en claro (el color ya se
+          // adapta solo vía context.colors).
+          const FireflyBackground(count: 14, intensity: 0.35),
+
           // Content
           // Envuelto en Positioned.fill (no bastaba con que fuera el único
           // hijo "normal" del Stack): con contenido corto, un Stack con un

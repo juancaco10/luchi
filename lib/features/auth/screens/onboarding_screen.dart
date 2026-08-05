@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/storage/local_storage.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/firefly_background.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -95,6 +96,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               );
             },
           ),
+
+          // Partículas de fondo, siempre presentes en las 4 páginas —
+          // por encima del degradado de cada página (PageView, opaco),
+          // por debajo de la barra de controles inferior. Mismo patrón
+          // que login/register: son de fondo ambiental, no interactivas
+          // (IgnorePointer dentro del propio widget).
+          const FireflyBackground(count: 18, intensity: 0.5),
 
           // Bottom controls
           Positioned(

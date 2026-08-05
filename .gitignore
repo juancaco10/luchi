@@ -1,4 +1,7 @@
 # Miscellaneous
+# Carpeta de trabajo personal (capturas, generaciones de IA) — no son
+# assets de la app.
+assets/images/mis cosas/
 *.class
 *.log
 *.pyc

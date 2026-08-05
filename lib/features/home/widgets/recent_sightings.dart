@@ -120,26 +120,28 @@ class _MockSightingCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = context.isDark;
 
-    return Container(
-      width: 135,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
-          width: 1,
+    return GestureDetector(
+      onTap: () => _showSightingDetails(context),
+      child: Container(
+        width: 135,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isDark ? Colors.white.withValues(alpha: 0.1) : Colors.black.withValues(alpha: 0.05),
+            width: 1,
+          ),
+          boxShadow: [
+            if (!isDark)
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              )
+          ],
         ),
-        boxShadow: [
-          if (!isDark)
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            )
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: Stack(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
           fit: StackFit.expand,
           children: [
             Image.asset(
@@ -251,6 +253,100 @@ class _MockSightingCard extends StatelessWidget {
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  void _showSightingDetails(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          clipBehavior: Clip.antiAlias,
+          backgroundColor: context.colors.surface,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SizedBox(
+                height: 200,
+                child: Image.asset(
+                  data['image'],
+                  fit: BoxFit.cover,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '🌎 ${data['location']}',
+                          style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        // UGC Compliance Menu
+                        PopupMenuButton<String>(
+                          icon: Icon(Icons.more_vert_rounded, color: context.colors.onSurface),
+                          onSelected: (value) {
+                            if (value == 'report') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Avistamiento reportado para revisión.')),
+                              );
+                              Navigator.pop(context);
+                            } else if (value == 'block') {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Usuario ${data['user']} bloqueado. Ya no verás sus publicaciones.')),
+                              );
+                              Navigator.pop(context);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'report',
+                              child: Text('Reportar contenido inapropiado', style: TextStyle(color: Colors.red)),
+                            ),
+                            const PopupMenuItem(
+                              value: 'block',
+                              child: Text('Bloquear a este usuario', style: TextStyle(color: Colors.red)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        CircleAvatar(
+                          radius: 12,
+                          backgroundImage: AssetImage(data['avatar']),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(data['user'], style: context.text.bodyMedium?.copyWith(fontWeight: FontWeight.w700)),
+                        const Spacer(),
+                        Icon(Icons.access_time_rounded, size: 16, color: context.colors.onSurface.withValues(alpha: 0.7)),
+                        const SizedBox(width: 4),
+                        Text(data['time'], style: context.text.bodyMedium?.copyWith(color: context.colors.onSurface.withValues(alpha: 0.7))),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.tonal(
+                        onPressed: () => Navigator.of(context).pop(),
+                        child: const Text('Cerrar'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
