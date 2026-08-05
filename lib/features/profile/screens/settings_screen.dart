@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 
 final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
@@ -36,12 +37,6 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
-                  IconButton(
-                    onPressed: () => context.go('/profile'),
-                    icon: Icon(Icons.arrow_back_ios_new_rounded,
-                        color: context.text.bodyMedium?.color, size: 20),
-                  ),
-                  const SizedBox(width: 4),
                   Text(
                     'Configuración',
                     style: TextStyle(
@@ -82,6 +77,25 @@ class SettingsScreen extends ConsumerWidget {
 
 
 
+                  // ── Appearance section ─────────────────────────
+                  const SizedBox(height: 20),
+                  _SettingsSection(
+                    title: 'Apariencia',
+                    children: [
+                      _SettingsTile(
+                        icon: context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                        iconColor: context.colors.primary,
+                        title: 'Tema oscuro',
+                        subtitle: context.isDark ? 'Activado' : 'Desactivado',
+                        delay: 200,
+                        trailing: Switch(
+                          value: context.isDark,
+                          onChanged: (val) => ref.read(themeProvider.notifier).toggleTheme(),
+                          activeColor: context.colors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 20),
 
                   // ── About section ──────────────────────────────

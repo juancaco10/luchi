@@ -18,6 +18,22 @@ abstract class AppConstants {
     defaultValue: false,
   );
 
+  /// Permite servir los datos de ejemplo (`getMockChapters`/`getMockMissions`)
+  /// cuando la API falla y no hay caché. **False por defecto, a propósito.**
+  ///
+  /// Esos mocks no son relleno inocuo: sus capítulos apuntan a vídeos de
+  /// muestra de Google (BigBuckBunny.mp4). Servirlos ante cualquier fallo de
+  /// red significaba enseñarle a un niño contenido que no es del curso, sin
+  /// distinguirlo del real. Es preferible un error honesto con botón de
+  /// reintentar.
+  ///
+  /// Para desarrollar sin backend:
+  ///   flutter run --dart-define=ALLOW_SEED_DATA=true
+  static const bool allowSeedData = bool.fromEnvironment(
+    'ALLOW_SEED_DATA',
+    defaultValue: false,
+  );
+
   /// Client ID "Web" del proyecto Firebase (google-services.json,
   /// oauth_client type=3). No es secreto: un client ID de OAuth viaja en
   /// el propio cliente (APK/bundle web) por diseño; lo que hay que

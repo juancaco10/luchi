@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
-import '../../../core/theme/app_theme.dart';
+import '../../../core/theme/theme_provider.dart';
 import '../providers/auth_provider.dart';
 import '../models/user_model.dart';
 import '../data/google_auth_service.dart';
@@ -104,8 +104,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   // POST /login, POST /auth/google, GET /me y DELETE /me. Faltan invitado
   // y recuperación de contraseña; la UI existe ya para no rehacerla luego.
 
-  // TODO: requiere endpoint de sesión anónima (o un usuario local sin sync).
-  void _entrarComoInvitado() => _proximamente('Entrar como invitado');
+  Future<void> _entrarComoInvitado() async {
+    final ok = await ref.read(authProvider.notifier).loginInvitado();
+    if (ok && mounted) context.go('/home');
+  }
 
   // TODO: requiere POST /forgot-password + envío de correo desde el backend.
   void _recuperarPassword() => _proximamente('Recuperar contraseña');
@@ -130,45 +132,73 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final isLoading = authState is AuthLoading;
     final error = authState is AuthError ? authState.message : null;
 
-    return Theme(
-      data: AppTheme.darkTheme,
-      child: Builder(
-        builder: (context) {
-          return AnnotatedRegion<SystemUiOverlayStyle>(
-            value: SystemUiOverlayStyle.light.copyWith(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgImage = isDark ? 'assets/images/bg1.png' : 'assets/images/bg2.png';
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: isDark
+          ? SystemUiOverlayStyle.light.copyWith(
               statusBarIconBrightness: Brightness.light,
               statusBarBrightness: Brightness.dark,
+            )
+          : SystemUiOverlayStyle.dark.copyWith(
+              statusBarIconBrightness: Brightness.dark,
+              statusBarBrightness: Brightness.light,
             ),
-            child: Scaffold(
-              body: Stack(
-                children: [
-          // Fondo: degradado de marca + luciérnagas animadas.
-          Container(
-            decoration: BoxDecoration(gradient: context.firefly.backgroundGradient),
-          ),
-          const FireflyBackground(count: 22, intensity: 0.6),
+      child: Scaffold(
+        body: Stack(
+          children: [
+            // Fondo
+            Positioned.fill(
+              child: Image.asset(
+                bgImage,
+                fit: BoxFit.cover,
+              ),
+            ),
+            // Gradiente para aclarar/oscurecer
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: isDark
+                        ? [
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.85),
+                          ]
+                        : [
+                            Colors.white.withValues(alpha: 0.85),
+                            Colors.white.withValues(alpha: 0.2),
+                          ],
+                    stops: const [0.0, 1.0],
+                  ),
+                ),
+              ),
+            ),
+            const FireflyBackground(count: 22, intensity: 0.6),
 
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.only(left: 28, right: 28, top: 4, bottom: 24),
-              child: Column(
-                children: [
-                  // ── Logo ──────────────────────────────────────────
-                  Image.asset(
-                    'assets/images/luchi_logo.png',
-                    height: 160,
-                    errorBuilder: (c, e, s) => Text(
-                      'Luchi',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 48,
-                        fontWeight: FontWeight.w900,
-                        color: context.colors.primary,
+            SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(left: 28, right: 28, top: 4, bottom: 24),
+                child: Column(
+                  children: [
+                    // ── Logo ──────────────────────────────────────────
+                    Image.asset(
+                      'assets/images/logo_luchi.png',
+                      height: 130,
+                      errorBuilder: (c, e, s) => Text(
+                        'Luchi',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 48,
+                          fontWeight: FontWeight.w900,
+                          color: context.colors.primary,
+                        ),
                       ),
-                    ),
                   ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 32),
 
                   Text(
                     'Bienvenido de nuevo',
@@ -400,15 +430,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ], // Column children
               ), // Column
-            ), // SingleChildScrollView
-          ), // SafeArea
-        ], // Stack children
+              ), // SingleChildScrollView
+            ), // SafeArea
+            
+            // Theme Toggle Button
+            Positioned(
+              top: 12,
+              right: 12,
+              child: SafeArea(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.black38 : Colors.white70,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark ? Colors.white30 : context.colors.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: IconButton(
+                    icon: Icon(
+                      isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                      color: isDark ? Colors.white : context.colors.primary,
+                      size: 22,
+                    ),
+                    onPressed: () {
+                      ref.read(themeProvider.notifier).toggleTheme();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ], // Stack children
       ), // Stack
     ), // Scaffold
   ); // AnnotatedRegion
-}, // builder function
-), // Builder
-); // Theme
 } // build()
 } // _LoginScreenState
 

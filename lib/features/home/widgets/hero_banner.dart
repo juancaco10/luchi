@@ -9,7 +9,7 @@ class HeroBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.all(16.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
@@ -24,14 +24,14 @@ class HeroBanner extends StatelessWidget {
         children: [
           Text(
             'Descubre el mundo de las luciérnagas',
-            style: context.text.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
+            style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             'Aprende, juega y comparte tus avistamientos',
-            style: context.text.bodyMedium,
+            style: context.text.bodySmall,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
 
           // Button
           Semantics(
@@ -40,8 +40,8 @@ class HeroBanner extends StatelessWidget {
             child: GestureDetector(
               onTap: () => context.go('/chapters'),
               child: Container(
-                constraints: const BoxConstraints(minHeight: 48),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                constraints: const BoxConstraints(minHeight: 36),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   gradient: context.firefly.greenGradient,
                   borderRadius: BorderRadius.circular(30),
@@ -57,13 +57,13 @@ class HeroBanner extends StatelessWidget {
                       'Explorar ahora',
                       style: TextStyle(
                         fontFamily: 'Nunito',
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF0F1E19),
                       ),
                     ),
                     SizedBox(width: 6),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF0F1E19)),
+                    Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF0F1E19)),
                   ],
                 ),
               ),

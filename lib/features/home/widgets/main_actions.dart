@@ -71,7 +71,7 @@ class _ActionCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 124,
+          height: 90,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             boxShadow: [
@@ -97,16 +97,16 @@ class _ActionCard extends StatelessWidget {
                   children: [
                     Image.asset(
                       icon,
-                      width: 44,
-                      height: 44,
-                      errorBuilder: (c, e, s) => Icon(fallbackIcon, color: fallbackColor, size: 32),
+                      width: 36,
+                      height: 36,
+                      errorBuilder: (c, e, s) => Icon(fallbackIcon, color: fallbackColor, size: 28),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     Text(
                       title,
                       style: const TextStyle(
                         fontFamily: 'Nunito',
-                        fontSize: 14,
+                        fontSize: 12,
                         fontWeight: FontWeight.w800,
                         color: Color(0xFF2C1B00),
                         shadows: [Shadow(color: Colors.white38, blurRadius: 2)],

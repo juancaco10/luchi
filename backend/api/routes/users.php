@@ -245,6 +245,32 @@ if ($method === 'POST' && $path === '/auth/google') {
     ]);
 }
 
+// ── POST /auth/guest ──────────────────────────────────────────────
+// Crea un usuario invitado y devuelve una sesión.
+
+if ($method === 'POST' && $path === '/auth/guest') {
+    $db = getDB();
+    $guestId = rand(10000, 99999);
+    $name = "Invitado $guestId";
+    $email = "invitado_$guestId@luciernagas.local";
+
+    $insert = $db->prepare(
+        'INSERT INTO users (name, email, auth_provider) VALUES (?, ?, \'guest\')'
+    );
+    $insert->execute([$name, $email]);
+    $userId = (int) $db->lastInsertId();
+
+    $stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    $token = generateToken((int) $user['id'], $user['email']);
+    jsonResponse([
+        'token' => $token,
+        'user'  => formatUser($user),
+    ]);
+}
+
 // ── GET /me ───────────────────────────────────────────────────────
 
 if ($method === 'GET' && $path === '/me') {

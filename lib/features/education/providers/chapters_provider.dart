@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chapter_model.dart';
+import '../../../core/data/cached_list_repository.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/storage/local_storage.dart';
@@ -11,22 +12,38 @@ class ChaptersState {
   final bool isLoading;
   final String? error;
 
+  /// True si `chapters` no vino de la red en la última carga (es caché o,
+  /// solo con ALLOW_SEED_DATA, datos de ejemplo). Sin esto la UI no puede
+  /// distinguir "datos frescos" de "lo último que se guardó antes de que
+  /// fallara la red".
+  final bool isStale;
+
   const ChaptersState({
     this.chapters = const [],
     this.isLoading = false,
     this.error,
+    this.isStale = false,
   });
 
+  /// `error`/`isStale` no llevan `??` sobre el valor previo: antes
+  /// `error: error ?? this.error` hacía imposible limpiar un error una vez
+  /// puesto (pasar `null` explícito no lo borraba). Aquí el valor pasado —
+  /// incluido `null` — siempre gana.
   ChaptersState copyWith({
     List<ChapterModel>? chapters,
     bool? isLoading,
-    String? error,
-  }) => ChaptersState(
-    chapters: chapters ?? this.chapters,
-    isLoading: isLoading ?? this.isLoading,
-    error: error ?? this.error,
-  );
+    Object? error = _unset,
+    bool isStale = false,
+  }) =>
+      ChaptersState(
+        chapters: chapters ?? this.chapters,
+        isLoading: isLoading ?? this.isLoading,
+        error: identical(error, _unset) ? this.error : error as String?,
+        isStale: isStale,
+      );
 }
+
+const _unset = Object();
 
 // ── Notifier ──────────────────────────────────────────────────────
 
@@ -39,30 +56,24 @@ class ChaptersNotifier extends StateNotifier<ChaptersState> {
 
   Future<void> loadChapters() async {
     state = state.copyWith(isLoading: true, error: null);
-    try {
-      final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
-        ApiEndpoints.chapters,
-      );
-      final List data = response.data!['chapters'] as List;
-      final List<ChapterModel> chapters = data.map<ChapterModel>((j) => ChapterModel.fromJson(j as Map<String, dynamic>)).toList();
-      await LocalStorage.instance.cacheChapters(
-        chapters.map<Map<String, dynamic>>((c) => c.toJson()).toList(),
-      );
-      state = state.copyWith(chapters: chapters, isLoading: false);
-    } catch (_) {
-      // Fallback to mock data or cache
-      final cached = LocalStorage.instance.getCachedChapters();
-      if (cached.isNotEmpty) {
-        state = state.copyWith(
-          chapters: cached.map<ChapterModel>((j) => ChapterModel.fromJson(j)).toList(),
-          isLoading: false,
-        );
-      } else {
-        // Use mock data for demo/offline
-        state = state.copyWith(chapters: ChapterModel.getMockChapters(), isLoading: false);
 
-      }
-    }
+    final result = await loadCachedList<ChapterModel>(
+      api: _ref.read(apiClientProvider),
+      path: ApiEndpoints.chapters,
+      envelopeKey: 'chapters',
+      fromJson: ChapterModel.fromJson,
+      toJson: (c) => c.toJson(),
+      readCache: LocalStorage.instance.getCachedChapters,
+      writeCache: LocalStorage.instance.cacheChapters,
+      seed: ChapterModel.getMockChapters,
+    );
+
+    state = state.copyWith(
+      chapters: result.items,
+      isLoading: false,
+      error: result.error?.message,
+      isStale: result.isStale,
+    );
   }
 
   void markCompleted(int chapterId) {
@@ -74,8 +85,8 @@ class ChaptersNotifier extends StateNotifier<ChaptersState> {
       }
       return c;
     }).toList();
-    state = state.copyWith(chapters: updated);
-    
+    state = state.copyWith(chapters: updated, isStale: state.isStale);
+
     LocalStorage.instance.cacheChapters(
       updated.map((c) => c.toJson()).toList(),
     );
@@ -85,9 +96,6 @@ class ChaptersNotifier extends StateNotifier<ChaptersState> {
     return chapters.firstWhere((c) => c.id == id, orElse: () => chapters.first).orderIndex;
   }
 }
-
-int _getOrder(int id, List<ChapterModel> chapters) =>
-    chapters.firstWhere((c) => c.id == id).orderIndex;
 
 // ── Providers ─────────────────────────────────────────────────────
 

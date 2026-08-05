@@ -63,11 +63,6 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                         ),
                         const Spacer(),
-                        IconButton(
-                          onPressed: () => context.go('/settings'),
-                          icon: Icon(Icons.settings_outlined,
-                              color: context.text.bodyMedium?.color),
-                        ),
                       ],
                     ).animate().fadeIn(duration: 400.ms),
                   ),

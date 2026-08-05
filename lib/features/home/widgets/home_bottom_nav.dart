@@ -3,7 +3,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../core/theme/firefly_colors.dart';
 
 class HomeBottomNav extends StatelessWidget {
-  const HomeBottomNav({super.key});
+  const HomeBottomNav({super.key, required this.navigationShell});
+
+  final StatefulNavigationShell navigationShell;
 
   @override
   Widget build(BuildContext context) {
@@ -22,36 +24,36 @@ class HomeBottomNav extends StatelessWidget {
                 context,
                 icon: Icons.home_rounded,
                 label: 'Inicio',
-                isActive: true,
-                onTap: () => context.go('/home'),
+                isActive: navigationShell.currentIndex == 0,
+                onTap: () => navigationShell.goBranch(0, initialLocation: navigationShell.currentIndex == 0),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.menu_book_rounded,
                 label: 'Aprender',
-                isActive: false,
-                onTap: () => context.go('/chapters'),
+                isActive: navigationShell.currentIndex == 1,
+                onTap: () => navigationShell.goBranch(1, initialLocation: navigationShell.currentIndex == 1),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.sports_esports_rounded,
                 label: 'Jugar',
-                isActive: false,
-                onTap: () => context.go('/game/level-1'),
+                isActive: navigationShell.currentIndex == 2,
+                onTap: () => navigationShell.goBranch(2, initialLocation: navigationShell.currentIndex == 2),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.map_rounded,
                 label: 'Explorar',
-                isActive: false,
-                onTap: () => context.go('/map'),
+                isActive: navigationShell.currentIndex == 3,
+                onTap: () => navigationShell.goBranch(3, initialLocation: navigationShell.currentIndex == 3),
               ),
               _buildNavItem(
                 context,
-                icon: Icons.person_rounded,
-                label: 'Perfil',
-                isActive: false,
-                onTap: () => context.go('/profile'),
+                icon: Icons.settings_rounded,
+                label: 'Opciones',
+                isActive: navigationShell.currentIndex == 4,
+                onTap: () => navigationShell.goBranch(4, initialLocation: navigationShell.currentIndex == 4),
               ),
             ],
           ),

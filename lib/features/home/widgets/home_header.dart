@@ -27,8 +27,8 @@ class HomeHeader extends ConsumerWidget {
           children: [
             // Logo
             Image.asset(
-              'assets/images/luchi_logo.png',
-              height: 80,
+              'assets/images/logo_luchi.png',
+              height: isSmallScreen ? 45 : 60,
               errorBuilder: (c, e, s) => Text(
                 'Luchi 🪲',
                 style: TextStyle(
@@ -43,13 +43,7 @@ class HomeHeader extends ConsumerWidget {
             // Actions Right
             Row(
               children: [
-                _iconButton(
-                  context,
-                  context.isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  semanticLabel: context.isDark ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
-                  onTap: () => ref.read(themeProvider.notifier).toggleTheme(),
-                ),
-                const SizedBox(width: 8),
+
                 _iconButton(context, Icons.notifications_none_rounded, semanticLabel: 'Notificaciones'),
                 const SizedBox(width: 8),
 
@@ -60,8 +54,8 @@ class HomeHeader extends ConsumerWidget {
                   child: GestureDetector(
                     onTap: () => context.go('/profile'),
                     child: Container(
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(color: context.colors.primary, width: 2),
@@ -98,7 +92,7 @@ class HomeHeader extends ConsumerWidget {
         // Welcome Text
         Text(
           '¡Hola, $userName! 👋',
-          style: context.text.displaySmall?.copyWith(fontWeight: FontWeight.w900),
+          style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
         ),
         const SizedBox(height: 6),
 
@@ -143,8 +137,8 @@ class HomeHeader extends ConsumerWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          width: 48,
-          height: 48,
+          width: 40,
+          height: 40,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: context.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
@@ -154,7 +148,7 @@ class HomeHeader extends ConsumerWidget {
                 const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
             ],
           ),
-          child: Icon(icon, color: context.colors.onSurface, size: 22),
+          child: Icon(icon, color: context.colors.onSurface, size: 20),
         ),
       ),
     );

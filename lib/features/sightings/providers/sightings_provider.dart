@@ -17,18 +17,23 @@ class SightingsState {
     this.error,
   });
 
+  /// `error` no lleva `??` sobre el valor previo: con eso, pasar `error:
+  /// null` para limpiar un error puesto antes no lo limpiaba — el mismo
+  /// bug que en ChaptersState/MissionsState.
   SightingsState copyWith({
     List<SightingModel>? sightings,
     bool? isLoading,
     bool? isSubmitting,
-    String? error,
+    Object? error = _unset,
   }) => SightingsState(
     sightings: sightings ?? this.sightings,
     isLoading: isLoading ?? this.isLoading,
     isSubmitting: isSubmitting ?? this.isSubmitting,
-    error: error ?? this.error,
+    error: identical(error, _unset) ? this.error : error as String?,
   );
 }
+
+const _unset = Object();
 
 class SightingsNotifier extends StateNotifier<SightingsState> {
   SightingsNotifier(this._ref) : super(const SightingsState()) {

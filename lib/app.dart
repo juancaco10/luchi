@@ -12,6 +12,7 @@ import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/home/screens/home_screen.dart';
+import 'features/home/widgets/home_bottom_nav.dart';
 import 'features/education/screens/chapters_list_screen.dart';
 import 'features/education/screens/chapter_detail_screen.dart';
 import 'features/education/screens/level_one_screen.dart';
@@ -167,118 +168,120 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ),
     routes: [
-    GoRoute(
-      path: '/splash',
-      name: 'splash',
-      pageBuilder: (context, state) => _fadeTransition(
-        state,
-        const SplashScreen(),
+      GoRoute(
+        path: '/splash',
+        name: 'splash',
+        pageBuilder: (context, state) => _fadeTransition(state, const SplashScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/onboarding',
-      name: 'onboarding',
-      pageBuilder: (context, state) => _fadeTransition(
-        state,
-        const OnboardingScreen(),
+      GoRoute(
+        path: '/onboarding',
+        name: 'onboarding',
+        pageBuilder: (context, state) => _fadeTransition(state, const OnboardingScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/login',
-      name: 'login',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const LoginScreen(),
+      GoRoute(
+        path: '/login',
+        name: 'login',
+        pageBuilder: (context, state) => _slideTransition(state, const LoginScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/register',
-      name: 'register',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const RegisterScreen(),
+      GoRoute(
+        path: '/register',
+        name: 'register',
+        pageBuilder: (context, state) => _slideTransition(state, const RegisterScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/home',
-      name: 'home',
-      pageBuilder: (context, state) => _fadeTransition(
-        state,
-        const HomeScreen(),
+      
+      // Main app navigation with persistent bottom bar
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) {
+          return Scaffold(
+            body: navigationShell,
+            bottomNavigationBar: HomeBottomNav(navigationShell: navigationShell),
+          );
+        },
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/home',
+                name: 'home',
+                pageBuilder: (context, state) => _fadeTransition(state, const HomeScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/chapters',
+                name: 'chapters',
+                pageBuilder: (context, state) => _slideTransition(state, const ChaptersListScreen()),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    name: 'chapter-detail',
+                    pageBuilder: (context, state) => _slideTransition(
+                      state,
+                      ChapterDetailScreen(chapterId: state.pathParameters['id']!),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/game/level-1',
+                name: 'game-level-1',
+                pageBuilder: (context, state) => _slideTransition(state, const LevelOneScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/map',
+                name: 'map',
+                pageBuilder: (context, state) => _slideTransition(state, const MapScreen()),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: '/settings',
+                name: 'settings',
+                pageBuilder: (context, state) => _slideTransition(state, const SettingsScreen()),
+              ),
+            ],
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/chapters',
-      name: 'chapters',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const ChaptersListScreen(),
+
+      // Out of shell routes
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        pageBuilder: (context, state) => _slideTransition(state, const ProfileScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/chapters/:id',
-      name: 'chapter-detail',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        ChapterDetailScreen(chapterId: state.pathParameters['id']!),
+      GoRoute(
+        path: '/missions',
+        name: 'missions',
+        pageBuilder: (context, state) => _slideTransition(state, const MissionsScreen()),
+        routes: [
+          GoRoute(
+            path: ':id',
+            name: 'mission-detail',
+            pageBuilder: (context, state) => _slideTransition(
+              state,
+              MissionDetailScreen(missionId: state.pathParameters['id']!),
+            ),
+          ),
+        ],
       ),
-    ),
-    GoRoute(
-      path: '/game/level-1',
-      name: 'game-level-1',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const LevelOneScreen(),
+      GoRoute(
+        path: '/sightings/new',
+        name: 'sighting-form',
+        pageBuilder: (context, state) => _slideTransition(state, const SightingFormScreen()),
       ),
-    ),
-    GoRoute(
-      path: '/missions',
-      name: 'missions',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const MissionsScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/missions/:id',
-      name: 'mission-detail',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        MissionDetailScreen(missionId: state.pathParameters['id']!),
-      ),
-    ),
-    GoRoute(
-      path: '/profile',
-      name: 'profile',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const ProfileScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/settings',
-      name: 'settings',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const SettingsScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/sightings/new',
-      name: 'sighting-form',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const SightingFormScreen(),
-      ),
-    ),
-    GoRoute(
-      path: '/map',
-      name: 'map',
-      pageBuilder: (context, state) => _slideTransition(
-        state,
-        const MapScreen(),
-      ),
-    ),
     ],
   );
 });

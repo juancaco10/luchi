@@ -34,17 +34,17 @@ class RecentSightings extends ConsumerWidget {
             ),
           ],
         ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         if (state.isLoading && sightings.isEmpty)
           const SizedBox(
-            height: 152,
+            height: 110,
             child: Center(child: CircularProgressIndicator()),
           )
         else if (sightings.isEmpty)
           const _EmptyState()
         else
           SizedBox(
-            height: 152,
+            height: 110,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: sightings.length,
@@ -131,7 +131,7 @@ class _SightingCard extends StatelessWidget {
               borderRadius:
                   const BorderRadius.vertical(top: Radius.circular(16)),
               child: SizedBox(
-                height: 80,
+                height: 54,
                 width: double.infinity,
                 // Las fotos del usuario viven en el servidor; no hay ningún
                 // asset local de relleno (el que había, forest_bg.jpg, no

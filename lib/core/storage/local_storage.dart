@@ -132,7 +132,7 @@ class LocalStorage {
 
   // ── Full Clear ───────────────────────────────────────────────
   Future<void> clearAll() async {
-    await _prefs.clear();
+    await clearUser();
     await clearToken();
     await chaptersBox.clear();
     await missionsBox.clear();
