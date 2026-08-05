@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Icono adaptativo (Android 8.0 / API 26+). Sin esto, cada launcher
+  (Samsung OneUI, Pixel, etc.) recortaba a lo bruto el PNG cuadrado de
+  ic_launcher.png a su propia forma — círculo, "squircle", cuadrado
+  redondeado — cortando el dibujo en las esquinas.
+
+  Con background + foreground separados, el sistema aplica su máscara
+  solo al conjunto completo: el fondo (color plano) rellena hasta el
+  borde sea cual sea la forma, y el foreground (el logo, inscrito en la
+  zona segura del 66% central — ver scripts/gen_adaptive_icon.py) nunca
+  queda cortado.
+-->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@color/ic_launcher_background"/>
+    <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+</adaptive-icon>

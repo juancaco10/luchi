@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Fondo del icono adaptativo (mipmap-anydpi-v26/ic_launcher.xml).
+         Mismo azul marino que launch_background.xml y
+         DarkPalette.background en el cliente Flutter, para que icono,
+         splash nativo y tema de la app compartan un mismo tono. -->
+    <color name="ic_launcher_background">#0B0F1A</color>
+</resources>

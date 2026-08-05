@@ -102,7 +102,11 @@ class HomeHeader extends ConsumerWidget {
           decoration: BoxDecoration(
             color: context.colors.primary.withValues(alpha: context.isDark ? 0.15 : 0.1),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: context.colors.primary.withValues(alpha: 0.4)),
+            border: Border.all(
+              color: context.isDark
+                  ? context.colors.primary.withValues(alpha: 0.4)
+                  : Colors.black54, // Borde negro/oscuro en modo claro
+            ),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -114,8 +118,8 @@ class HomeHeader extends ConsumerWidget {
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: context.colors.primary,
+                  fontWeight: FontWeight.w900,
+                  color: context.isDark ? context.colors.primary : Colors.black87, // Letras negras en modo claro
                 ),
               ),
             ],

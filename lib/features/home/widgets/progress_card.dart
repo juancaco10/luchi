@@ -19,7 +19,7 @@ class ProgressCard extends ConsumerWidget {
     final progress = totalChapters == 0 ? 0.0 : completedChapters / totalChapters;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1C2640) : const Color(0xFFE8EEF5),
         borderRadius: BorderRadius.circular(20),
@@ -65,17 +65,17 @@ class ProgressCard extends ConsumerWidget {
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 12,
+              minHeight: 10,
               backgroundColor: isDark ? const Color(0xFF0B0F1A) : Colors.white,
               valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF72E26E)),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Text(
             '$completedChapters de $totalChapters capítulos completados',
             style: TextStyle(

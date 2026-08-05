@@ -15,8 +15,8 @@ class MainActions extends StatelessWidget {
           child: _ActionCard(
             title: 'JUGAR',
             subtitle: 'Quiz y desafíos',
-            iconLight: 'assets/images/icon_jugar_3d_light.jpg',
-            iconDark: 'assets/images/icon_jugar_3d_dark.jpg',
+            iconLight: 'assets/images/icon_jugar_3d.png',
+            iconDark: 'assets/images/icon_jugar_3d.png',
             themeColor: const Color(0xFF90F055), // Bright green
             lightGradientColors: const [Color(0xFFE2F9D8), Color(0xFFF1FDF0)],
             onTap: () => context.go('/game/level-1'),
@@ -27,8 +27,8 @@ class MainActions extends StatelessWidget {
           child: _ActionCard(
             title: 'CAPÍTULOS',
             subtitle: 'Aprende y descubre',
-            iconLight: 'assets/images/icon_capitulos_3d_light.jpg',
-            iconDark: 'assets/images/icon_capitulos_3d_dark.jpg',
+            iconLight: 'assets/images/icon_capitulos_3d.png',
+            iconDark: 'assets/images/icon_capitulos_3d.png',
             themeColor: const Color(0xFFC48BFF), // Purple
             lightGradientColors: const [Color(0xFFEFE2FF), Color(0xFFF7F3FF)],
             onTap: () => context.go('/chapters'),
@@ -39,8 +39,8 @@ class MainActions extends StatelessWidget {
           child: _ActionCard(
             title: 'MAPA',
             subtitle: 'Explora avistamientos',
-            iconLight: 'assets/images/icon_mapa_3d_light.jpg',
-            iconDark: 'assets/images/icon_mapa_3d_dark.jpg',
+            iconLight: 'assets/images/icon_mapa_3d.png',
+            iconDark: 'assets/images/icon_mapa_3d.png',
             themeColor: const Color(0xFF4DBBFF), // Blue
             lightGradientColors: const [Color(0xFFE1F3FF), Color(0xFFF1FAFF)],
             onTap: () => context.go('/map'),
@@ -96,7 +96,7 @@ class _ActionCard extends StatelessWidget {
                   ),
             border: isDark
                 ? Border.all(color: themeColor.withValues(alpha: 0.6), width: 1.5)
-                : Border.all(color: themeColor.withValues(alpha: 0.2), width: 1),
+                : Border.all(color: themeColor.withValues(alpha: 0.8), width: 1.0),
             boxShadow: isDark
                 ? [
                     BoxShadow(
@@ -120,16 +120,31 @@ class _ActionCard extends StatelessWidget {
               // Icon
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 8.0, left: 8.0, right: 8.0),
-                  child: ColorFiltered(
-                    colorFilter: ColorFilter.mode(
-                      isDark ? Colors.black : Colors.white,
-                      isDark ? BlendMode.lighten : BlendMode.multiply,
-                    ),
-                    child: Image.asset(
-                      isDark ? iconDark : iconLight,
-                      fit: BoxFit.contain,
-                    ),
+                  padding: const EdgeInsets.only(top: 14.0, left: 14.0, right: 14.0),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (isDark)
+                        Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF43FF55).withValues(alpha: 0.6), // Green luminous glow
+                                blurRadius: 25,
+                                spreadRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                      Image.asset(
+                        iconLight, // Holds the common .png path
+                        fit: BoxFit.contain,
+                        errorBuilder: (c, e, s) => const Icon(Icons.image_not_supported, size: 40, color: Colors.grey),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -138,27 +153,33 @@ class _ActionCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: Column(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                        color: isDark ? Colors.white : Colors.black87,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        title,
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      textAlign: TextAlign.center,
-                      maxLines: 2,
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        height: 1.1,
-                        color: isDark ? themeColor.withValues(alpha: 0.9) : Colors.black54,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        subtitle,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          height: 1.1,
+                          color: isDark ? themeColor.withValues(alpha: 0.9) : Colors.black54,
+                        ),
                       ),
                     ),
                   ],

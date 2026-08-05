@@ -11,7 +11,7 @@ class HomeBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: context.colors.surface,
+        color: context.isDark ? Colors.black : Colors.white,
       ),
       child: SafeArea(
         child: Padding(

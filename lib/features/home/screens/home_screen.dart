@@ -36,9 +36,9 @@ class HomeScreen extends ConsumerWidget {
                   begin: Alignment.bottomCenter,
                   end: Alignment.topCenter,
                   colors: [
-                    context.colors.surface,
-                    context.colors.surface.withValues(alpha: 0.8),
-                    context.colors.surface.withValues(alpha: 0.3),
+                    context.isDark ? Colors.black : Colors.white,
+                    (context.isDark ? Colors.black : Colors.white).withValues(alpha: 0.8),
+                    (context.isDark ? Colors.black : Colors.white).withValues(alpha: 0.3),
                     Colors.transparent,
                   ],
                   stops: const [0.0, 0.4, 0.7, 1.0],
