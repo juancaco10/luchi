@@ -34,9 +34,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     ),
     _OnboardingPage(
       emoji: '🌿',
-      title: 'Completa misiones',
+      title: 'Aprende jugando',
       subtitle:
-          'Gana puntos haciendo acciones reales: apaga luces innecesarias, evita pesticidas y observa la naturaleza.',
+          'Gana puntos respondiendo quizzes y demuestra lo que has aprendido sobre la conservación de las luciérnagas.',
       gradient: [Color(0xFF0A2010), Color(0xFF0B0F1A)],
     ),
     _OnboardingPage(

@@ -82,9 +82,9 @@ class MissionsScreen extends ConsumerWidget {
                           children: [
                             if (state.dailyMissions.isNotEmpty) ...[
                               _SectionHeader(
-                                  title: 'Misiones diarias',
+                                  title: 'Misiones de Guardián',
                                   emoji: '🌅',
-                                  subtitle: 'Se renuevan cada día'),
+                                  subtitle: 'Actividades para proteger la naturaleza'),
                               const SizedBox(height: 10),
                               ...state.dailyMissions.asMap().entries.map(
                                     (e) => Padding(
@@ -104,7 +104,7 @@ class MissionsScreen extends ConsumerWidget {
                             ],
                             if (state.weeklyMissions.isNotEmpty) ...[
                               _SectionHeader(
-                                  title: 'Misiones semanales',
+                                  title: 'Retos Especiales',
                                   emoji: '🌿',
                                   subtitle: 'Mayor desafío, mayor recompensa'),
                               const SizedBox(height: 10),

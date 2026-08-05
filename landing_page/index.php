@@ -60,12 +60,12 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                     PROTEGE LA <span class="glow-text">LUZ</span> DEL BOSQUE
                 </h1>
                 <p class="hero-subtitle">
-                    Una aventura interactiva para niños de 6 a 12 años donde descubrirás el mundo secreto de las luciérnagas, completarás misiones científicas reales y te convertirás en un verdadero Guardián de la Naturaleza.
+                    Una aventura interactiva para niños de 6 a 12 años donde descubrirás el mundo secreto de las luciérnagas, participarás en actividades científicas reales y te convertirás en un verdadero Guardián de la Naturaleza.
                 </p>
                 <div class="hero-stats">
                     <div class="stat glass">
                         <span class="stat-num">🌿</span>
-                        <span class="stat-label">Misiones Ecológicas</span>
+                        <span class="stat-label">Actividades Ecológicas</span>
                     </div>
                     <div class="stat glass">
                         <span class="stat-num">🗺️</span>
@@ -115,10 +115,10 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
             <div class="features-grid">
                 <div class="feature-card glass" data-delay="0">
                     <div class="feature-icon">
-                        <i class="fa-solid fa-book-open"></i>
+                        <i class="fa-solid fa-gamepad"></i>
                     </div>
-                    <h3>Capítulos Educativos</h3>
-                    <p>Aprende sobre la bioluminiscencia, los hábitats nocturnos y la importancia de la oscuridad para el ecosistema.</p>
+                    <h3>Juega y Aprende</h3>
+                    <p>Diviértete con minijuegos y aprende sobre la bioluminiscencia y los hábitats nocturnos.</p>
                 </div>
                 <div class="feature-card glass" data-delay="100">
                     <div class="feature-icon icon-cyan">
@@ -131,8 +131,8 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                     <div class="feature-icon icon-gold">
                         <i class="fa-solid fa-trophy"></i>
                     </div>
-                    <h3>Misiones y Rangos</h3>
-                    <p>Completa misiones diarias, gana puntos y sube de rango: de Observador a Maestro Guardián.</p>
+                    <h3>Gana Rangos</h3>
+                    <p>Aprende, gana puntos y sube de rango: de Observador a Maestro Guardián.</p>
                 </div>
                 <div class="feature-card glass" data-delay="300">
                     <div class="feature-icon icon-pink">
@@ -163,8 +163,8 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <div class="step-card glass">
                     <div class="step-number">02</div>
                     <div class="step-content">
-                        <h3>Completa Misiones</h3>
-                        <p>Acepta desafíos diarios y semanales: observar el cielo, reducir la luz artificial, investigar especies.</p>
+                        <h3>Aprende Jugando</h3>
+                        <p>Responde quizzes y demuestra lo que has aprendido sobre la conservación y la vida de las luciérnagas.</p>
                     </div>
                 </div>
                 <div class="step-card glass">

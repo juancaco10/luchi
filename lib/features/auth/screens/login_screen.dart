@@ -192,13 +192,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       height: 180,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.colors.primary.withValues(alpha: 0.15),
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(30),
