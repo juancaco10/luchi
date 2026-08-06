@@ -36,6 +36,19 @@ class ApiClient {
     String path, {
     Options? options,
   }) => _dio.delete<T>(path, options: options);
+
+  /// `_buildDio()` fija `Content-Type: application/json` globalmente, así
+  /// que una subida de archivo necesita pisar ese header explícitamente
+  /// con `multipart/form-data` — de ahí este método aparte en vez de
+  /// reutilizar `post` con un `FormData` a secas.
+  Future<Response<T>> uploadFile<T>(
+    String path, {
+    required FormData formData,
+  }) => _dio.post<T>(
+        path,
+        data: formData,
+        options: Options(contentType: 'multipart/form-data'),
+      );
 }
 
 Dio _buildDio() {

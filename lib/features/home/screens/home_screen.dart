@@ -8,6 +8,7 @@ import '../widgets/progress_card.dart';
 import '../widgets/main_actions.dart';
 import '../widgets/recent_sightings.dart';
 import '../../../../widgets/firefly_background.dart';
+import '../../../../widgets/screen_fitter.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -63,22 +64,32 @@ class HomeScreen extends ConsumerWidget {
           // disponible completo, tenga el contenido la altura que tenga.
           Positioned.fill(
             child: SafeArea(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      HomeHeader(userName: userName, isSmallScreen: isSmallScreen),
-                      const SizedBox(height: 12),
-                      const ProgressCard(completedChapters: 2, totalChapters: 5), // Mock data for now
-                      const SizedBox(height: 12),
-                      const MainActions(),
-                      const SizedBox(height: 12),
-                      const RecentSightings(),
-                      const SizedBox(height: 12),
-                    ],
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                // Los espacios y tarjetas se reducen de forma proporcional
+                // en pantallas bajas — ver ScreenFitter. El scroll es solo
+                // una red de seguridad: ScreenFitter calcula la escala a
+                // partir del alto total de pantalla sin descontar barra de
+                // estado/navegación, así que en dispositivos con poco
+                // margen (o con la sección de avistamientos más alta, como
+                // ahora que muestra foto) puede no alcanzar a compensar del
+                // todo — sin el scroll, eso sería un overflow duro.
+                child: SingleChildScrollView(
+                  child: ScreenFitter(
+                    naturalHeight: 720,
+                    builder: (context, scale) => Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        HomeHeader(userName: userName, isSmallScreen: isSmallScreen),
+                        SizedBox(height: 12 * scale),
+                        const ProgressCard(completedChapters: 2, totalChapters: 5), // Mock data for now
+                        SizedBox(height: 12 * scale),
+                        MainActions(scale: scale),
+                        SizedBox(height: 12 * scale),
+                        RecentSightings(scale: scale),
+                      ],
+                    ),
                   ),
                 ),
               ),

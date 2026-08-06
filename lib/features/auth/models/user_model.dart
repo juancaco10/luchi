@@ -9,6 +9,11 @@ class UserModel {
   final String levelName;
   final String? avatarUrl;
   final String? createdAt;
+  // País/ciudad del perfil — requisito para publicar un avistamiento (ver
+  // location_setup_screen.dart). `hasLocation` es lo que el redirect de
+  // GoRouter usa para decidir si mandar a esa pantalla.
+  final String? country;
+  final String? city;
 
   const UserModel({
     required this.id,
@@ -19,7 +24,12 @@ class UserModel {
     required this.levelName,
     this.avatarUrl,
     this.createdAt,
+    this.country,
+    this.city,
   });
+
+  bool get hasLocation =>
+      (country?.trim().isNotEmpty ?? false) && (city?.trim().isNotEmpty ?? false);
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json['id'] as int? ?? 0,
@@ -30,6 +40,8 @@ class UserModel {
         levelName: json['levelName'] as String? ?? 'Observador',
         avatarUrl: json['avatar_url'] as String?,
         createdAt: json['created_at'] as String?,
+        country: json['country'] as String?,
+        city: json['city'] as String?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -41,6 +53,8 @@ class UserModel {
         'levelName': levelName,
         'avatar_url': avatarUrl,
         'created_at': createdAt,
+        'country': country,
+        'city': city,
       };
 
   UserModel copyWith({
@@ -52,6 +66,8 @@ class UserModel {
     String? levelName,
     String? avatarUrl,
     String? createdAt,
+    String? country,
+    String? city,
   }) =>
       UserModel(
         id: id ?? this.id,
@@ -62,6 +78,8 @@ class UserModel {
         levelName: levelName ?? this.levelName,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         createdAt: createdAt ?? this.createdAt,
+        country: country ?? this.country,
+        city: city ?? this.city,
       );
 }
 

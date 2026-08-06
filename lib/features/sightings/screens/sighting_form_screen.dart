@@ -1,17 +1,26 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
+import '../models/sighting_model.dart';
 import '../providers/sightings_provider.dart';
+import '../utils/sighting_geocoding.dart';
+import '../utils/nsfw_filter.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/reward_overlay.dart';
 
+/// Crea un avistamiento nuevo, o edita uno existente si se pasa
+/// [sightingId] — mismo formulario para ambos, sin duplicar la UI.
+/// En modo edición no se ofrecen puntos: no es un logro nuevo.
 class SightingFormScreen extends ConsumerStatefulWidget {
-  const SightingFormScreen({super.key});
+  final int? sightingId;
+  const SightingFormScreen({super.key, this.sightingId});
 
   @override
   ConsumerState<SightingFormScreen> createState() => _SightingFormScreenState();
@@ -20,96 +29,291 @@ class SightingFormScreen extends ConsumerStatefulWidget {
 class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _notesCtrl = TextEditingController();
-  final _locationCtrl = TextEditingController();
 
   int _quantity = 1;
   double? _lat, _lng;
-  bool _locating = false;
+  String? _locationName;
   bool _showReward = false;
+  bool _prefilled = false;
+  bool _resolvingLocation = false;
+
+  // true por defecto: compartir la ubicación exacta es la opción
+  // destacada, pero el usuario puede apagarla y el punto se marca al azar
+  // dentro de su ciudad — ver PRIVACY.md, nunca se dispara el permiso
+  // nativo sin esta explicación visible primero.
+  bool _shareGps = true;
+
+  // Foto: `_pickedPhoto` es el archivo local recién elegido (aún no
+  // subido); `_existingPhotoUrl` es la que ya vive en el servidor (modo
+  // edición) o la que se acaba de subir.
+  File? _pickedPhoto;
+  String? _existingPhotoUrl;
+  bool _uploadingPhoto = false;
+  bool _checkingPhoto = false;
+
+  bool get _isEditing => widget.sightingId != null;
 
   @override
   void dispose() {
     _notesCtrl.dispose();
-    _locationCtrl.dispose();
     super.dispose();
   }
 
-  Future<void> _getLocation() async {
-    setState(() => _locating = true);
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        _showSnack('Activa el GPS en tu dispositivo');
+  /// Editar no vuelve a tocar la ubicación (no se re-pide GPS ni se
+  /// recalcula el punto aleatorio) — se conservan tal cual la coordenada y
+  /// el nombre que ya tenía el avistamiento.
+  void _prefillFrom(SightingModel s) {
+    if (_prefilled) return;
+    _prefilled = true;
+    _quantity = s.quantity;
+    _lat = s.lat;
+    _lng = s.lng;
+    _locationName = s.locationName;
+    _notesCtrl.text = s.notes ?? '';
+    _existingPhotoUrl = s.photoUrl;
+  }
+
+  /// Resuelve dónde cae el marcador de un avistamiento nuevo: con el GPS
+  /// si el usuario lo comparte (y el permiso se concede), o un punto al
+  /// azar dentro de la ciudad de su perfil en cualquier otro caso — sin
+  /// permiso, denegado, GPS apagado por el usuario, o el propio GPS falla.
+  /// Nunca bloquea el envío: siempre hay una alternativa válida.
+  Future<void> _resolveLocation() async {
+    final user = ref.read(currentUserProvider);
+    // El redirect de app.dart no deja llegar aquí sin país/ciudad, pero
+    // por robustez (deep link, estado inconsistente) se cubre igual.
+    final country = user?.country;
+    final city = user?.city;
+    if (country == null || city == null) {
+      _lat = unresolvedLat;
+      _lng = unresolvedLng;
+      _locationName = null;
+      return;
+    }
+
+    _locationName = '$city, $country';
+
+    final cityCoords = await resolveProfileCityCoordinates(country: country, city: city);
+    if (cityCoords == null) {
+      // Sin conexión y el país no tiene lista fija (no es Uruguay) — no
+      // hay de dónde sacar ni el punto exacto ni uno aleatorio todavía.
+      _lat = unresolvedLat;
+      _lng = unresolvedLng;
+      return;
+    }
+
+    if (_shareGps) {
+      final exact = await _tryGetGpsPosition();
+      if (exact != null) {
+        _lat = exact.lat;
+        _lng = exact.lng;
         return;
       }
+    }
 
-      LocationPermission permission = await Geolocator.checkPermission();
+    final random = randomPointNear(cityCoords.lat, cityCoords.lng, radiusKm: 3);
+    _lat = random.lat;
+    _lng = random.lng;
+  }
+
+  Future<({double lat, double lng})?> _tryGetGpsPosition() async {
+    try {
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+
+      var permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          _showSnack('Permiso de ubicación denegado');
-          return;
-        }
       }
-      if (permission == LocationPermission.deniedForever) {
-        _showSnack('Permiso denegado permanentemente. Actívalo en ajustes.');
-        return;
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        return null;
       }
 
-      final pos = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
+      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      // Difuminado a 3 decimales (~100 m) antes de que la coordenada salga
+      // del dispositivo — igual criterio que el resto de la app.
+      return (
+        lat: double.parse(pos.latitude.toStringAsFixed(3)),
+        lng: double.parse(pos.longitude.toStringAsFixed(3)),
       );
-      
-      // Blur coordinates to 3 decimals (~100m) for privacy
-      final blurredLat = double.parse(pos.latitude.toStringAsFixed(3));
-      final blurredLng = double.parse(pos.longitude.toStringAsFixed(3));
-
-      setState(() {
-        _lat = blurredLat;
-        _lng = blurredLng;
-        _locationCtrl.text =
-            '${blurredLat.toStringAsFixed(3)}, ${blurredLng.toStringAsFixed(3)}';
-      });
-    } catch (e) {
-      _showSnack('No se pudo obtener la ubicación');
-    } finally {
-      if (mounted) setState(() => _locating = false);
+    } catch (_) {
+      return null;
     }
   }
 
+  /// PRIVACY.md exige una explicación en pantalla ANTES de disparar el
+  /// diálogo nativo de permiso de cámara/galería, en lenguaje apto para
+  /// niños — no basta con dejar que el sistema operativo lo pida solo.
+  Future<void> _choosePhotoSource() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '📸 Foto de tu avistamiento',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: context.colors.onSurface,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Usaremos tu cámara o tus fotos solo para esta imagen. Es opcional.',
+                style: TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 13,
+                  color: context.text.bodyMedium?.color,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Tomar foto', style: TextStyle(fontFamily: 'Nunito')),
+                onTap: () => Navigator.pop(context, ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Elegir de la galería', style: TextStyle(fontFamily: 'Nunito')),
+                onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
 
+    if (source == null) return;
 
-  Future<void> _submit() async {
-    if (_formKey.currentState!.validate()) {
-      if (_lat == null || _lng == null) {
-        _showSnack('Por favor obtén o ingresa una ubicación');
+    try {
+      // `imageQuality`/`maxWidth` re-codifican la imagen al elegirla, lo
+      // que ya descarta el EXIF (ubicación, dispositivo) como primera
+      // capa — el servidor la vuelve a recodificar como segunda capa.
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 1600,
+      );
+      if (picked == null || !mounted) return;
+
+      final file = File(picked.path);
+
+      // Filtro de contenido on-device (nunca sale del teléfono para esta
+      // comprobación) antes de aceptar la foto — primera barrera, no un
+      // moderador perfecto, pero bloquea lo obvio sin subir nada.
+      setState(() => _checkingPhoto = true);
+      final safe = await isPhotoSafe(file);
+      if (!mounted) return;
+      setState(() => _checkingPhoto = false);
+
+      if (!safe) {
+        _showSnack('Esta foto no se puede usar. Elige otra foto de luciérnagas 🌿');
         return;
       }
 
-      final status = await ref.read(sightingsProvider.notifier).submitSighting(
+      setState(() {
+        _pickedPhoto = file;
+        _existingPhotoUrl = null; // se reemplaza la que hubiera
+      });
+    } catch (_) {
+      if (mounted) _showSnack('No se pudo acceder a la cámara o galería');
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    // En modo edición la ubicación ya viene de `_prefillFrom` y no se
+    // vuelve a tocar. Solo al crear se resuelve GPS/punto aleatorio —
+    // aquí es también donde, si `_shareGps` está activo, se dispara el
+    // permiso nativo (la explicación ya estuvo visible en pantalla antes).
+    if (!_isEditing) {
+      setState(() => _resolvingLocation = true);
+      await _resolveLocation();
+      if (!mounted) return;
+      setState(() => _resolvingLocation = false);
+
+      if (isUnresolvedCoordinate(_lat ?? 0, _lng ?? 0)) {
+        _showSnack('No pudimos ubicar tu ciudad ahora mismo. '
+            'Se completará automáticamente cuando tengas conexión.');
+      }
+    }
+
+    final locationName = _locationName ?? '';
+
+    // Subir la foto primero si hay una nueva. Requiere conexión: si falla
+    // (sin red), el avistamiento se guarda igualmente sin foto y se avisa
+    // — no bloqueamos el registro por esto.
+    String? photoUrl = _existingPhotoUrl;
+    if (_pickedPhoto != null) {
+      setState(() => _uploadingPhoto = true);
+      photoUrl = await ref.read(sightingsProvider.notifier).uploadPhoto(_pickedPhoto!);
+      if (mounted) setState(() => _uploadingPhoto = false);
+      if (photoUrl == null && mounted) {
+        _showSnack('No se pudo subir la foto (sin conexión). Se guardará sin foto.');
+      }
+    }
+
+    final notes = _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
+
+    if (_isEditing) {
+      final ok = await ref.read(sightingsProvider.notifier).updateSighting(
+            id: widget.sightingId!,
             lat: _lat!,
             lng: _lng!,
             quantity: _quantity,
-            notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-            locationName: _locationCtrl.text.trim().isEmpty
-                ? null
-                : _locationCtrl.text.trim(),
+            notes: notes,
+            photoUrl: photoUrl,
+            locationName: locationName,
           );
-
-      if (status == 'success') {
-        await ref.read(authProvider.notifier).addPoints(AppConstants.pointsSighting);
-        setState(() => _showReward = true);
-        await Future.delayed(const Duration(seconds: 2));
-        if (mounted) {
-          setState(() => _showReward = false);
-          context.go('/home');
-        }
-      } else if (status == 'pending') {
-        _showSnack('Guardado, se enviará cuando haya conexión');
-        await Future.delayed(const Duration(seconds: 1));
-        if (mounted) context.go('/home');
+      if (!mounted) return;
+      if (ok) {
+        context.go('/sightings');
+      } else {
+        final error = ref.read(sightingsProvider).error;
+        _showSnack(error ?? 'No se pudo guardar el cambio');
       }
+      return;
     }
+
+    final status = await ref.read(sightingsProvider.notifier).submitSighting(
+          lat: _lat!,
+          lng: _lng!,
+          quantity: _quantity,
+          notes: notes,
+          photoUrl: photoUrl,
+          locationName: locationName,
+        );
+
+    if (status == 'success') {
+      await ref.read(authProvider.notifier).addPoints(AppConstants.pointsSighting);
+      setState(() => _showReward = true);
+      await Future.delayed(const Duration(seconds: 2));
+      if (mounted) {
+        setState(() => _showReward = false);
+        context.go('/home');
+      }
+    } else if (status == 'pending') {
+      _showSnack('Guardado, se enviará cuando haya conexión');
+      await Future.delayed(const Duration(seconds: 1));
+      if (mounted) context.go('/home');
+    }
+  }
+
+  String _profileCityLabel() {
+    final user = ref.read(currentUserProvider);
+    if (user == null || !user.hasLocation) return 'tu ciudad';
+    return '${user.city}, ${user.country}';
   }
 
   void _showSnack(String msg) {
@@ -125,7 +329,13 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isEditing) {
+      final existing = ref.watch(sightingByIdProvider(widget.sightingId!));
+      if (existing != null) _prefillFrom(existing);
+    }
+
     final isSubmitting = ref.watch(sightingsProvider).isSubmitting;
+    final busy = isSubmitting || _uploadingPhoto || _checkingPhoto || _resolvingLocation;
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
@@ -143,7 +353,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                     Row(
                       children: [
                         IconButton(
-                          onPressed: () => context.go('/home'),
+                          onPressed: () => context.go(_isEditing ? '/sightings' : '/home'),
                           icon: Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
@@ -161,7 +371,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Registrar avistamiento',
+                              _isEditing ? 'Editar avistamiento' : 'Registrar avistamiento',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 20,
@@ -170,7 +380,9 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                               ),
                             ),
                             Text(
-                              '¡Tu dato es valioso para la ciencia!',
+                              _isEditing
+                                  ? 'Corrige los datos que necesites'
+                                  : '¡Tu dato es valioso para la ciencia!',
                               style: TextStyle(
                                 fontFamily: 'Nunito',
                                 fontSize: 12,
@@ -209,91 +421,37 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
 
                     const SizedBox(height: 28),
 
-                    // ── Location section ──────────────────────────────
-                    _SectionLabel(emoji: '📍', title: 'Ubicación'),
+                    // ── Photo section ──────────────────────────────────
+                    _SectionLabel(emoji: '📸', title: 'Foto (opcional)'),
                     const SizedBox(height: 10),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _locationCtrl,
-                            style: TextStyle(
-                                color: context.colors.onSurface,
-                                fontFamily: 'Nunito',
-                                fontSize: 13),
-                            decoration: InputDecoration(
-                              hintText: 'Lat, Lng o nombre del lugar',
-                              prefixIcon: Icon(Icons.location_on_outlined,
-                                  color: context.text.bodyMedium?.color, size: 18),
-                            ),
-                            onChanged: (v) {
-                              // Try to parse manual lat,lng
-                              final parts = v.split(',');
-                              if (parts.length == 2) {
-                                final lat = double.tryParse(parts[0].trim());
-                                final lng = double.tryParse(parts[1].trim());
-                                if (lat != null && lng != null) {
-                                  if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
-                                    _lat = double.parse(lat.toStringAsFixed(3));
-                                    _lng = double.parse(lng.toStringAsFixed(3));
-                                  }
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        ElevatedButton.icon(
-                          onPressed: _locating ? null : _getLocation,
-                          icon: _locating
-                              ? SizedBox(
-                                  width: 16,
-                                  height: 16,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: context.colors.onPrimary,
-                                  ),
-                                )
-                              : const Icon(Icons.gps_fixed_rounded, size: 18),
-                          label: const Text('GPS'),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 16),
-                          ),
-                        ),
-                      ],
-                    ).animate(delay: 100.ms).fadeIn(),
-
-                    if (_lat != null) ...[
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: context.firefly.greenGlow,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle_rounded,
-                                color: context.colors.secondary, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Ubicación: ${_lat!.toStringAsFixed(4)}, ${_lng!.toStringAsFixed(4)}',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 12,
-                                color: context.colors.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    _PhotoPicker(
+                      pickedFile: _pickedPhoto,
+                      existingUrl: _existingPhotoUrl,
+                      isUploading: _uploadingPhoto,
+                      isChecking: _checkingPhoto,
+                      onTap: busy ? null : _choosePhotoSource,
+                      onRemove: () => setState(() {
+                        _pickedPhoto = null;
+                        _existingPhotoUrl = null;
+                      }),
+                    ).animate(delay: 50.ms).fadeIn(),
 
                     const SizedBox(height: 24),
+
+                    // ── Location section ──────────────────────────────
+                    // Solo al crear: en edición la ubicación no se toca
+                    // (ver _prefillFrom).
+                    if (!_isEditing) ...[
+                      _SectionLabel(emoji: '📍', title: 'Ubicación'),
+                      const SizedBox(height: 10),
+                      _LocationCard(
+                        cityLabel: _profileCityLabel(),
+                        shareGps: _shareGps,
+                        resolving: _resolvingLocation,
+                        onChanged: busy ? null : (v) => setState(() => _shareGps = v),
+                      ).animate(delay: 100.ms).fadeIn(),
+                      const SizedBox(height: 24),
+                    ],
 
                     // ── Quantity section ──────────────────────────────
                     _SectionLabel(emoji: '✨', title: '¿Cuántas viste?'),
@@ -328,10 +486,12 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
 
                     // Submit button
                     AppButton(
-                      label: 'Enviar avistamiento (+${AppConstants.pointsSighting} pts)',
-                      onPressed: isSubmitting ? null : _submit,
-                      isLoading: isSubmitting,
-                      icon: Icons.send_rounded,
+                      label: _isEditing
+                          ? 'Guardar cambios'
+                          : 'Enviar avistamiento (+${AppConstants.pointsSighting} pts)',
+                      onPressed: busy ? null : _submit,
+                      isLoading: busy,
+                      icon: _isEditing ? Icons.save_rounded : Icons.send_rounded,
                     ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
 
                     const SizedBox(height: 40),
@@ -346,6 +506,226 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
               points: AppConstants.pointsSighting,
               message: '¡Avistamiento registrado!',
             ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Photo Picker ─────────────────────────────────────────────────
+
+class _PhotoPicker extends StatelessWidget {
+  final File? pickedFile;
+  final String? existingUrl;
+  final bool isUploading;
+  final bool isChecking;
+  final VoidCallback? onTap;
+  final VoidCallback onRemove;
+
+  const _PhotoPicker({
+    required this.pickedFile,
+    required this.existingUrl,
+    required this.isUploading,
+    required this.isChecking,
+    required this.onTap,
+    required this.onRemove,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasPhoto = pickedFile != null || existingUrl != null;
+
+    if (!hasPhoto) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: double.infinity,
+          height: 120,
+          decoration: BoxDecoration(
+            color: context.firefly.cardSurface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: context.firefly.cardBorder),
+          ),
+          child: Center(
+            child: isChecking
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Revisando la foto...',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.text.bodyMedium?.color,
+                        ),
+                      ),
+                    ],
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.add_a_photo_outlined, color: context.text.bodyMedium?.color, size: 28),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Agregar una foto',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: context.text.bodyMedium?.color,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      );
+    }
+
+    return Stack(
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 160,
+              child: pickedFile != null
+                  ? Image.file(pickedFile!, fit: BoxFit.cover)
+                  : Image.network(
+                      existingUrl!,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) => progress == null
+                          ? child
+                          : const Center(child: CircularProgressIndicator()),
+                      errorBuilder: (context, error, stack) => Container(
+                        color: context.firefly.cardSurface,
+                        child: Icon(Icons.broken_image_outlined,
+                            color: context.text.bodyMedium?.color),
+                      ),
+                    ),
+            ),
+          ),
+        ),
+        if (isUploading)
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.4),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            ),
+          ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: GestureDetector(
+            onTap: onRemove,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: const BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Location Card ─────────────────────────────────────────────────
+//
+// PRIVACY.md exige explicar en pantalla ANTES de disparar el permiso
+// nativo de ubicación — esta tarjeta es esa explicación, siempre visible
+// antes de que el interruptor esté en "sí" y se envíe el formulario (que
+// es cuando realmente se pide el permiso, en _tryGetGpsPosition).
+
+class _LocationCard extends StatelessWidget {
+  final String cityLabel;
+  final bool shareGps;
+  final bool resolving;
+  final ValueChanged<bool>? onChanged;
+
+  const _LocationCard({
+    required this.cityLabel,
+    required this.shareGps,
+    required this.resolving,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: context.firefly.cardSurface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: context.firefly.cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Tu avistamiento se marcará en $cityLabel.',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: context.colors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Si compartes tu ubicación, lo marcamos en el punto exacto '
+            'donde viste la luciérnaga. Si no, ponemos un punto al azar '
+            'dentro de tu ciudad. Tú eliges.',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 12,
+              height: 1.5,
+              color: context.text.bodyMedium?.color,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(Icons.my_location_rounded, size: 18, color: context.colors.primary),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Compartir mi ubicación exacta',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: context.colors.onSurface,
+                  ),
+                ),
+              ),
+              if (resolving)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                Switch(value: shareGps, onChanged: onChanged),
+            ],
+          ),
         ],
       ),
     );

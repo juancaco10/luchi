@@ -80,10 +80,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgImage = isDark ? 'assets/images/bg1.png' : 'assets/images/bg2.png';
+
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
+          // Fondo
+          Positioned.fill(
+            child: Image.asset(
+              bgImage,
+              fit: BoxFit.cover,
+            ),
+          ),
+
           // Page content
           PageView.builder(
             controller: _pageController,
@@ -191,7 +202,10 @@ class _OnboardingPageWidget extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: page.gradient,
+          colors: [
+            page.gradient[0].withValues(alpha: 0.7),
+            page.gradient[1].withValues(alpha: 0.9),
+          ],
         ),
       ),
       child: SafeArea(

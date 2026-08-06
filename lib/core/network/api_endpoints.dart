@@ -18,6 +18,9 @@ abstract class ApiEndpoints {
   // ── Sightings ────────────────────────────────────────────────
   static const String sightings = '/sightings';
   static const String mySightings = '/my-sightings';
+  static String sighting(int id) => '/sightings/$id';
+  static String archiveSighting(int id) => '/sightings/$id/archive';
+  static const String uploadSightingPhoto = '/uploads/sighting-photo';
 
   // ── Profile ──────────────────────────────────────────────────
   static const String profile = '/profile';

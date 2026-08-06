@@ -21,6 +21,8 @@ function formatUser(array $user): array
         'level'      => (int) $user['level'],
         'levelName'  => getLevelName((int) $user['points']),
         'avatar_url' => $user['avatar_url'],
+        'country'    => $user['country'],
+        'city'       => $user['city'],
         'created_at' => $user['created_at'],
     ];
 }
@@ -276,6 +278,35 @@ if ($method === 'POST' && $path === '/auth/guest') {
 if ($method === 'GET' && $path === '/me') {
     $user = requireAuth();
     jsonResponse(['user' => formatUser($user)]);
+}
+
+// ── PUT /me — guardar país y ciudad del perfil ──────────────────────
+// Se piden una sola vez, la primera vez que el usuario va a publicar un
+// avistamiento (ver lib/features/sightings/screens/location_setup_screen.dart
+// en el cliente), y quedan aquí para no volver a preguntarlos.
+
+if ($method === 'PUT' && $path === '/me') {
+    $user = requireAuth();
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+
+    $country = sanitize($body['country'] ?? '');
+    $city    = sanitize($body['city']    ?? '');
+
+    if ($country === '' || $city === '') {
+        jsonError('País y ciudad son requeridos');
+    }
+
+    $db = getDB();
+    $db->prepare('UPDATE users SET country = ?, city = ? WHERE id = ?')
+       ->execute([$country, $city, $user['id']]);
+
+    // Releer la fila para devolver el estado real ya guardado, en vez de
+    // asumir que el UPDATE hizo exactamente lo que se pidió.
+    $stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
+    $stmt->execute([$user['id']]);
+    $updated = $stmt->fetch();
+
+    jsonResponse(['user' => formatUser($updated)]);
 }
 
 // ── DELETE /me ────────────────────────────────────────────────────

@@ -52,6 +52,13 @@ app.*.map.json
 backend/api/.env
 scripts/run_prod.sh
 backend/api/config/database.php
+
+# Fotos subidas por usuarios — no son assets del repo, y son datos de
+# menores. La carpeta y su .htaccess (bloquea ejecución de scripts) sí se
+# versionan; su contenido, no.
+backend/api/uploads/sightings/*
+!backend/api/uploads/sightings/.gitkeep
+
 android/local.properties
 android/key.properties
 *.jks

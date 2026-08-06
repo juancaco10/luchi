@@ -1,18 +1,20 @@
 /// App-wide constants
 abstract class AppConstants {
   // ── API ──────────────────────────────────────────────────────
-  /// Injected at build/run time, e.g.:
+  /// Dominio de producción por defecto. Se puede apuntar a otro entorno
+  /// (staging, backend local) en tiempo de compilación:
   ///   flutter run --dart-define=API_BASE_URL=https://tu-dominio.com/api
-  /// Never hardcode a real domain here or in any committed file — this keeps
-  /// the placeholder as a safe default for local development against mocks.
+  /// Una URL base no es un secreto — el APK la lleva dentro de todos modos —,
+  /// pero nada más de la configuración del servidor debe vivir aquí.
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'https://dimgrey-dove-703529.hostingersite.com/api',
   );
 
-  /// When true (the default while no real backend is configured), auth uses
-  /// the local mock instead of calling the API. Flip with:
-  ///   flutter run --dart-define=USE_MOCK_AUTH=false
+  /// Cuando es true, el login/registro usa el mock local en vez de llamar a
+  /// la API. **False por defecto**: el backend real ya está desplegado.
+  /// Para desarrollar sin backend:
+  ///   flutter run --dart-define=USE_MOCK_AUTH=true
   static const bool useMockAuth = bool.fromEnvironment(
     'USE_MOCK_AUTH',
     defaultValue: false,
@@ -55,6 +57,11 @@ abstract class AppConstants {
   static const String chaptersBox = 'chapters_box';
   static const String missionsBox = 'missions_box';
   static const String sightingsBox = 'sightings_box';
+
+  /// Caja propia para la cola de misiones pendientes de enviar. No puede
+  /// compartir `missionsBox`: esa se usa como caché y `cacheMissions()` la
+  /// vacía en cada refresco, lo que borraría la cola.
+  static const String pendingMissionsBox = 'pending_missions_box';
 
   // ── Gamification ─────────────────────────────────────────────
   static const int pointsDailyMission = 10;

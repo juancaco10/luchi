@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS users (
   points        INT UNSIGNED        NOT NULL DEFAULT 0,
   level         TINYINT UNSIGNED    NOT NULL DEFAULT 1,
   avatar_url    VARCHAR(500)        NULL,
+  country       VARCHAR(100)        NULL,
+  city          VARCHAR(120)        NULL,
   created_at    TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email)
@@ -98,8 +100,11 @@ CREATE TABLE IF NOT EXISTS sightings (
   photo_url     VARCHAR(500)     NULL,
   location_name VARCHAR(300)     NULL,
   created_at    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    TIMESTAMP        NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  archived_at   TIMESTAMP        NULL DEFAULT NULL,
   INDEX idx_user   (user_id),
   INDEX idx_coords (lat, lng),
+  INDEX idx_user_created (user_id, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

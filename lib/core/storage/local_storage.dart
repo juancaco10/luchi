@@ -28,6 +28,7 @@ class LocalStorage {
     await Hive.openBox(AppConstants.chaptersBox);
     await Hive.openBox(AppConstants.missionsBox);
     await Hive.openBox(AppConstants.sightingsBox);
+    await Hive.openBox(AppConstants.pendingMissionsBox);
 
     // One-time migration: earlier builds stored the token in plaintext
     // SharedPreferences. Move it to secure storage and remove the old copy.
@@ -76,6 +77,7 @@ class LocalStorage {
   Box get chaptersBox => Hive.box(AppConstants.chaptersBox);
   Box get missionsBox => Hive.box(AppConstants.missionsBox);
   Box get sightingsBox => Hive.box(AppConstants.sightingsBox);
+  Box get pendingMissionsBox => Hive.box(AppConstants.pendingMissionsBox);
 
   // ── Cache Chapters ───────────────────────────────────────────
   Future<void> cacheChapters(List<Map<String, dynamic>> chapters) async {
@@ -130,6 +132,24 @@ class LocalStorage {
 
   Future<void> clearPendingSightings() => sightingsBox.clear();
 
+  // ── Offline Mission Queue ────────────────────────────────────
+  // Igual patrón que la cola de avistamientos, pero aquí la clave del box
+  // ES el id de la misión (no un id autoincremental): pulsar la misma
+  // misión dos veces sin conexión debe dejar una única entrada pendiente.
+  Future<void> queuePendingMission(int missionId) =>
+      pendingMissionsBox.put(missionId, {'mission_id': missionId});
+
+  Map<dynamic, Map<String, dynamic>> getPendingMissionsWithKeys() {
+    return pendingMissionsBox.toMap().map(
+          (key, value) => MapEntry(key, Map<String, dynamic>.from(value as Map)),
+        );
+  }
+
+  Future<void> removePendingMission(dynamic key) =>
+      pendingMissionsBox.delete(key);
+
+  Future<void> clearPendingMissions() => pendingMissionsBox.clear();
+
   // ── Full Clear ───────────────────────────────────────────────
   Future<void> clearAll() async {
     await clearUser();
@@ -137,5 +157,6 @@ class LocalStorage {
     await chaptersBox.clear();
     await missionsBox.clear();
     await sightingsBox.clear();
+    await pendingMissionsBox.clear();
   }
 }

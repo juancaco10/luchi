@@ -38,7 +38,10 @@ android {
         applicationId = "com.guardianes.luciernagas"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
+        // nsfw_detector_flutter (filtro de contenido on-device) requiere
+        // Android 8.0 / API 26 como mínimo — sube el piso si el default de
+        // Flutter fuera menor.
+        minSdk = maxOf(26, flutter.minSdkVersion)
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

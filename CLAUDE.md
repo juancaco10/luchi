@@ -4,7 +4,7 @@ Este archivo orienta a cualquier agente o colaborador que edite este repo. Léel
 
 ## Qué es esto
 
-Juego educativo Flutter para niños de 6–12 años sobre conservación de luciérnagas: capítulos (vídeo + quiz), misiones diarias/semanales, avistamientos con GPS + foto, mapa comunitario, perfil con puntos y niveles. Cliente Flutter 3 / Dart 3 (Riverpod + GoRouter + Hive/SharedPreferences + Dio) más una API PHP/MySQL en `backend/` pensada para Hostinger.
+Juego educativo Flutter para niños de 6–12 años sobre conservación de luciérnagas: capítulos (vídeo + quiz), misiones diarias/semanales, avistamientos con país/ciudad de perfil + GPS opcional (si no se comparte, punto al azar dentro de la ciudad) + foto, mapa comunitario, perfil con puntos y niveles. Cliente Flutter 3 / Dart 3 (Riverpod + GoRouter + Hive/SharedPreferences + Dio) más una API PHP/MySQL en `backend/` pensada para Hostinger.
 
 Ver [ARCHITECTURE.md](ARCHITECTURE.md) para el mapa de capas y flujo de datos, [docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md) para el estado real del backend, y [docs/PRIVACY.md](docs/PRIVACY.md) para las reglas de datos de menores.
 

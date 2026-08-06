@@ -20,20 +20,27 @@ class MissionDetailScreen extends ConsumerStatefulWidget {
 
 class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
   bool _showReward = false;
+  bool _isSubmitting = false;
   int _earnedPoints = 0;
 
   Future<void> _complete() async {
-    final pts = await ref
-        .read(missionsProvider.notifier)
-        .completeMission(int.parse(widget.missionId));
-    if (pts > 0) {
-      await ref.read(authProvider.notifier).addPoints(pts);
-      setState(() {
-        _earnedPoints = pts;
-        _showReward = true;
-      });
-      await Future.delayed(const Duration(seconds: 2));
-      if (mounted) setState(() => _showReward = false);
+    setState(() => _isSubmitting = true);
+    try {
+      final pts = await ref
+          .read(missionsProvider.notifier)
+          .completeMission(int.parse(widget.missionId));
+      if (pts > 0) {
+        await ref.read(authProvider.notifier).addPoints(pts);
+        if (!mounted) return;
+        setState(() {
+          _earnedPoints = pts;
+          _showReward = true;
+        });
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) setState(() => _showReward = false);
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -216,7 +223,8 @@ class _MissionDetailScreenState extends ConsumerState<MissionDetailScreen> {
                   if (!mission.isCompleted)
                     AppButton(
                       label: '¡Misión cumplida!',
-                      onPressed: _complete,
+                      onPressed: _isSubmitting ? null : _complete,
+                      isLoading: _isSubmitting,
                       icon: Icons.check_circle_rounded,
                       gradient: context.firefly.greenGradient,
                     ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.3, end: 0)

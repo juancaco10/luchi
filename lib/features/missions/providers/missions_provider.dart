@@ -78,8 +78,23 @@ class MissionsNotifier extends StateNotifier<MissionsState> {
       seed: MissionModel.getMockMissions,
     );
 
+    // Las misiones completadas sin conexión quedan en pendingMissionsBox
+    // hasta que SyncService las reenvíe. Mientras tanto, este refresco no
+    // debe hacerlas volver a "pendiente" en la UI.
+    final pendingIds =
+        LocalStorage.instance.getPendingMissionsWithKeys().values
+            .map((m) => m['mission_id'] as int)
+            .toSet();
+    final items = pendingIds.isEmpty
+        ? result.items
+        : result.items
+            .map((m) => pendingIds.contains(m.id)
+                ? m.copyWith(isCompleted: true)
+                : m)
+            .toList();
+
     state = state.copyWith(
-      missions: result.items,
+      missions: items,
       isLoading: false,
       error: result.error?.message,
       isStale: result.isStale,
@@ -101,14 +116,16 @@ class MissionsNotifier extends StateNotifier<MissionsState> {
       isStale: state.isStale,
     );
 
-    // Call API (best-effort, no rollback on failure)
+    // El estado optimista se mantiene aunque falle la llamada: si no hay
+    // conexión, encolamos la misión para que SyncService la reenvíe al
+    // reconectar (mismo patrón que la cola de avistamientos).
     try {
       await _ref.read(apiClientProvider).post(
         ApiEndpoints.completeMission,
         data: {'mission_id': missionId},
       );
     } catch (_) {
-      // Offline — mission still marked as done locally
+      await LocalStorage.instance.queuePendingMission(missionId);
     }
 
     return mission.pointsReward;

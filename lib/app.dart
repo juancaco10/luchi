@@ -16,10 +16,13 @@ import 'features/home/widgets/home_bottom_nav.dart';
 import 'features/education/screens/chapters_list_screen.dart';
 import 'features/education/screens/chapter_detail_screen.dart';
 import 'features/education/screens/level_one_screen.dart';
+import 'features/education/screens/play_lobby_screen.dart';
 import 'features/missions/screens/missions_screen.dart';
 import 'features/missions/screens/mission_detail_screen.dart';
 import 'features/sightings/screens/sighting_form_screen.dart';
+import 'features/sightings/screens/my_sightings_screen.dart';
 import 'features/sightings/screens/map_screen.dart';
+import 'features/sightings/screens/location_setup_screen.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/profile/screens/settings_screen.dart';
 
@@ -129,7 +132,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       // divergentes hasta la siguiente navegación. refreshListenable ya
       // escucha authProvider (ver _AuthRouterRefresh) para forzar una
       // re-evaluación inmediata; aquí solo hace falta leerlo.
-      final isLoggedIn = ref.read(authProvider) is AuthAuthenticated;
+      final authState = ref.read(authProvider);
+      final isLoggedIn = authState is AuthAuthenticated;
       final onboardingDone = LocalStorage.instance.onboardingDone;
       final goingTo = state.matchedLocation;
 
@@ -152,6 +156,18 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (!isLoggedIn && !isPublic) return '/login';
       if (isLoggedIn && (goingTo == '/login' || goingTo == '/register')) {
         return '/home';
+      }
+
+      // Puerta antes de publicar: país/ciudad son requisito para el primer
+      // avistamiento (ver location_setup_screen.dart) — sin ellos no hay
+      // de dónde sacar el punto aleatorio cuando el usuario no comparte su
+      // GPS, ni forma de ubicarlo en el mapa. Centralizado aquí en vez de
+      // repartido por cada pantalla desde la que se puede llegar a
+      // publicar; cubre las 4 formas de entrar a la app de una sola vez.
+      if (authState is AuthAuthenticated &&
+          goingTo == '/sightings/new' &&
+          !authState.user.hasLocation) {
+        return '/sightings/location-setup';
       }
 
       return null;
@@ -229,9 +245,16 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/game/level-1',
-                name: 'game-level-1',
-                pageBuilder: (context, state) => _slideTransition(state, const LevelOneScreen()),
+                path: '/game',
+                name: 'game-lobby',
+                pageBuilder: (context, state) => _fadeTransition(state, const PlayLobbyScreen()),
+                routes: [
+                  GoRoute(
+                    path: 'level-1',
+                    name: 'game-level-1',
+                    pageBuilder: (context, state) => _slideTransition(state, const LevelOneScreen()),
+                  ),
+                ],
               ),
             ],
           ),
@@ -278,9 +301,27 @@ final routerProvider = Provider<GoRouter>((ref) {
         ],
       ),
       GoRoute(
+        path: '/sightings',
+        name: 'my-sightings',
+        pageBuilder: (context, state) => _slideTransition(state, const MySightingsScreen()),
+      ),
+      GoRoute(
+        path: '/sightings/location-setup',
+        name: 'sighting-location-setup',
+        pageBuilder: (context, state) => _slideTransition(state, const LocationSetupScreen()),
+      ),
+      GoRoute(
         path: '/sightings/new',
         name: 'sighting-form',
         pageBuilder: (context, state) => _slideTransition(state, const SightingFormScreen()),
+      ),
+      GoRoute(
+        path: '/sightings/:id/edit',
+        name: 'sighting-edit',
+        pageBuilder: (context, state) => _slideTransition(
+          state,
+          SightingFormScreen(sightingId: int.parse(state.pathParameters['id']!)),
+        ),
       ),
     ],
   );

@@ -27,9 +27,11 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Luchi usa tu ubicación solo cuando registras un avistamiento, para marcar en el mapa dónde viste la luciérnaga. Nunca compartimos tu ubicación exacta con otros jugadores.</string>
+	<string>Si compartes tu ubicación al registrar un avistamiento, la usamos para marcar el punto exacto en el mapa. Es opcional: si no la compartes, marcamos un punto al azar dentro de tu ciudad. Nunca guardamos tu ubicación fuera de ese momento.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Luchi usa la cámara para que puedas tomar una foto como evidencia de tu avistamiento de luciérnagas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Luchi necesita acceso a tus fotos para que puedas elegir una imagen ya tomada como evidencia de tu avistamiento de luciérnagas.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

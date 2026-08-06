@@ -85,6 +85,7 @@ require_once __DIR__ . '/routes/users.php';
 require_once __DIR__ . '/routes/chapters.php';
 require_once __DIR__ . '/routes/missions.php';
 require_once __DIR__ . '/routes/sightings.php';
+require_once __DIR__ . '/routes/uploads.php';
 
 // 404 fallback
 http_response_code(404);

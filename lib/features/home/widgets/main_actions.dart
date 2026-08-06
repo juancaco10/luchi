@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/firefly_colors.dart';
 
 class MainActions extends StatelessWidget {
-  const MainActions({super.key});
+  const MainActions({super.key, this.scale = 1.0});
+
+  /// Factor de escala para el alto de las tarjetas — ver ScreenFitter.
+  final double scale;
 
   @override
   Widget build(BuildContext context) {
@@ -20,6 +22,7 @@ class MainActions extends StatelessWidget {
             themeColor: const Color(0xFF90F055), // Bright green
             lightGradientColors: const [Color(0xFFE2F9D8), Color(0xFFF1FDF0)],
             onTap: () => context.go('/game/level-1'),
+            scale: scale,
           ),
         ),
         const SizedBox(width: 8),
@@ -32,6 +35,7 @@ class MainActions extends StatelessWidget {
             themeColor: const Color(0xFFC48BFF), // Purple
             lightGradientColors: const [Color(0xFFEFE2FF), Color(0xFFF7F3FF)],
             onTap: () => context.go('/chapters'),
+            scale: scale,
           ),
         ),
         const SizedBox(width: 8),
@@ -44,6 +48,7 @@ class MainActions extends StatelessWidget {
             themeColor: const Color(0xFF4DBBFF), // Blue
             lightGradientColors: const [Color(0xFFE1F3FF), Color(0xFFF1FAFF)],
             onTap: () => context.go('/map'),
+            scale: scale,
           ),
         ),
       ],
@@ -59,6 +64,7 @@ class _ActionCard extends StatelessWidget {
   final Color themeColor;
   final List<Color> lightGradientColors;
   final VoidCallback onTap;
+  final double scale;
 
   const _ActionCard({
     required this.title,
@@ -68,6 +74,7 @@ class _ActionCard extends StatelessWidget {
     required this.themeColor,
     required this.lightGradientColors,
     required this.onTap,
+    this.scale = 1.0,
   });
 
   @override
@@ -80,7 +87,7 @@ class _ActionCard extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          height: 155, // Adjusted to match design proportions
+          height: 155 * scale,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             gradient: isDark

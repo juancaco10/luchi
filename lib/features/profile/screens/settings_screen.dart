@@ -72,6 +72,17 @@ class SettingsScreen extends ConsumerWidget {
                         subtitle: user?.email ?? '—',
                         delay: 150,
                       ),
+                      _SettingsTile(
+                        icon: Icons.place_outlined,
+                        iconColor: context.colors.primary,
+                        title: 'País y ciudad',
+                        subtitle: (user?.hasLocation ?? false)
+                            ? '${user!.city}, ${user.country}'
+                            : 'Sin configurar',
+                        delay: 175,
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => context.go('/sightings/location-setup'),
+                      ),
                     ],
                   ),
 

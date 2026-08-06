@@ -8,6 +8,7 @@ import '../models/user_model.dart';
 import '../../../widgets/custom_button.dart';
 import 'package:flutter/services.dart';
 import '../../../widgets/firefly_background.dart';
+import '../../../widgets/screen_fitter.dart';
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -62,6 +63,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
               statusBarBrightness: Brightness.light,
             ),
       child: Scaffold(
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             // Fondo
@@ -95,32 +97,40 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             const FireflyBackground(count: 22, intensity: 0.6),
 
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Back button
-                    IconButton(
-                      onPressed: () => context.go('/login'),
-                      icon: Icon(Icons.arrow_back_ios_new_rounded,
-                          color: context.text.bodyMedium?.color),
-                      style: IconButton.styleFrom(
-                        backgroundColor: context.firefly.cardSurface,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ).animate().fadeIn(),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                // Sin scroll: los espacios y el logo se reducen de forma
+                // proporcional en pantallas bajas — campos y botón
+                // conservan siempre su tamaño táctil (mínimo 48dp).
+                child: ScreenFitter(
+                  naturalHeight: 830,
+                  builder: (context, scale) => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Back button
+                      IconButton(
+                        onPressed: () => context.go('/login'),
+                        icon: Icon(Icons.arrow_back_ios_new_rounded,
+                            color: context.text.bodyMedium?.color),
+                        style: IconButton.styleFrom(
+                          backgroundColor: context.firefly.cardSurface,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ).animate().fadeIn(),
 
-                    const SizedBox(height: 10),
+                      SizedBox(height: 10 * scale),
 
-                    // ── Logo ──────────────────────────────────────────
-                    Center(
-                      child: Container(
-                        height: 120, // Reduce layout footprint
-                        alignment: Alignment.center,
-                        child: Transform.scale(
-                          scale: 1.9, // Visually enlarge the logo without pushing content down
+                      // ── Logo ──────────────────────────────────────────
+                      Center(
+                        child: Container(
+                          height: 80 * scale,
+                          alignment: Alignment.center,
                           child: Image.asset(
                             'assets/images/logo_luchi.png',
                             fit: BoxFit.contain,
@@ -136,179 +146,181 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               ),
                             ),
                           ),
-                        ),
-                      ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    Center(
-                      child: Text(
-                        'Únete como Guadián 🪲',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Nunito',
-                          fontSize: 24, // Smaller title
-                          fontWeight: FontWeight.w800,
-                          color: context.colors.onSurface,
-                          height: 1.2,
-                        ),
-                      ).animate(delay: 100.ms).fadeIn().slideY(begin: -0.2, end: 0),
-                    ),
-
-                    const SizedBox(height: 8),
-
-                    Center(
-                      child: Text(
-                        'Crea tu cuenta gratuita y empieza a proteger las luciérnagas.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Nunito',
-                          fontSize: 14,
-                          color: context.text.bodyMedium?.color,
-                          height: 1.5,
-                        ),
-                      ).animate(delay: 150.ms).fadeIn(),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    if (error != null) ...[
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: context.colors.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
-                        ),
-                        child: Row(children: [
-                          Icon(Icons.error_outline_rounded,
-                              color: context.colors.error, size: 20),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(error,
-                                style: TextStyle(
-                                    color: context.colors.error,
-                                    fontFamily: 'Nunito',
-                                    fontSize: 14)),
-                          ),
-                        ]),
-                      ).animate().fadeIn().shake(),
-                      const SizedBox(height: 20),
-                    ],
-
-                    Form(
-                      key: _formKey,
-                      child: Column(
-                        children: [
-                          _buildField(
-                            controller: _nameCtrl,
-                            label: 'Tu nombre o apodo',
-                            icon: Icons.person_outline_rounded,
-                            delay: 200,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Campo requerido';
-                              if (v.length < 2) return 'Mínimo 2 caracteres';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _emailCtrl,
-                            label: 'Correo electrónico',
-                            icon: Icons.email_outlined,
-                            delay: 250,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Campo requerido';
-                              if (!v.contains('@')) return 'Correo inválido';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _passwordCtrl,
-                            label: 'Contraseña',
-                            icon: Icons.lock_outline_rounded,
-                            delay: 300,
-                            obscureText: _obscurePassword,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: context.text.bodySmall?.color,
-                                size: 20,
-                              ),
-                              onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
-                            ),
-                            validator: (v) {
-                              if (v == null || v.isEmpty) return 'Campo requerido';
-                              if (v.length < 6) return 'Mínimo 6 caracteres';
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          _buildField(
-                            controller: _confirmCtrl,
-                            label: 'Confirmar contraseña',
-                            icon: Icons.lock_outline_rounded,
-                            delay: 350,
-                            obscureText: true,
-                            validator: (v) {
-                              if (v != _passwordCtrl.text) {
-                                return 'Las contraseñas no coinciden';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 32),
-                          AppButton(
-                            label: 'Crear mi cuenta',
-                            onPressed: isLoading ? null : _register,
-                            isLoading: isLoading,
-                          ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.2, end: 0),
-                          const SizedBox(height: 16),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                '¿Ya tienes cuenta? ',
-                                style: TextStyle(
-                                    color: context.text.bodyMedium?.color,
-                                    fontFamily: 'Nunito',
-                                    fontSize: 14),
-                              ),
-                              TextButton(
-                                onPressed: () => context.go('/login'),
-                                style: TextButton.styleFrom(
-                                  padding: EdgeInsets.zero,
-                                  minimumSize: Size.zero,
-                                ),
-                                child: Text(
-                                  'Inicia sesión',
-                                  style: TextStyle(
-                                      color: context.colors.primary,
-                                      fontFamily: 'Nunito',
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w700),
-                                ),
-                              ),
-                            ],
-                          ).animate(delay: 450.ms).fadeIn(),
-                        ],
+                        ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
                       ),
-                    ),
-                    const SizedBox(height: 40),
-                  ],
+
+                      SizedBox(height: 4 * scale),
+
+                      Center(
+                        child: Text(
+                          'Únete como Guadián 🪲',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 24,
+                            fontWeight: FontWeight.w800,
+                            color: context.colors.onSurface,
+                            height: 1.2,
+                          ),
+                        ).animate(delay: 100.ms).fadeIn().slideY(begin: -0.2, end: 0),
+                      ),
+
+                      SizedBox(height: 8 * scale),
+
+                      Center(
+                        child: Text(
+                          'Crea tu cuenta gratuita y empieza a proteger las luciérnagas.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontFamily: 'Nunito',
+                            fontSize: 14,
+                            color: context.text.bodyMedium?.color,
+                            height: 1.5,
+                          ),
+                        ).animate(delay: 150.ms).fadeIn(),
+                      ),
+
+                      SizedBox(height: 32 * scale),
+
+                      if (error != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: context.colors.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(children: [
+                            Icon(Icons.error_outline_rounded,
+                                color: context.colors.error, size: 20),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(error,
+                                  style: TextStyle(
+                                      color: context.colors.error,
+                                      fontFamily: 'Nunito',
+                                      fontSize: 14)),
+                            ),
+                          ]),
+                        ).animate().fadeIn().shake(),
+                        SizedBox(height: 20 * scale),
+                      ],
+
+                      Form(
+                        key: _formKey,
+                        child: Column(
+                          children: [
+                            _buildField(
+                              controller: _nameCtrl,
+                              label: 'Tu nombre o apodo',
+                              icon: Icons.person_outline_rounded,
+                              delay: 200,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Campo requerido';
+                                if (v.length < 2) return 'Mínimo 2 caracteres';
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 14 * scale),
+                            _buildField(
+                              controller: _emailCtrl,
+                              label: 'Correo electrónico',
+                              icon: Icons.email_outlined,
+                              delay: 250,
+                              keyboardType: TextInputType.emailAddress,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Campo requerido';
+                                if (!v.contains('@')) return 'Correo inválido';
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 14 * scale),
+                            _buildField(
+                              controller: _passwordCtrl,
+                              label: 'Contraseña',
+                              icon: Icons.lock_outline_rounded,
+                              delay: 300,
+                              obscureText: _obscurePassword,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_outlined
+                                      : Icons.visibility_off_outlined,
+                                  color: context.text.bodySmall?.color,
+                                  size: 20,
+                                ),
+                                onPressed: () => setState(
+                                    () => _obscurePassword = !_obscurePassword),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Campo requerido';
+                                if (v.length < 6) return 'Mínimo 6 caracteres';
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 14 * scale),
+                            _buildField(
+                              controller: _confirmCtrl,
+                              label: 'Confirmar contraseña',
+                              icon: Icons.lock_outline_rounded,
+                              delay: 350,
+                              obscureText: true,
+                              validator: (v) {
+                                if (v != _passwordCtrl.text) {
+                                  return 'Las contraseñas no coinciden';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 32 * scale),
+                            AppButton(
+                              label: 'Crear mi cuenta',
+                              onPressed: isLoading ? null : _register,
+                              isLoading: isLoading,
+                            ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                            SizedBox(height: 16 * scale),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '¿Ya tienes cuenta? ',
+                                  style: TextStyle(
+                                      color: context.text.bodyMedium?.color,
+                                      fontFamily: 'Nunito',
+                                      fontSize: 14),
+                                ),
+                                TextButton(
+                                  onPressed: () => context.go('/login'),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                  ),
+                                  child: Text(
+                                    'Inicia sesión',
+                                    style: TextStyle(
+                                        color: context.colors.primary,
+                                        fontFamily: 'Nunito',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700),
+                                  ),
+                                ),
+                              ],
+                            ).animate(delay: 450.ms).fadeIn(),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
+          ),
         ),
       ),
-    );
+    ],
+  ),
+),
+);
   }
 
   Widget _buildField({

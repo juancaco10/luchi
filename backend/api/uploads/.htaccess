@@ -1,0 +1,11 @@
+# Esta carpeta se sirve directamente por Apache (el .htaccess raíz de
+# backend/api/ solo reescribe a index.php lo que NO sea un fichero
+# existente), así que las fotos subidas se descargan sin pasar por PHP.
+# Justo por eso hay que impedir aquí, explícitamente, que se ejecute
+# cualquier script si alguna vez lograra colarse un fichero no-imagen.
+
+<FilesMatch "\.(ph(p[0-9]?|tml|ar)|cgi|pl|py|sh|htaccess)$">
+    Require all denied
+</FilesMatch>
+
+Options -Indexes -ExecCGI

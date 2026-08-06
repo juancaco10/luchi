@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/sightings_provider.dart';
+import '../utils/sighting_geocoding.dart';
 
 class MapScreen extends ConsumerWidget {
   const MapScreen({super.key});
@@ -13,7 +14,12 @@ class MapScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(sightingsProvider);
-    final sightings = state.sightings;
+    // Un avistamiento con coordenada centinela (país sin lista fija,
+    // registrado sin conexión, todavía sin resolver) no tiene dónde
+    // pintarse de verdad — sin filtrarlo, cae literalmente en el golfo de
+    // Guinea y, si es el más reciente, el mapa abre centrado ahí.
+    final sightings =
+        state.sightings.where((s) => !isUnresolvedCoordinate(s.lat, s.lng)).toList();
 
     // Default center — Latin America
     const defaultCenter = LatLng(-34.6037, -58.3816); // Buenos Aires
@@ -114,6 +120,16 @@ class MapScreen extends ConsumerWidget {
                           ],
                         ),
                       ),
+                      IconButton(
+                        tooltip: 'Editar y archivar avistamientos',
+                        onPressed: () => context.go('/sightings'),
+                        icon: Icon(Icons.list_alt_rounded,
+                            color: context.text.bodyMedium?.color, size: 20),
+                        style: IconButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: const Size(32, 32)),
+                      ),
+                      const SizedBox(width: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 12, vertical: 6),

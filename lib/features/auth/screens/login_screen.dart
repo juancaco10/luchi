@@ -13,6 +13,7 @@ import '../data/google_auth_service.dart';
 import '../widgets/google_sign_in_button.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/firefly_background.dart';
+import '../../../widgets/screen_fitter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -146,6 +147,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               statusBarBrightness: Brightness.light,
             ),
       child: Scaffold(
+        // Si el teclado se abre, el Scaffold se encogerá. Gracias a que usamos
+        // LayoutBuilder + SingleChildScrollView, el contenido se podrá hacer scroll
+        // sin perder la escala que calcula ScreenFitter usando MediaQuery.
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             // Fondo
@@ -179,19 +184,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             const FireflyBackground(count: 22, intensity: 0.6),
 
             SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.only(left: 28, right: 28, top: 4, bottom: 24),
-                child: Column(
-                  children: [
-                    // ── Logo ──────────────────────────────────────────
-                    // Misma imagen e igual tratamiento (recorte redondeado +
-                    // brillo) que el splash, para que icono, splash y esta
-                    // primera pantalla se vean como una sola marca.
-                    Container(
-                      height: 120, // Reduce layout footprint
-                      alignment: Alignment.center,
-                      child: Transform.scale(
-                        scale: 1.9, // Visually enlarge the logo without pushing content down
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 28, right: 28, top: 4, bottom: 16),
+                // Sin scroll: todo el contenido debe caber en el alto
+                // disponible. ScreenFitter reduce los espacios y el logo
+                // de forma proporcional en pantallas bajas — los campos y
+                // el botón de "Iniciar sesión" no se tocan, se quedan
+                // siempre en su tamaño táctil normal (mínimo 48dp).
+                child: ScreenFitter(
+                  naturalHeight: 680,
+                  builder: (context, scale) => Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // ── Logo ──────────────────────────────────────
+                      Container(
+                        height: 80 * scale,
+                        alignment: Alignment.center,
                         child: Image.asset(
                           'assets/images/logo_luchi.png',
                           fit: BoxFit.contain,
@@ -205,244 +217,247 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                           ),
                         ),
+                      ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
+
+                      SizedBox(height: 4 * scale),
+
+                      Text(
+                        'Bienvenido de nuevo',
+                        textAlign: TextAlign.center,
+                        style: context.text.headlineLarge?.copyWith(fontWeight: FontWeight.w800),
                       ),
-                  ).animate().fadeIn(duration: 600.ms).scale(begin: const Offset(0.9, 0.9)),
-
-                  const SizedBox(height: 4),
-
-                  Text(
-                    'Bienvenido de nuevo',
-                    textAlign: TextAlign.center,
-                    style: context.text.headlineLarge?.copyWith(fontWeight: FontWeight.w800),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Aprende jugando',
-                    style: context.text.bodyMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: 56,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: context.colors.primary,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-
-                  const SizedBox(height: 28),
-
-                  // ── Botones Rápidos ─────────────────────────────────────────
-                  Row(
-                    children: [
-                      Expanded(
-                        child: kIsWeb
-                            ? Center(child: buildWebGoogleButton())
-                                .animate(delay: 100.ms)
-                                .fadeIn()
-                                .slideY(begin: 0.15, end: 0)
-                            : _OutlinedAction(
-                                label: _googleLoading ? '...' : 'Google',
-                                onTap: _googleLoading ? null : _loginConGoogle,
-                                leading: _googleLoading
-                                    ? SizedBox(
-                                        width: 18,
-                                        height: 18,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          color: context.colors.primary,
-                                        ),
-                                      )
-                                    : Text(
-                                        'G',
-                                        style: TextStyle(
-                                          fontFamily: 'Nunito',
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w900,
-                                          color: context.colors.primary,
-                                        ),
-                                      ),
-                                filled: true,
-                              ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                      SizedBox(height: 4 * scale),
+                      Text(
+                        'Aprende jugando',
+                        style: context.text.bodyMedium,
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _OutlinedAction(
-                          label: 'Invitado',
-                          onTap: _entrarComoInvitado,
-                          leading: Icon(Icons.person_outline_rounded,
-                              size: 20, color: context.colors.primary),
-                        ).animate(delay: 150.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                      SizedBox(height: 8 * scale),
+                      Container(
+                        width: 56,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: context.colors.primary,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
                       ),
-                    ],
-                  ),
 
-                  const SizedBox(height: 20),
+                      SizedBox(height: 28 * scale),
 
-                  // ── Separador ─────────────────────────────────────
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: Text('o continúa con tu correo',
-                            style: context.text.bodySmall),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // ── Banner de error del backend ───────────────────
-                  if (error != null) ...[
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: context.colors.error.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
-                      ),
-                      child: Row(
+                      // ── Botones Rápidos ─────────────────────────
+                      Row(
                         children: [
-                          Icon(Icons.error_outline_rounded,
-                              color: context.colors.error, size: 20),
-                          const SizedBox(width: 10),
                           Expanded(
-                            child: Text(
-                              error,
-                              style: TextStyle(
-                                color: context.colors.error,
-                                fontFamily: 'Nunito',
-                                fontSize: 14,
-                              ),
-                            ),
+                            child: kIsWeb
+                                ? Center(child: buildWebGoogleButton())
+                                    .animate(delay: 100.ms)
+                                    .fadeIn()
+                                    .slideY(begin: 0.15, end: 0)
+                                : _OutlinedAction(
+                                    label: _googleLoading ? '...' : 'Google',
+                                    onTap: _googleLoading ? null : _loginConGoogle,
+                                    leading: _googleLoading
+                                        ? SizedBox(
+                                            width: 18,
+                                            height: 18,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: context.colors.primary,
+                                            ),
+                                          )
+                                        : Text(
+                                            'G',
+                                            style: TextStyle(
+                                              fontFamily: 'Nunito',
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.w900,
+                                              color: context.colors.primary,
+                                            ),
+                                          ),
+                                    filled: true,
+                                  ).animate(delay: 100.ms).fadeIn().slideY(begin: 0.15, end: 0),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _OutlinedAction(
+                              label: 'Invitado',
+                              onTap: _entrarComoInvitado,
+                              leading: Icon(Icons.person_outline_rounded,
+                                  size: 20, color: context.colors.primary),
+                            ).animate(delay: 150.ms).fadeIn().slideY(begin: 0.15, end: 0),
                           ),
                         ],
                       ),
-                    ).animate().fadeIn().shake(),
-                    const SizedBox(height: 20),
-                  ],
 
-                  // ── Formulario ────────────────────────────────────
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _emailCtrl,
-                          keyboardType: TextInputType.emailAddress,
-                          style: TextStyle(
-                              color: context.colors.onSurface, fontFamily: 'Nunito'),
-                          decoration: InputDecoration(
-                            labelText: 'Correo electrónico',
-                            hintText: 'ejemplo@correo.com',
-                            prefixIcon: Icon(Icons.email_outlined,
-                                color: context.colors.primary, size: 20),
+                      SizedBox(height: 20 * scale),
+
+                      // ── Separador ─────────────────────────────
+                      Row(
+                        children: [
+                          const Expanded(child: Divider()),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            child: Text('o continúa con tu correo',
+                                style: context.text.bodySmall),
                           ),
-                          validator: (v) {
-                            if (v == null || v.isEmpty) return 'Campo requerido';
-                            if (!v.contains('@')) return 'Correo inválido';
-                            return null;
-                          },
-                        ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.1, end: 0),
+                          const Expanded(child: Divider()),
+                        ],
+                      ),
 
-                        const SizedBox(height: 16),
+                      SizedBox(height: 20 * scale),
 
-                        TextFormField(
-                          controller: _passwordCtrl,
-                          obscureText: _obscurePassword,
-                          style: TextStyle(
-                              color: context.colors.onSurface, fontFamily: 'Nunito'),
-                          decoration: InputDecoration(
-                            labelText: 'Contraseña',
-                            prefixIcon: Icon(Icons.lock_outline_rounded,
-                                color: context.colors.primary, size: 20),
-                            suffixIcon: IconButton(
-                              tooltip: _obscurePassword
-                                  ? 'Mostrar contraseña'
-                                  : 'Ocultar contraseña',
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_outlined
-                                    : Icons.visibility_off_outlined,
-                                color: context.text.bodySmall?.color,
-                                size: 20,
+                      // ── Banner de error del backend ─────────────
+                      if (error != null) ...[
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: context.colors.error.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: context.colors.error.withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.error_outline_rounded,
+                                  color: context.colors.error, size: 20),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  error,
+                                  style: TextStyle(
+                                    color: context.colors.error,
+                                    fontFamily: 'Nunito',
+                                    fontSize: 14,
+                                  ),
+                                ),
                               ),
-                              onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword),
-                            ),
+                            ],
                           ),
-                          validator: (v) {
-                            if (v == null || v.isEmpty) return 'Campo requerido';
-                            if (v.length < 6) return 'Mínimo 6 caracteres';
-                            return null;
-                          },
-                        ).animate(delay: 250.ms).fadeIn().slideX(begin: -0.1, end: 0),
+                        ).animate().fadeIn().shake(),
+                        SizedBox(height: 20 * scale),
+                      ],
 
-                        const SizedBox(height: 8),
-
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: _recuperarPassword,
-                            child: Text(
-                              '¿Olvidaste tu contraseña?',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: context.colors.primary,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 12),
-
-                        AppButton(
-                          label: 'Iniciar sesión',
-                          icon: Icons.arrow_forward_rounded,
-                          onPressed: isLoading ? null : _login,
-                          isLoading: isLoading,
-                        ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
-
-                        const SizedBox(height: 20),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                      // ── Formulario ────────────────────────────
+                      Form(
+                        key: _formKey,
+                        child: Column(
                           children: [
-                            Text(
-                              '¿No tienes cuenta? ',
-                              style: context.text.bodyMedium,
-                            ),
-                            TextButton(
-                              onPressed: () => context.go('/register'),
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            TextFormField(
+                              controller: _emailCtrl,
+                              keyboardType: TextInputType.emailAddress,
+                              style: TextStyle(
+                                  color: context.colors.onSurface, fontFamily: 'Nunito'),
+                              decoration: InputDecoration(
+                                labelText: 'Correo electrónico',
+                                hintText: 'ejemplo@correo.com',
+                                prefixIcon: Icon(Icons.email_outlined,
+                                    color: context.colors.primary, size: 20),
                               ),
-                              child: Text(
-                                'Regístrate',
-                                style: TextStyle(
-                                  color: context.colors.primary,
-                                  fontFamily: 'Nunito',
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Campo requerido';
+                                if (!v.contains('@')) return 'Correo inválido';
+                                return null;
+                              },
+                            ).animate(delay: 200.ms).fadeIn().slideX(begin: -0.1, end: 0),
+
+                            SizedBox(height: 16 * scale),
+
+                            TextFormField(
+                              controller: _passwordCtrl,
+                              obscureText: _obscurePassword,
+                              style: TextStyle(
+                                  color: context.colors.onSurface, fontFamily: 'Nunito'),
+                              decoration: InputDecoration(
+                                labelText: 'Contraseña',
+                                prefixIcon: Icon(Icons.lock_outline_rounded,
+                                    color: context.colors.primary, size: 20),
+                                suffixIcon: IconButton(
+                                  tooltip: _obscurePassword
+                                      ? 'Mostrar contraseña'
+                                      : 'Ocultar contraseña',
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                    color: context.text.bodySmall?.color,
+                                    size: 20,
+                                  ),
+                                  onPressed: () => setState(
+                                      () => _obscurePassword = !_obscurePassword),
+                                ),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.isEmpty) return 'Campo requerido';
+                                if (v.length < 6) return 'Mínimo 6 caracteres';
+                                return null;
+                              },
+                            ).animate(delay: 250.ms).fadeIn().slideX(begin: -0.1, end: 0),
+
+                            SizedBox(height: 8 * scale),
+
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: TextButton(
+                                onPressed: _recuperarPassword,
+                                child: Text(
+                                  '¿Olvidaste tu contraseña?',
+                                  style: TextStyle(
+                                    fontFamily: 'Nunito',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: context.colors.primary,
+                                  ),
                                 ),
                               ),
                             ),
+
+                            SizedBox(height: 12 * scale),
+
+                            AppButton(
+                              label: 'Iniciar sesión',
+                              icon: Icons.arrow_forward_rounded,
+                              onPressed: isLoading ? null : _login,
+                              isLoading: isLoading,
+                            ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
+
+                            SizedBox(height: 20 * scale),
+
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  '¿No tienes cuenta? ',
+                                  style: context.text.bodyMedium,
+                                ),
+                                TextButton(
+                                  onPressed: () => context.go('/register'),
+                                  style: TextButton.styleFrom(
+                                    padding: EdgeInsets.zero,
+                                    minimumSize: Size.zero,
+                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    'Regístrate',
+                                    style: TextStyle(
+                                      color: context.colors.primary,
+                                      fontFamily: 'Nunito',
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ).animate(delay: 400.ms).fadeIn(),
                           ],
-                        ).animate(delay: 400.ms).fadeIn(),
-                      ],
+                        ),
+                      ),
+                    ],
+                  ),
+                      ),
                     ),
                   ),
-                ], // Column children
-              ), // Column
-              ), // SingleChildScrollView
-            ), // SafeArea
-            
+                ),
+              ),
+            ),
+
             // Theme Toggle Button
             Positioned(
               top: 12,
@@ -469,12 +484,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
             ),
-          ], // Stack children
-      ), // Stack
-    ), // Scaffold
-  ); // AnnotatedRegion
-} // build()
-} // _LoginScreenState
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 /// Botón secundario con borde, usado por los accesos que aún no tienen
 /// backend. `filled` lo pinta sobre la superficie del tema (Google en el

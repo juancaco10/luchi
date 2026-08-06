@@ -1,7 +1,7 @@
 name: guardianes_luciernagas
 description: Guardianes de las Luciérnagas — Educational app for children about firefly conservation.
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -29,13 +29,25 @@ dependencies:
   flutter_animate: ^4.5.0
 
   # Maps & Location
+  # geolocator es opt-in por avistamiento (interruptor "compartir mi
+  # ubicación exacta" en sighting_form_screen.dart) — si el usuario no lo
+  # activa, o el permiso se deniega, se usa un punto al azar dentro de la
+  # ciudad de su perfil en su lugar (`randomPointNear`, nunca se bloquea
+  # el envío). `geocoding` resuelve país/ciudad para perfiles fuera de la
+  # lista fija de Uruguay (ver lib/features/sightings/data/uy_places.dart).
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
   geolocator: ^12.0.0
+  geocoding: ^3.0.0
 
   # Media
   video_player: ^2.9.1
   chewie: ^1.8.3
+  image_picker: ^1.1.2
+  # Filtro NSFW 100% on-device (TFLite en Android, Core ML en iOS) — la
+  # foto nunca sale del teléfono para esta comprobación, sin llamadas a
+  # ningún servicio externo. Ver lib/features/sightings/utils/nsfw_filter.dart.
+  nsfw_detector_flutter: ^2.0.0
 
   # UI & Icons
   google_fonts: ^6.2.1

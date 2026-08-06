@@ -211,6 +211,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
       state = AuthAuthenticated(updated);
     }
   }
+
+  /// Guarda país/ciudad — requisito único antes de publicar el primer
+  /// avistamiento (ver location_setup_screen.dart) y editable después
+  /// desde ajustes. A diferencia de `addPoints`, sí hay backend real que
+  /// actualizar: sin el `PUT /me`, el dato se perdería al reinstalar o
+  /// cambiar de dispositivo, ya que hoy no hay forma de recuperarlo.
+  Future<bool> updateLocation({required String country, required String city}) async {
+    final current = state;
+    if (current is! AuthAuthenticated) return false;
+
+    if (AppConstants.useMockAuth) {
+      final updated = current.user.copyWith(country: country, city: city);
+      await LocalStorage.instance.saveUser(updated.toJson());
+      state = AuthAuthenticated(updated);
+      return true;
+    }
+
+    try {
+      final response = await _ref.read(apiClientProvider).put(
+        ApiEndpoints.me,
+        data: {'country': country, 'city': city},
+      );
+      final data = response.data as Map<String, dynamic>;
+      final updated = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      await LocalStorage.instance.saveUser(updated.toJson());
+      state = AuthAuthenticated(updated);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────

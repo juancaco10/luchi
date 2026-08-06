@@ -1,9 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <!-- Declared explicitly instead of relying only on plugin manifest merging
-         (geolocator, image_picker, dio all pull these in implicitly). -->
+         (geolocator, image_picker, dio pull these in implicitly).
+         La ubicación es opt-in por avistamiento (interruptor en
+         sighting_form_screen.dart); si se deniega o el usuario la
+         desactiva, se usa un punto al azar dentro de su ciudad. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <!-- Android 13+ (API 33) usa este permiso granular en vez de
+         READ_EXTERNAL_STORAGE para elegir fotos de la galería. -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
 
     <application
         android:label="Luchi"
