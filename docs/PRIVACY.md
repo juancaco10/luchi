@@ -32,11 +32,11 @@ Este documento describe el diseño objetivo; el código actual **no** lo cumple 
 - El recorte de EXIF de las fotos ya está implementado en dos capas — `sighting_form_screen.dart` re-codifica la imagen al elegirla (`imageQuality: 85`, `maxWidth: 1600`), y `backend/api/routes/uploads.php` la vuelve a decodificar y re-codificar con GD antes de guardarla, lo que descarta cualquier metadato EXIF (ubicación GPS de precisión completa, datos del dispositivo) que hubiera sobrevivido a la primera capa.
 - El GPS es opt-in explícito por avistamiento, con una explicación siempre visible en pantalla (`_LocationCard` en `sighting_form_screen.dart`) antes de que el interruptor "Compartir mi ubicación exacta" pueda disparar el permiso nativo. La alternativa (punto al azar dentro de la ciudad del perfil, `randomPointNear` en `sighting_geocoding.dart`) es funcionalmente equivalente para el mapa, así que negarse no degrada la experiencia ni bloquea el envío.
 - **El mapa/feed comunitario ya no está deshabilitado.** `GET /sightings` (antes `410` a propósito) ahora devuelve avistamientos reales, pero solo bajo las tres condiciones que este documento exigía para poder abrirlo — ver `backend/api/routes/sightings.php`:
-  1. **Moderación previa**: todo avistamiento nace con `moderation_status = 'pending'` y no aparece en el feed hasta que un moderador humano lo aprueba en `backend/admin/moderation.php` (acceso restringido a cuentas con `is_moderator = 1`, activado a mano en la base — no hay forma de auto-concedérselo desde la app). Editar un avistamiento ya aprobado lo devuelve a `pending` automáticamente.
-  2. **Sin nombre de usuario**: la respuesta de `GET /sightings` nunca incluye `user_id` ni `user_name`. Solo `is_mine` (booleano, calculado en el servidor) distingue lo propio de lo ajeno, y solo sobre uno mismo.
-  3. **Coordenadas redondeadas en el servidor**: `blurCoord()` recorta `lat`/`lng` a 3 decimales antes de responder, como segunda capa de defensa además del difuminado del cliente. `location_name` se recorta a nivel ciudad (`cityLevelLocation()`).
-  - Corazones (`sighting_likes`) siguen la misma regla: solo se puede dar corazón a algo `approved`, y un corazón por persona (`UNIQUE KEY`), sin que quede expuesto quién lo dio a nadie más que al propio autor del corazón.
-  - Migración: `backend/database/migrations/04_2026_sightings_social.sql`.
+  1. **Sin nombre de usuario**: la respuesta de `GET /sightings` nunca incluye `user_id` ni `user_name`. Solo `is_mine` (booleano, calculado en el servidor) distingue lo propio de lo ajeno, y solo sobre uno mismo.
+  2. **Coordenadas redondeadas en el servidor**: `blurCoord()` recorta `lat`/`lng` a 3 decimales antes de responder, como segunda capa de defensa además del difuminado del cliente. `location_name` se recorta a nivel ciudad (`cityLevelLocation()`).
+  3. **Publicación inmediata (auto-publicación)**: por decisión de producto para una app familiar, todo avistamiento nace `approved` y se ve para todos al instante (`POST /sightings`). La moderación manual previa se sustituyó por esta política — si algún día se restaura, hay que (a) volver al INSERT sin `approved` y (b) filtrar el feed por `moderation_status` (los detalles están comentados en `sightings.php`). La migración `07_2026_auto_publish_sightings.sql` aprueba los pendientes de la época anterior.
+  - Corazones (`sighting_likes`): un corazón por persona (`UNIQUE KEY`), sin que quede expuesto quién lo dio a nadie más que al propio autor del corazón.
+  - Migración: `backend/database/migrations/04_2026_sightings_social.sql` y `07_2026_auto_publish_sightings.sql`.
 
 ## Requisitos de cliente
 
@@ -50,10 +50,10 @@ Este documento describe el diseño objetivo; el código actual **no** lo cumple 
 ## Requisitos de backend
 
 - ~~`GET /sightings` no debe devolver coordenadas de precisión completa ni `user_name` real~~ — hecho, ver "Resuelto" arriba.
-- ~~Implementar moderación real antes de publicar un avistamiento en el mapa comunitario~~ — hecho (`moderation_status`, `backend/admin/moderation.php`).
-- Endpoint de borrado de cuenta que elimine o anonimice avistamientos y datos personales asociados. **Sigue pendiente**: con el feed comunitario abierto, esto pasa de ser una mejora a ser más urgente — hoy borrar una cuenta no retira sus avistamientos ya aprobados del feed.
+- ~~Implementar moderación real antes de publicar un avistamiento en el mapa comunitario~~ — sustituido por auto-publicación (decisión de producto, ver "Resuelto" arriba). El panel `backend/admin/moderation.php` sigue existiendo para revisar/aplicar cambios puntuales.
+- Endpoint de borrado de cuenta que elimine o anonimice avistamientos y datos personales asociados — hecho: `DELETE /me` borra la cuenta y sus avistamientos/corazones/badges por `ON DELETE CASCADE` (las fotos en disco también se eliminan). Pendiente: verificar el comportamiento en una prueba de extremo a extremo real.
 - Retención mínima: definir un plazo de expiración de datos de cuentas inactivas.
-- La cola de moderación no tiene límite de tiempo: un avistamiento puede quedarse en `pending` indefinidamente si nadie lo revisa. Antes de un lanzamiento real hace falta un proceso (aunque sea manual) que garantice que se revisa en un plazo razonable, o el feed comunitario se queda vacío en la práctica.
+- Con auto-publicación ya no hay cola de moderación que pueda dejar el feed vacío; la compensación es que el contenido se publica sin revisión humana previa (mitigado por el filtro NSFW del cliente y la anonimidad de autor).
 
 ## Checklist antes de cualquier release pública
 
@@ -61,8 +61,7 @@ Este documento describe el diseño objetivo; el código actual **no** lo cumple 
 - [x] Coordenadas difuminadas en el cliente antes de cualquier envío
 - [x] Mapa/feed comunitario sin nombres de usuario
 - [x] EXIF recortado de las fotos antes de subir
-- [x] Moderación previa a la publicación en el feed comunitario
-- [ ] Proceso que garantice que la cola de moderación se revisa en un plazo razonable (hoy es manual y sin SLA)
+- [x] Publicación en el feed comunitario operativa (auto-publicación; la moderación manual se reemplazó por decisión de producto — revisar si el alcance llega a ser público amplio)
 - [ ] Token en almacenamiento seguro
 - [ ] Endpoint de borrado de cuenta que retire también sus avistamientos del feed
 - [ ] Política de privacidad pública redactada y enlazada en la tienda de apps

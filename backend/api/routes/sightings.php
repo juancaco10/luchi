@@ -88,9 +88,15 @@ if ($method === 'POST' && $path === '/sightings') {
 
     $db = getDB();
 
+    // Auto-publicación (decisión de producto para una app familiar): todo
+    // avistamiento nace aprobado y se ve para todos al instante. Si algún
+    // día se vuelve a exigir moderación manual, quitar estas dos columnas
+    // del INSERT y restaurar la condición 1 del GET /sightings.
     $stmt = $db->prepare(
-        'INSERT INTO sightings (user_id, lat, lng, quantity, notes, photo_url, location_name)
-         VALUES (?, ?, ?, ?, ?, ?, ?)'
+        'INSERT INTO sightings
+            (user_id, lat, lng, quantity, notes, photo_url, location_name,
+             moderation_status, moderated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, "approved", NOW())'
     );
     $stmt->execute([
         $user['id'],
@@ -126,17 +132,22 @@ if ($method === 'POST' && $path === '/sightings') {
 //
 // Estuvo devolviendo 410 a propósito durante toda la v1: exponer
 // coordenadas y fotos de menores sin sistema comunitario era un riesgo
-// real. Se abre ahora, y sigue siendo seguro **solo** por estas cuatro
+// real. Se abre ahora, y sigue siendo seguro **solo** por estas tres
 // condiciones — si se quita cualquiera, hay que volver a cerrarlo:
 //
-//   1. Lo ajeno solo se devuelve aprobado por un moderador (`approved`),
-//      nunca lo recién publicado. **Excepción**: lo propio `pending` se
-//      devuelve (y llega marcado `is_pending: true`) para que el autor vea
-//      su avistamiento en el mapa mientras espera la revisión — nadie más
-//      puede verlo hasta que un moderador lo apruebe.
-//   2. No sale `user_id` ni `user_name`: nada identifica al niño autor.
-//   3. Las coordenadas se redondean aquí también, no solo en el cliente.
-//   4. `location_name` se recorta a nivel ciudad.
+//   1. No sale `user_id` ni `user_name`: nada identifica al niño autor.
+//   2. Las coordenadas se redondean aquí también, no solo en el cliente.
+//   3. `location_name` se recorta a nivel ciudad.
+//
+// La moderación previa (condición 4 de la versión original: "lo ajeno solo
+// se devuelve aprobado por un moderador") se sustituyó por auto-publicación
+// por decisión de producto: todo avistamiento nace `approved` (ver
+// POST /sightings) y se ve para todos al instante, sin cola de revisión.
+// Si algún día se restaura la moderación manual, hay que (a) volver a
+// poner la condición de filtrado por `moderation_status` y (b) quitar el
+// `approved` del INSERT. La excepción de "lo propio pendiente" del WHERE
+// se conserva para no dejar huérfanos los avistamientos viejos que aún
+// estén en 'pending' — nadie más los ve hasta que se aprueben.
 //
 // `is_mine` se calcula en el servidor y es el único vínculo con el autor
 // que se revela — y solo sobre uno mismo, para que la app sepa si mostrar
@@ -330,14 +341,11 @@ if ($method === 'PUT' && preg_match('#^/sightings/(\d+)$#', $path, $m)) {
         jsonError('Avistamiento no encontrado', 404);
     }
 
-    // Editar contenido ya aprobado lo devuelve a revisión: un moderador
-    // vio la foto/notas originales, no las nuevas. Si estaba pending o
-    // rejected se queda igual (no hay nada que "reabrir").
+    // Con auto-publicación el contenido ya está visible para todos al
+    // editar; no hay nada que "reabrir" para revisión.
     $stmt = $db->prepare(
         'UPDATE sightings
-         SET lat = ?, lng = ?, quantity = ?, notes = ?, photo_url = ?, location_name = ?,
-             moderation_status = IF(moderation_status = "approved", "pending", moderation_status),
-             moderated_at = IF(moderation_status = "approved", NULL, moderated_at)
+         SET lat = ?, lng = ?, quantity = ?, notes = ?, photo_url = ?, location_name = ?
          WHERE id = ? AND user_id = ?'
     );
     $stmt->execute([
