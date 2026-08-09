@@ -44,8 +44,7 @@ class SyncService {
 
     try {
       final pendingSightings = LocalStorage.instance.getPendingSightingsWithKeys();
-      final pendingMissions = LocalStorage.instance.getPendingMissionsWithKeys();
-      if (pendingSightings.isEmpty && pendingMissions.isEmpty) return;
+      if (pendingSightings.isEmpty) return;
 
       bool anySuccess = false;
       bool sightingsSynced = false;
@@ -104,21 +103,10 @@ class SyncService {
       // seguiría mostrándolo como pendiente hasta reiniciar la app.
       if (sightingsSynced) {
         _ref.read(sightingsProvider.notifier).loadSightings();
-      }
-
-      // Misiones completadas sin conexión. /complete-mission es idempotente
-      // en el backend (no otorga puntos dobles), así que reenviar es seguro.
-      for (final entry in pendingMissions.entries) {
-        try {
-          await _ref.read(apiClientProvider).post(
-            ApiEndpoints.completeMission,
-            data: {'mission_id': entry.value['mission_id']},
-          );
-          await LocalStorage.instance.removePendingMission(entry.key);
-          anySuccess = true;
-        } catch (_) {
-          // Se queda en la caja para el próximo intento.
-        }
+        // El mapa pinta el feed comunitario: si ya estaba abierto cuando
+        // vuelve la conexión, refrescarlo aquí hace que el avistamiento
+        // subido ahora aparezca sin reiniciar la app.
+        _ref.read(sightingsProvider.notifier).loadCommunitySightings();
       }
 
       if (anySuccess) {

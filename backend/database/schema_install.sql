@@ -27,7 +27,11 @@ CREATE TABLE IF NOT EXISTS users (
   auth_provider VARCHAR(20)         NOT NULL DEFAULT 'password',
   password_hash VARCHAR(255)        NULL,
   points        INT UNSIGNED        NOT NULL DEFAULT 0,
+  game_stars    INT UNSIGNED        NOT NULL DEFAULT 0,
   level         TINYINT UNSIGNED    NOT NULL DEFAULT 1,
+  -- Acceso a backend/admin/moderation.php. Se activa a mano en la base;
+  -- no hay forma de concedérselo a uno mismo desde la app.
+  is_moderator  TINYINT(1)          NOT NULL DEFAULT 0,
   avatar_url    VARCHAR(500)        NULL,
   country       VARCHAR(100)        NULL,
   city          VARCHAR(120)        NULL,
@@ -102,10 +106,29 @@ CREATE TABLE IF NOT EXISTS sightings (
   created_at    TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   updated_at    TIMESTAMP        NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
   archived_at   TIMESTAMP        NULL DEFAULT NULL,
+  -- Moderación previa: nada aparece en el feed comunitario hasta que un
+  -- moderador lo aprueba. Ver docs/PRIVACY.md.
+  moderation_status ENUM('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+  moderated_at  TIMESTAMP        NULL DEFAULT NULL,
+  likes_count   INT UNSIGNED     NOT NULL DEFAULT 0,
   INDEX idx_user   (user_id),
   INDEX idx_coords (lat, lng),
   INDEX idx_user_created (user_id, created_at),
+  INDEX idx_feed (moderation_status, archived_at, created_at),
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ── sighting_likes ───────────────────────────────────────────────
+-- Un corazón por persona y avistamiento: lo garantiza el UNIQUE KEY.
+CREATE TABLE IF NOT EXISTS sighting_likes (
+  id          INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  sighting_id INT UNSIGNED NOT NULL,
+  user_id     INT UNSIGNED NOT NULL,
+  created_at  TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_like (sighting_id, user_id),
+  INDEX idx_sighting (sighting_id),
+  FOREIGN KEY (sighting_id) REFERENCES sightings(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── badges ───────────────────────────────────────────────────────
@@ -114,7 +137,7 @@ CREATE TABLE IF NOT EXISTS badges (
   name              VARCHAR(100) NOT NULL,
   emoji             VARCHAR(10)  NOT NULL,
   description       TEXT         NOT NULL,
-  condition_type    ENUM('points','missions','chapters','sightings') NOT NULL,
+  condition_type    ENUM('points','missions','chapters','sightings','game_stars') NOT NULL,
   condition_value   INT UNSIGNED NOT NULL,
   created_at        TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -140,28 +163,28 @@ SET FOREIGN_KEY_CHECKS = 1;
 INSERT INTO chapters (title, description, video_url, order_index, points_reward, facts, quiz) VALUES
 ('¿Qué es una luciérnaga?',
  'Descubre los secretos de estos increíbles insectos bioluminiscentes que iluminan las noches de verano.',
- 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+ 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
  1, 15,
  '["Las luciérnagas producen luz fría — casi sin calor.", "Su luz es producida por una reacción química llamada bioluminiscencia.", "Existen más de 2000 especies de luciérnagas en el mundo."]',
  '[{"question": "¿Cómo producen luz las luciérnagas?", "options": ["Con electricidad", "Con bioluminiscencia", "Con el sol", "Con calor"], "correctIndex": 1}]'),
 
 ('Su hábitat natural',
  'Aprende dónde viven las luciérnagas y por qué necesitan lugares oscuros y húmedos para sobrevivir.',
- 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+ 'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
  2, 15,
  '["Las luciérnagas prefieren zonas húmedas como prados y bordes de ríos.", "La contaminación lumínica es su mayor amenaza.", "Necesitan vegetación para esconderse durante el día."]',
  '[{"question": "¿Cuál es la mayor amenaza para las luciérnagas?", "options": ["El frío", "La contaminación lumínica", "La lluvia", "El viento"], "correctIndex": 1}]'),
 
 ('Por qué están desapareciendo',
  'Entiende las causas del declive de las luciérnagas y cómo cada uno de nosotros puede hacer la diferencia.',
- 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+ 'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
  3, 20,
  '["La pérdida de hábitat afecta al 70% de las especies.", "El uso de pesticidas mata a sus larvas que viven en la tierra.", "Puedes ayudar apagando luces exteriores innecesarias."]',
  '[{"question": "¿Qué puedes hacer para ayudar?", "options": ["Usar más luces afuera", "Apagar luces innecesarias", "Usar pesticidas", "Nada"], "correctIndex": 1}]'),
 
 ('Cómo ser un Guardián',
  'Aprende las acciones concretas que puedes tomar para proteger a las luciérnagas en tu vecindario.',
- 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+ 'https://download.samplelib.com/mp4/sample-15s.mp4',
  4, 25,
  '["Planta vegetación nativa para crear hábitat.", "Evita pesticidas y herbicidas en tu jardín.", "Registra tus avistamientos para ayudar a los científicos."]',
  '[{"question": "¿Qué deberías plantar para ayudar?", "options": ["Plantas artificiales", "Vegetación nativa", "Cactus", "Ninguna"], "correctIndex": 1}]');
@@ -194,9 +217,13 @@ INSERT INTO missions (title, description, type, points_reward, icon, how_to, tip
 
 -- Badges
 INSERT INTO badges (name, emoji, description, condition_type, condition_value) VALUES
-('Primera Luz', '💡', 'Completa tu primera misión', 'missions', 1),
+('Primer Paso', '📖', 'Completa tu primer capítulo', 'chapters', 1),
 ('Explorador', '🔭', 'Alcanza 100 puntos', 'points', 100),
 ('Guardián', '🛡️', 'Alcanza 200 puntos', 'points', 200),
 ('Maestro Guardián', '⭐', 'Alcanza 400 puntos', 'points', 400),
 ('Observador Nocturno', '🌙', 'Registra tu primer avistamiento', 'sightings', 1),
-('Pequeño Científico', '🧪', 'Completa un capítulo entero', 'chapters', 1);
+('Pequeño Científico', '🧪', 'Completa todos los capítulos', 'chapters', 4),
+('Primera Estrella', '🌟', 'Gana tu primera estrella en un minijuego', 'game_stars', 1),
+('Jugador Constante', '🎮', 'Reúne 25 estrellas en los minijuegos', 'game_stars', 25),
+('Estrella del Bosque', '🏅', 'Reúne 75 estrellas en los minijuegos', 'game_stars', 75),
+('Leyenda Luminosa', '🏆', 'Consigue las 150 estrellas: todos los juegos, todos los niveles, perfectos', 'game_stars', 150);

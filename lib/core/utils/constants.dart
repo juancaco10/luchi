@@ -20,8 +20,8 @@ abstract class AppConstants {
     defaultValue: false,
   );
 
-  /// Permite servir los datos de ejemplo (`getMockChapters`/`getMockMissions`)
-  /// cuando la API falla y no hay caché. **False por defecto, a propósito.**
+  /// Permite servir los datos de ejemplo (`getMockChapters`) cuando la API
+  /// falla y no hay caché. **False por defecto, a propósito.**
   ///
   /// Esos mocks no son relleno inocuo: sus capítulos apuntan a vídeos de
   /// muestra de Google (BigBuckBunny.mp4). Servirlos ante cualquier fallo de
@@ -55,19 +55,44 @@ abstract class AppConstants {
   static const String userKey = 'current_user';
   static const String onboardingKey = 'onboarding_done';
   static const String chaptersBox = 'chapters_box';
-  static const String missionsBox = 'missions_box';
   static const String sightingsBox = 'sightings_box';
+  static const String badgesBox = 'badges_box';
 
-  /// Caja propia para la cola de misiones pendientes de enviar. No puede
-  /// compartir `missionsBox`: esa se usa como caché y `cacheMissions()` la
-  /// vacía en cada refresco, lo que borraría la cola.
-  static const String pendingMissionsBox = 'pending_missions_box';
+  /// Progreso de los minijuegos (estrellas por nivel, energía, racha).
+  /// Es progreso local del jugador, no caché de servidor: nunca se limpia
+  /// en un refresco, solo en `clearAll()` al cerrar sesión.
+  static const String gamesBox = 'games_box';
 
   // ── Gamification ─────────────────────────────────────────────
-  static const int pointsDailyMission = 10;
-  static const int pointsWeeklyMission = 30;
   static const int pointsChapter = 15;
   static const int pointsSighting = 20;
+
+  // ── Minijuegos ───────────────────────────────────────────────
+  /// Puntos por estrella ganada en un nivel de minijuego. Un nivel perfecto
+  /// (3 estrellas) vale 15, igual que completar un capítulo — jugar y
+  /// aprender pesan lo mismo. Solo se pagan las estrellas **nuevas**: repetir
+  /// un nivel ya superado no vuelve a dar puntos (ver `recordResult` en
+  /// lib/features/games/providers/games_progress_provider.dart).
+  static const int pointsGameStar = 5;
+
+  /// Energía de luz por estrella nueva. Es la moneda que se gasta en
+  /// "Restaurar el Bosque", el meta-juego que une a los otros cuatro.
+  ///
+  /// El bosque completo cuesta 1250. Con 10 por estrella, un jugador que
+  /// sacara las 120 estrellas posibles (3×10×4 juegos) se quedaba a 50 de
+  /// terminar la última zona sin volver otro día — un callejón sin salida
+  /// para un niño. Con 11, el juego perfecto lo cubre todo y dejar alguna
+  /// estrella sin 3 estrellas se compensa jugando varios días (racha +15).
+  static const int energyPerStar = 11;
+
+  /// Bonus de energía por jugar el primer nivel del día (racha diaria).
+  static const int energyDailyBonus = 15;
+
+  /// Estrellas necesarias en un juego para desbloquear el siguiente del hub.
+  static const int starsToUnlockNextGame = 8;
+
+  /// Niveles por minijuego. El catálogo debe tener exactamente estos.
+  static const int levelsPerGame = 10;
 
   static const Map<int, String> levelNames = {
     1: 'Observador',

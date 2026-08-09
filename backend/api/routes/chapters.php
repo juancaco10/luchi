@@ -49,6 +49,7 @@ if ($method === 'GET' && $path === '/chapters') {
         ];
     }
 
+    header('Cache-Control: public, max-age=3600');
     jsonResponse(['chapters' => $result]);
 }
 

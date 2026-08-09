@@ -83,8 +83,8 @@ require_once __DIR__ . '/lib/gamification.php';
 // ── Routes ────────────────────────────────────────────────────────
 require_once __DIR__ . '/routes/users.php';
 require_once __DIR__ . '/routes/chapters.php';
-require_once __DIR__ . '/routes/missions.php';
 require_once __DIR__ . '/routes/sightings.php';
+require_once __DIR__ . '/routes/badges.php';
 require_once __DIR__ . '/routes/uploads.php';
 
 // 404 fallback

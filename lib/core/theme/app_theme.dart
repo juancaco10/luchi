@@ -214,7 +214,7 @@ abstract class AppTheme {
       // ── Bottom Navigation ─────────────────────────────────────
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: DarkPalette.surface,
-        selectedItemColor: DarkPalette.primary,
+        selectedItemColor: Color(0xFFB2FF59), // yellowish green
         unselectedItemColor: DarkPalette.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
@@ -455,7 +455,7 @@ abstract class AppTheme {
       // ── Bottom Navigation ─────────────────────────────────────
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: LightPalette.surface,
-        selectedItemColor: LightPalette.primary,
+        selectedItemColor: LightPalette.secondary, // verde amarillento
         unselectedItemColor: LightPalette.textMuted,
         type: BottomNavigationBarType.fixed,
         elevation: 0,

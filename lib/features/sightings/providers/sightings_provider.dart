@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,32 +10,45 @@ import '../../../core/storage/local_storage.dart';
 class SightingsState {
   final List<SightingModel> sightings;
   final List<SightingModel> archivedSightings;
+
+  /// Feed comunitario (`GET /sightings`): avistamientos ajenos ya
+  /// aprobados por moderación, sin nombre de autor. Separado de
+  /// `sightings` por la misma razón que los archivados viven aparte: son
+  /// datos de naturaleza distinta, no una vista filtrada de lo mismo.
+  final List<SightingModel> communitySightings;
   final bool isLoading;
   final bool isSubmitting;
+  final bool isLoadingCommunity;
   final String? error;
 
   const SightingsState({
     this.sightings = const [],
     this.archivedSightings = const [],
+    this.communitySightings = const [],
     this.isLoading = false,
     this.isSubmitting = false,
+    this.isLoadingCommunity = false,
     this.error,
   });
 
   /// `error` no lleva `??` sobre el valor previo: con eso, pasar `error:
   /// null` para limpiar un error puesto antes no lo limpiaba — el mismo
-  /// bug que en ChaptersState/MissionsState.
+  /// bug que en ChaptersState.
   SightingsState copyWith({
     List<SightingModel>? sightings,
     List<SightingModel>? archivedSightings,
+    List<SightingModel>? communitySightings,
     bool? isLoading,
     bool? isSubmitting,
+    bool? isLoadingCommunity,
     Object? error = _unset,
   }) => SightingsState(
     sightings: sightings ?? this.sightings,
     archivedSightings: archivedSightings ?? this.archivedSightings,
+    communitySightings: communitySightings ?? this.communitySightings,
     isLoading: isLoading ?? this.isLoading,
     isSubmitting: isSubmitting ?? this.isSubmitting,
+    isLoadingCommunity: isLoadingCommunity ?? this.isLoadingCommunity,
     error: identical(error, _unset) ? this.error : error as String?,
   );
 }
@@ -55,12 +69,42 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
         ApiEndpoints.mySightings,
       );
       final List data = response.data!['sightings'] as List;
-      final List<SightingModel> sightings = data
+      final List<SightingModel> apiSightings = data
           .map<SightingModel>((j) => SightingModel.fromJson(j as Map<String, dynamic>))
           .toList();
-      state = state.copyWith(sightings: sightings, isLoading: false);
+
+      final pendingData = LocalStorage.instance.getPendingSightings();
+      final List<SightingModel> pendingSightings = pendingData
+          .map<SightingModel>((j) => SightingModel.fromJson(j))
+          .toList();
+
+      state = state.copyWith(
+        sightings: [...pendingSightings, ...apiSightings],
+        isLoading: false,
+      );
+    } on DioException catch (e) {
+      // Fallo de red o del servidor: no dejar el mapa en silencio. Se
+      // mantiene visible lo que haya en la cola local (pendientes offline)
+      // y se expone el motivo para que la pantalla pueda mostrarlo con
+      // opción de reintentar — un mapa vacío sin explicación parecía
+      // "perder" los avistamientos al reiniciar la app.
+      final message = e.error is AppException
+          ? (e.error as AppException).message
+          : 'No se pudo cargar tus avistamientos.';
+      final pendingData = LocalStorage.instance.getPendingSightings();
+      final pendingSightings = pendingData
+          .map<SightingModel>((j) => SightingModel.fromJson(j))
+          .toList();
+      state = state.copyWith(
+        sightings: pendingSightings,
+        isLoading: false,
+        error: message,
+      );
     } catch (_) {
-      state = state.copyWith(isLoading: false);
+      state = state.copyWith(
+        isLoading: false,
+        error: 'No se pudo cargar tus avistamientos.',
+      );
     }
   }
 
@@ -121,9 +165,34 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
         sightings: [synced, ...state.sightings],
         isSubmitting: false,
       );
+      // El mapa muestra el feed comunitario: refrescarlo aquí hace que el
+      // avistamiento recién creado aparezca sin reiniciar la app (aunque el
+      // mapa ya esté abierto en una pestaña).
+      unawaited(loadCommunitySightings());
       return 'success';
+    } on DioException catch (e) {
+      if (e.response != null) {
+        // El servidor respondió con un error (validación, sesión...): NO es
+        // falta de conexión. Encolarlo en local sería mentirle al niño —
+        // parecería guardado y desaparecería al reinstalar la app. Se
+        // expone el error y no se marca como pendiente.
+        final message = e.error is AppException
+            ? (e.error as AppException).message
+            : 'No se pudo guardar el avistamiento. Inténtalo de nuevo.';
+        state = state.copyWith(isSubmitting: false, error: message);
+        return 'error';
+      }
+      // Sin respuesta del servidor = sin conexión: se encola y se mostrará
+      // como pendiente hasta que la cola offline la suba.
+      await LocalStorage.instance.queueSighting(sighting.toJson());
+      state = state.copyWith(
+        sightings: [sighting, ...state.sightings],
+        isSubmitting: false,
+      );
+      return 'pending';
     } catch (_) {
-      // Queue for offline sync
+      // Cualquier otro fallo (p. ej. Hive al encolar) tampoco debe parecer
+      // un guardado exitoso.
       await LocalStorage.instance.queueSighting(sighting.toJson());
       state = state.copyWith(
         sightings: [sighting, ...state.sightings],
@@ -239,6 +308,89 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
     }
   }
 
+  /// Carga el feed comunitario. A diferencia de `loadSightings()`, no se
+  /// llama en el constructor: solo hace falta cuando alguna pantalla
+  /// realmente lo muestra (evita una llamada de red que la mayoría de
+  /// sesiones ni usaría, igual que `loadArchivedSightings`).
+  Future<void> loadCommunitySightings() async {
+    state = state.copyWith(isLoadingCommunity: true);
+    try {
+      final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
+        ApiEndpoints.sightings,
+      );
+      final List data = response.data!['sightings'] as List;
+      final List<SightingModel> community = data
+          .map<SightingModel>((j) => SightingModel.fromJson(j as Map<String, dynamic>))
+          .toList();
+      state = state.copyWith(
+        communitySightings: community,
+        isLoadingCommunity: false,
+      );
+    } on DioException catch (e) {
+      final message = e.error is AppException
+          ? (e.error as AppException).message
+          : 'No se pudo cargar el mapa comunitario.';
+      state = state.copyWith(isLoadingCommunity: false, error: message);
+    } catch (_) {
+      state = state.copyWith(
+        isLoadingCommunity: false,
+        error: 'No se pudo cargar el mapa comunitario.',
+      );
+    }
+  }
+
+  /// Da o quita el corazón. Optimista con reversión, igual patrón que
+  /// `setArchived`: el contador y el estado de "me gusta" cambian al
+  /// instante en las tres listas donde el avistamiento pudiera estar (uno
+  /// propio puede aparecer también en el feed comunitario si se ve a sí
+  /// mismo ahí), y se revierte si la llamada falla.
+  Future<bool> toggleLike(int id) async {
+    SightingModel? before;
+    for (final s in [
+      ...state.sightings,
+      ...state.communitySightings,
+      ...state.archivedSightings,
+    ]) {
+      if (s.id == id) {
+        before = s;
+        break;
+      }
+    }
+    if (before == null) return false;
+
+    final liked = !before.likedByMe;
+    final delta = liked ? 1 : -1;
+
+    SightingModel apply(SightingModel s) => s.id == id
+        ? s.copyWith(likedByMe: liked, likesCount: (s.likesCount + delta).clamp(0, 1 << 30))
+        : s;
+
+    state = state.copyWith(
+      sightings: state.sightings.map(apply).toList(),
+      communitySightings: state.communitySightings.map(apply).toList(),
+      archivedSightings: state.archivedSightings.map(apply).toList(),
+    );
+
+    try {
+      final client = _ref.read(apiClientProvider);
+      if (liked) {
+        await client.post(ApiEndpoints.likeSighting(id));
+      } else {
+        await client.delete(ApiEndpoints.likeSighting(id));
+      }
+      return true;
+    } catch (_) {
+      SightingModel revert(SightingModel s) => s.id == id ? before! : s;
+      state = state.copyWith(
+        sightings: state.sightings.map(revert).toList(),
+        communitySightings: state.communitySightings.map(revert).toList(),
+        archivedSightings: state.archivedSightings.map(revert).toList(),
+        error: 'No se pudo guardar tu corazón. Revisa tu conexión.',
+      );
+      return false;
+    }
+  }
+
   /// Sube una foto y devuelve su URL pública ya sin metadatos EXIF (el
   /// servidor la recodifica). Requiere conexión — no se encola.
   Future<String?> uploadPhoto(File file) async {
@@ -263,11 +415,16 @@ final sightingsProvider =
   (ref) => SightingsNotifier(ref),
 );
 
-/// Busca por id en ambas listas (activos y archivados) — la pantalla de
-/// edición puede llegar desde cualquiera de las dos.
+/// Busca por id en las tres listas (activos, archivados y feed
+/// comunitario) — la pantalla de edición puede llegar desde cualquiera de
+/// las dos primeras, y el modal de detalle desde cualquiera de las tres.
 final sightingByIdProvider = Provider.family<SightingModel?, int>((ref, id) {
   final state = ref.watch(sightingsProvider);
-  for (final s in [...state.sightings, ...state.archivedSightings]) {
+  for (final s in [
+    ...state.sightings,
+    ...state.archivedSightings,
+    ...state.communitySightings,
+  ]) {
     if (s.id == id) return s;
   }
   return null;

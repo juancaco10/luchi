@@ -69,7 +69,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _finish() async {
     await LocalStorage.instance.setOnboardingDone();
     if (!mounted) return;
-    context.go('/login');
+    context.go('/onboarding/consent');
   }
 
   @override

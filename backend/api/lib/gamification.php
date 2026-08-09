@@ -41,7 +41,7 @@ function updateUserLevel(PDO $db, int $userId, int $points): void
  * Previously only 'points' was handled, so the seeded 'missions',
  * 'chapters' and 'sightings' badges could never be earned.
  */
-function awardBadgesIfEarned(PDO $db, int $userId, int $points): void
+function awardBadgesIfEarned(PDO $db, int $userId, int $points, int $gameStars = 0): void
 {
     // Badges this user has not earned yet
     $stmt = $db->prepare(
@@ -59,8 +59,12 @@ function awardBadgesIfEarned(PDO $db, int $userId, int $points): void
     $countFor = function (string $type) use ($db, $userId, &$counts): int {
         if (array_key_exists($type, $counts)) return $counts[$type];
 
+        // 'missions' ya no es un tipo de condición vigente: la feature de
+        // misiones se eliminó del cliente y ninguna insignia activa lo usa
+        // (ver database/migrations/05_2026_profile_badges.sql). La tabla
+        // `user_missions` sigue existiendo — no se borró, por si se
+        // reactivara — pero nada vuelve a leerla desde aquí.
         $table = match ($type) {
-            'missions'  => 'user_missions',
             'chapters'  => 'user_chapters',
             'sightings' => 'sightings',
             default     => null,
@@ -80,7 +84,11 @@ function awardBadgesIfEarned(PDO $db, int $userId, int $points): void
         $type     = $badge['condition_type'];
         $required = (int) $badge['condition_value'];
 
-        $actual = $type === 'points' ? $points : $countFor($type);
+        $actual = match ($type) {
+            'points'     => $points,
+            'game_stars' => $gameStars,
+            default      => $countFor($type),
+        };
 
         if ($actual >= $required) {
             $insert->execute([$userId, (int) $badge['id']]);
@@ -89,17 +97,19 @@ function awardBadgesIfEarned(PDO $db, int $userId, int $points): void
 }
 
 /**
- * Re-read the user's points, then sync level and badges. Call this after
- * any points award so every route stays consistent.
+ * Re-read el puntaje y las estrellas de juego del usuario, y sincroniza
+ * nivel + insignias. Llamar después de cualquier cambio en puntos o en
+ * `game_stars` para que toda ruta quede consistente.
  */
 function syncUserProgress(PDO $db, int $userId): int
 {
-    $stmt = $db->prepare('SELECT points FROM users WHERE id = ?');
+    $stmt = $db->prepare('SELECT points, game_stars FROM users WHERE id = ?');
     $stmt->execute([$userId]);
-    $points = (int) $stmt->fetchColumn();
+    $row    = $stmt->fetch();
+    $points = (int) $row['points'];
 
     updateUserLevel($db, $userId, $points);
-    awardBadgesIfEarned($db, $userId, $points);
+    awardBadgesIfEarned($db, $userId, $points, (int) $row['game_stars']);
 
     return $points;
 }

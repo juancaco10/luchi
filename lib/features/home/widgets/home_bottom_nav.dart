@@ -15,7 +15,7 @@ class HomeBottomNav extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -71,7 +71,7 @@ class HomeBottomNav extends StatelessWidget {
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    final color = isActive ? context.colors.primary : context.colors.onSurface.withValues(alpha: 0.5);
+    final color = isActive ? context.colors.secondary : context.colors.onSurface.withValues(alpha: 0.5);
 
     return Semantics(
       button: true,
@@ -85,7 +85,7 @@ class HomeBottomNav extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: isActive
               ? BoxDecoration(
-                  color: context.colors.primary.withValues(alpha: 0.1),
+                  color: context.colors.secondary.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(20),
                 )
               : null,

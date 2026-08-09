@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -26,9 +27,9 @@ class LocalStorage {
 
     // Open untyped Hive boxes for offline caching
     await Hive.openBox(AppConstants.chaptersBox);
-    await Hive.openBox(AppConstants.missionsBox);
     await Hive.openBox(AppConstants.sightingsBox);
-    await Hive.openBox(AppConstants.pendingMissionsBox);
+    await Hive.openBox(AppConstants.gamesBox);
+    await Hive.openBox(AppConstants.badgesBox);
 
     // One-time migration: earlier builds stored the token in plaintext
     // SharedPreferences. Move it to secure storage and remove the old copy.
@@ -38,6 +39,13 @@ class LocalStorage {
       await _prefs.remove(AppConstants.tokenKey);
     }
     _cachedToken = await _secureStorage.read(key: AppConstants.tokenKey);
+  }
+
+  /// Test seam: wires only SharedPreferences, skipping Hive/path_provider and
+  /// secure storage so widget tests can exercise screens that read prefs.
+  @visibleForTesting
+  Future<void> initForTesting() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
   // ── Auth Token (flutter_secure_storage — Keychain/Keystore) ───
@@ -58,6 +66,17 @@ class LocalStorage {
   // ── Onboarding ───────────────────────────────────────────────
   bool get onboardingDone => _prefs.getBool(AppConstants.onboardingKey) ?? false;
 
+  /// La primera vez que se inicia un juego se marca aquí: el cartel de
+  /// instrucciones solo se muestra en esa primera apertura, no en cada nivel.
+  bool isFirstGameStart(String gameKey) {
+    final key = 'first_game_start_$gameKey';
+    final first = !(_prefs.getBool(key) ?? false);
+    if (first) {
+      _prefs.setBool(key, true);
+    }
+    return first;
+  }
+
   Future<void> setOnboardingDone() =>
       _prefs.setBool(AppConstants.onboardingKey, true);
 
@@ -75,9 +94,9 @@ class LocalStorage {
 
   // ── Hive Boxes (untyped) ──────────────────────────────────────
   Box get chaptersBox => Hive.box(AppConstants.chaptersBox);
-  Box get missionsBox => Hive.box(AppConstants.missionsBox);
   Box get sightingsBox => Hive.box(AppConstants.sightingsBox);
-  Box get pendingMissionsBox => Hive.box(AppConstants.pendingMissionsBox);
+  Box get gamesBox => Hive.box(AppConstants.gamesBox);
+  Box get badgesBox => Hive.box(AppConstants.badgesBox);
 
   // ── Cache Chapters ───────────────────────────────────────────
   Future<void> cacheChapters(List<Map<String, dynamic>> chapters) async {
@@ -93,16 +112,16 @@ class LocalStorage {
         .toList();
   }
 
-  // ── Cache Missions ───────────────────────────────────────────
-  Future<void> cacheMissions(List<Map<String, dynamic>> missions) async {
-    await missionsBox.clear();
-    for (var m in missions) {
-      await missionsBox.put(m['id'].toString(), m);
+  // ── Cache Badges ─────────────────────────────────────────────
+  Future<void> cacheBadges(List<Map<String, dynamic>> badges) async {
+    await badgesBox.clear();
+    for (var b in badges) {
+      await badgesBox.put(b['id'].toString(), b);
     }
   }
 
-  List<Map<String, dynamic>> getCachedMissions() {
-    return missionsBox.values
+  List<Map<String, dynamic>> getCachedBadges() {
+    return badgesBox.values
         .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
         .toList();
   }
@@ -132,31 +151,12 @@ class LocalStorage {
 
   Future<void> clearPendingSightings() => sightingsBox.clear();
 
-  // ── Offline Mission Queue ────────────────────────────────────
-  // Igual patrón que la cola de avistamientos, pero aquí la clave del box
-  // ES el id de la misión (no un id autoincremental): pulsar la misma
-  // misión dos veces sin conexión debe dejar una única entrada pendiente.
-  Future<void> queuePendingMission(int missionId) =>
-      pendingMissionsBox.put(missionId, {'mission_id': missionId});
-
-  Map<dynamic, Map<String, dynamic>> getPendingMissionsWithKeys() {
-    return pendingMissionsBox.toMap().map(
-          (key, value) => MapEntry(key, Map<String, dynamic>.from(value as Map)),
-        );
-  }
-
-  Future<void> removePendingMission(dynamic key) =>
-      pendingMissionsBox.delete(key);
-
-  Future<void> clearPendingMissions() => pendingMissionsBox.clear();
-
   // ── Full Clear ───────────────────────────────────────────────
   Future<void> clearAll() async {
     await clearUser();
     await clearToken();
     await chaptersBox.clear();
-    await missionsBox.clear();
     await sightingsBox.clear();
-    await pendingMissionsBox.clear();
+    await gamesBox.clear();
   }
 }

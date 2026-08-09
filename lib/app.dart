@@ -9,16 +9,21 @@ import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/models/user_model.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/screens/onboarding_screen.dart';
+import 'features/auth/screens/parental_consent_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/home/widgets/home_bottom_nav.dart';
 import 'features/education/screens/chapters_list_screen.dart';
 import 'features/education/screens/chapter_detail_screen.dart';
-import 'features/education/screens/level_one_screen.dart';
-import 'features/education/screens/play_lobby_screen.dart';
-import 'features/missions/screens/missions_screen.dart';
-import 'features/missions/screens/mission_detail_screen.dart';
+import 'features/games/models/game_id.dart';
+import 'features/games/screens/map_hub_screen.dart';
+import 'features/games/screens/level_select_screen.dart';
+import 'features/games/screens/quiz_game_screen.dart';
+import 'features/games/screens/guide_game_screen.dart';
+import 'features/games/screens/sync_game_screen.dart';
+import 'features/games/screens/protect_game_screen.dart';
+import 'features/games/screens/restore_game_screen.dart';
 import 'features/sightings/screens/sighting_form_screen.dart';
 import 'features/sightings/screens/my_sightings_screen.dart';
 import 'features/sightings/screens/map_screen.dart';
@@ -150,7 +155,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // registrarla aquí, con la lista de protegidas quedaba pública por
       // defecto (falla insegura); con la allowlist queda protegida por
       // defecto (falla segura).
-      const publicRoutes = {'/splash', '/onboarding', '/login', '/register'};
+      const publicRoutes = {'/splash', '/onboarding', '/onboarding/consent', '/login', '/register'};
       final isPublic = publicRoutes.contains(goingTo);
 
       if (!isLoggedIn && !isPublic) return '/login';
@@ -193,6 +198,11 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/onboarding',
         name: 'onboarding',
         pageBuilder: (context, state) => _fadeTransition(state, const OnboardingScreen()),
+      ),
+      GoRoute(
+        path: '/onboarding/consent',
+        name: 'parental-consent',
+        pageBuilder: (context, state) => _slideTransition(state, const ParentalConsentScreen()),
       ),
       GoRoute(
         path: '/login',
@@ -247,12 +257,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/game',
                 name: 'game-lobby',
-                pageBuilder: (context, state) => _fadeTransition(state, const PlayLobbyScreen()),
+                pageBuilder: (context, state) => _fadeTransition(state, const MapHubScreen()),
                 routes: [
                   GoRoute(
-                    path: 'level-1',
-                    name: 'game-level-1',
-                    pageBuilder: (context, state) => _slideTransition(state, const LevelOneScreen()),
+                    path: ':gameId',
+                    name: 'game-level-select',
+                    pageBuilder: (context, state) {
+                      final id = GameId.fromSlug(state.pathParameters['gameId']);
+                      if (id == null) {
+                        return _fadeTransition(state, const MapHubScreen());
+                      }
+                      return _slideTransition(state, LevelSelectScreen(gameId: id));
+                    },
                   ),
                 ],
               ),
@@ -281,24 +297,22 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Out of shell routes
       GoRoute(
+        path: '/game/:gameId/play/:level',
+        name: 'game-play',
+        pageBuilder: (context, state) {
+          final id = GameId.fromSlug(state.pathParameters['gameId']);
+          final level =
+              int.tryParse(state.pathParameters['level'] ?? '') ?? 1;
+          if (id == null) {
+            return _fadeTransition(state, const MapHubScreen());
+          }
+          return _fadeTransition(state, _gameScreenFor(id, level));
+        },
+      ),
+      GoRoute(
         path: '/profile',
         name: 'profile',
         pageBuilder: (context, state) => _slideTransition(state, const ProfileScreen()),
-      ),
-      GoRoute(
-        path: '/missions',
-        name: 'missions',
-        pageBuilder: (context, state) => _slideTransition(state, const MissionsScreen()),
-        routes: [
-          GoRoute(
-            path: ':id',
-            name: 'mission-detail',
-            pageBuilder: (context, state) => _slideTransition(
-              state,
-              MissionDetailScreen(missionId: state.pathParameters['id']!),
-            ),
-          ),
-        ],
       ),
       GoRoute(
         path: '/sightings',
@@ -326,6 +340,22 @@ final routerProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+// ── Minijuegos: qué pantalla monta cada GameId ──────────────────────
+//
+// Un único punto de despacho en vez de cinco entradas de ruta repetidas
+// (una por juego x nivel único, como tenía el prototipo). Añadir un juego
+// nuevo es añadir un caso aquí; añadir un nivel no toca esta función en
+// absoluto, porque el nivel es un parámetro de la pantalla.
+Widget _gameScreenFor(GameId id, int level) {
+  return switch (id) {
+    GameId.explorar => QuizGameScreen(level: level),
+    GameId.guiar => GuideGameScreen(level: level),
+    GameId.sincronizar => SyncGameScreen(level: level),
+    GameId.proteger => ProtectGameScreen(level: level),
+    GameId.restaurar => RestoreGameScreen(level: level),
+  };
+}
 
 // ── Page Transitions ──────────────────────────────────────────────
 

@@ -242,6 +242,37 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return false;
     }
   }
+
+  /// Cambia el avatar del perfil a uno de los 18 predefinidos en
+  /// `assets/images/avatars/` (ver `AvatarPickerSheet`). Se guarda solo el
+  /// nombre de archivo (`avatar07.png`), nunca una ruta completa — el
+  /// backend valida contra esa misma lista blanca en `PUT /me`, así que
+  /// esto no es más que la mitad cliente de esa comprobación.
+  Future<bool> updateAvatar(String fileName) async {
+    final current = state;
+    if (current is! AuthAuthenticated) return false;
+
+    if (AppConstants.useMockAuth) {
+      final updated = current.user.copyWith(avatarUrl: fileName);
+      await LocalStorage.instance.saveUser(updated.toJson());
+      state = AuthAuthenticated(updated);
+      return true;
+    }
+
+    try {
+      final response = await _ref.read(apiClientProvider).put(
+        ApiEndpoints.me,
+        data: {'avatar_url': fileName},
+      );
+      final data = response.data as Map<String, dynamic>;
+      final updated = UserModel.fromJson(data['user'] as Map<String, dynamic>);
+      await LocalStorage.instance.saveUser(updated.toJson());
+      state = AuthAuthenticated(updated);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────

@@ -4,15 +4,18 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/theme_provider.dart';
 import '../../../../core/theme/firefly_colors.dart';
+import '../../../features/profile/utils/avatar_image.dart';
 
 class HomeHeader extends ConsumerWidget {
   final String userName;
   final bool isSmallScreen;
+  final String? avatarUrl;
 
   const HomeHeader({
     super.key,
     required this.userName,
     required this.isSmallScreen,
+    this.avatarUrl,
   });
 
   @override
@@ -71,14 +74,7 @@ class HomeHeader extends ConsumerWidget {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(24),
-                        child: Image.asset(
-                          'assets/images/avatar_mateo.png',
-                          fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => CircleAvatar(
-                            backgroundColor: context.firefly.cardSurface,
-                            child: const Text('👦', style: TextStyle(fontSize: 20)),
-                          ),
-                        ),
+                        child: _buildAvatar(context),
                       ),
                     ),
                   ),
@@ -94,39 +90,23 @@ class HomeHeader extends ConsumerWidget {
           '¡Hola, $userName! 👋',
           style: context.text.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
         ),
-        const SizedBox(height: 6),
-
-        // Badge
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: context.colors.primary.withValues(alpha: context.isDark ? 0.15 : 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: context.isDark
-                  ? context.colors.primary.withValues(alpha: 0.4)
-                  : Colors.black54, // Borde negro/oscuro en modo claro
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('🛡️', style: TextStyle(fontSize: 12)),
-              const SizedBox(width: 6),
-              Text(
-                'Explorador Nocturno',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: context.isDark ? context.colors.primary : Colors.black87, // Letras negras en modo claro
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     ).animate().fadeIn(duration: 400.ms).slideY(begin: -0.15, end: 0);
+  }
+
+  /// Avatar real del usuario: foto de Google (`http...`) o el avatar
+  /// elegido en el perfil (`avatarXX.png`). Si no hay avatar guardado o el
+  /// asset/URL falla, cae al avatar por defecto de siempre.
+  Widget _buildAvatar(BuildContext context) {
+    final image = avatarImageFor(avatarUrl);
+    return Image(
+      image: image ?? const AssetImage('assets/images/avatar_mateo.png'),
+      fit: BoxFit.cover,
+      errorBuilder: (c, e, s) => CircleAvatar(
+        backgroundColor: context.firefly.cardSurface,
+        child: const Text('👦', style: TextStyle(fontSize: 20)),
+      ),
+    );
   }
 
   Widget _iconButton(

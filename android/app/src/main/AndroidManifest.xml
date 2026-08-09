@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <!-- Declared explicitly instead of relying only on plugin manifest merging
          (geolocator, image_picker, dio pull these in implicitly).
          La ubicación es opt-in por avistamiento (interruptor en
@@ -8,9 +9,25 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <uses-permission android:name="android.permission.CAMERA"/>
-    <!-- Android 13+ (API 33) usa este permiso granular en vez de
-         READ_EXTERNAL_STORAGE para elegir fotos de la galería. -->
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+    <!-- Sin READ_MEDIA_IMAGES: image_picker usa el selector de fotos del
+         sistema (Photo Picker) para elegir una imagen de la galería, que
+         no requiere ningún permiso de acceso a medios — así lo confirma
+         el manifiesto del propio plugin (io.flutter.plugins.imagepicker),
+         que no declara ni este permiso ni READ_EXTERNAL_STORAGE. Declararlo
+         aparte era innecesario y es justo lo que activa la revisión de
+         "Permisos de fotos y vídeos" de Play Console. -->
+
+    <!-- litert-gpu-api (dependencia transitiva de nsfw_detector_flutter,
+         para el delegado GPU de TFLite) no declara targetSdkVersion en su
+         propio manifiesto, y el fusionador de Android inyecta estos tres
+         permisos de forma heredada "por si acaso" cuando eso pasa — ver
+         build/app/outputs/logs/manifest-merger-release-report.txt,
+         "IMPLIED ... reason: org.tensorflow.lite.gpu.api has a
+         targetSdkVersion < 4". El filtro NSFW es cómputo local puro, no
+         toca almacenamiento; se retiran explícitamente. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
 
     <application
         android:label="Luchi"

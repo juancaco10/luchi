@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/firefly_colors.dart';
+import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/sightings/models/sighting_model.dart';
 import '../../../features/sightings/providers/sightings_provider.dart';
 import '../../../features/sightings/utils/sighting_format.dart';
+import '../../../features/profile/utils/avatar_image.dart';
+import 'sighting_details_modal.dart';
 
 class RecentSightings extends ConsumerWidget {
   const RecentSightings({super.key, this.scale = 1.0});
@@ -142,17 +145,23 @@ class _EmptyState extends StatelessWidget {
   }
 }
 
-class _SightingCard extends StatelessWidget {
+class _SightingCard extends ConsumerWidget {
   final SightingModel sighting;
 
   const _SightingCard({required this.sighting});
 
   @override
-  Widget build(BuildContext context) {
-    final location = sightingLocationLabel(sighting);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locationFull = sightingLocationLabel(sighting);
+    final locationShort = sightingShortLocationLabel(sighting);
+    // Foto real del autor: solo para avistamientos propios (la del usuario
+    // actual, de Google o el avatar elegido). Lo ajeno del feed se muestra
+    // anónimo siempre — nunca la foto de otro niño.
+    final user = ref.watch(currentUserProvider);
+    final authorImage = sighting.isMine ? avatarImageFor(user?.avatarUrl) : null;
 
     return GestureDetector(
-      onTap: () => _SightingDetailsDialog.show(context, sighting, location),
+      onTap: () => SightingDetailsModal.show(context, sighting, locationFull, ref.read(sightingsProvider).sightings.length),
       child: Container(
         width: 135,
         decoration: BoxDecoration(
@@ -218,7 +227,7 @@ class _SightingCard extends StatelessWidget {
                             const SizedBox(width: 2),
                             Flexible(
                               child: Text(
-                                location,
+                                locationShort,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
@@ -240,7 +249,7 @@ class _SightingCard extends StatelessWidget {
                       )
                     else
                       Text(
-                        relativeTime(sighting.createdAt),
+                        relativeTimeShort(sighting.createdAt),
                         style: const TextStyle(
                           fontFamily: 'Nunito',
                           fontSize: 10,
@@ -261,24 +270,134 @@ class _SightingCard extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const CircleAvatar(
-                          radius: 9,
-                          backgroundImage: AssetImage('assets/images/avatar_mateo.png'),
+                        // Avatar del autor, más grande. Lo propio usa la
+                        // foto real del usuario (Google o avatar elegido);
+                        // lo ajeno, un icono anónimo.
+                        ClipOval(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: authorImage != null
+                                ? Image(
+                                    image: authorImage,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (c, e, s) =>
+                                        const Icon(Icons.person, size: 16),
+                                  )
+                                : Container(
+                                    color: Colors.white.withValues(alpha: 0.2),
+                                    child: Icon(
+                                      sighting.isMine
+                                          ? Icons.person
+                                          : Icons.eco_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
                         ),
-                        const SizedBox(width: 4),
+                        const SizedBox(width: 6),
                         Text(
                           'x${sighting.quantity}',
                           style: const TextStyle(
                             fontFamily: 'Nunito',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
                             color: Colors.white,
+                            shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                           ),
                         ),
                       ],
                     ),
-                    const Text('✨', style: TextStyle(fontSize: 12)),
+                    // No se ofrece dar corazón a algo `isPending`: todavía
+                    // no existe en el servidor (`toggleLike` fallaría con
+                    // un id nulo), así que aquí solo hay hueco vacío hasta
+                    // que sincronice.
+                    if (!sighting.isPending) _LikeButton(sighting: sighting),
                   ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Corazón + contador, en la esquina donde antes había un '✨' decorativo.
+/// `GestureDetector` propio para que tocarlo no abra el modal (el de la
+/// tarjeta entera) — solo da o quita el corazón.
+class _LikeButton extends ConsumerStatefulWidget {
+  const _LikeButton({required this.sighting});
+
+  final SightingModel sighting;
+
+  @override
+  ConsumerState<_LikeButton> createState() => _LikeButtonState();
+}
+
+class _LikeButtonState extends ConsumerState<_LikeButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pop = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+    lowerBound: 0,
+    upperBound: 0.35,
+  );
+
+  @override
+  void dispose() {
+    _pop.dispose();
+    super.dispose();
+  }
+
+  Future<void> _tap() async {
+    if (widget.sighting.id == null) return;
+    final wasLiked = widget.sighting.likedByMe;
+    if (!wasLiked) {
+      // Solo hace el pop al dar corazón, no al quitarlo — el gesto
+      // afirmativo se celebra, el negativo no necesita ceremonia.
+      _pop.forward(from: 0).then((_) => _pop.reverse());
+    }
+    await ref.read(sightingsProvider.notifier).toggleLike(widget.sighting.id!);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final liked = widget.sighting.likedByMe;
+    final count = widget.sighting.likesCount;
+    return GestureDetector(
+      onTap: _tap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        // Área táctil un poco mayor que el icono visible, sin desplazar el
+        // layout — el icono real ya ronda los 14px.
+        padding: const EdgeInsets.all(4),
+        child: AnimatedBuilder(
+          animation: _pop,
+          builder: (context, child) => Transform.scale(
+            scale: 1 + _pop.value,
+            child: child,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                liked ? Icons.favorite : Icons.favorite_border,
+                size: 20,
+                color: liked ? const Color(0xFFFF5C7A) : Colors.white,
+                shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: const TextStyle(
+                  fontFamily: 'Nunito',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                 ),
               ),
             ],
@@ -325,53 +444,3 @@ class _SightingPhoto extends StatelessWidget {
   }
 }
 
-class _SightingDetailsDialog {
-  static void show(BuildContext context, SightingModel sighting, String location) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          backgroundColor: context.colors.surface,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '🌎 $location',
-                  style: context.text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '✨ ${sighting.quantity} luciérnaga(s)',
-                  style: context.text.bodyMedium,
-                ),
-                if (sighting.notes?.trim().isNotEmpty == true) ...[
-                  const SizedBox(height: 8),
-                  Text(sighting.notes!, style: context.text.bodyMedium),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  sighting.isPending ? 'Pendiente de enviar' : relativeTime(sighting.createdAt),
-                  style: context.text.bodySmall?.copyWith(
-                    color: context.text.bodySmall?.color?.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: FilledButton.tonal(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Cerrar'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}

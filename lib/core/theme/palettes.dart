@@ -76,12 +76,6 @@ abstract class DarkPalette {
   // Theme-invariant decorative tokens — no distinct light variant existed in
   // the old AppColors either, so both themes read these from DarkPalette
   // (same pattern as primaryGradient/greenGradient below).
-  static const LinearGradient missionGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF243050), Color(0xFF1A2340)],
-  );
-
   static List<BoxShadow> greenGlowShadow = [
     const BoxShadow(color: secondaryGlow, blurRadius: 16, spreadRadius: 1),
   ];
@@ -95,7 +89,7 @@ abstract class LightPalette {
   static const Color primary = Color(0xFFD4A800); // primaryDark en AppColors
   static const Color primaryGlow = Color(0x40F5D020);
 
-  static const Color secondary = Color(0xFF4CAF50); // secondaryDark
+  static const Color secondary = Color(0xFF7CB342); // yellowish green
 
   static const Color accent = Color(0xFF5B8BF5);
 

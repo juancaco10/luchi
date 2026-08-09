@@ -22,38 +22,20 @@ class ChaptersListScreen extends ConsumerWidget {
           SafeArea(
             child: Column(
               children: [
-                // Header
+                // Header — pestaña de nivel superior (accesible desde el menú
+                // inferior): sin flecha de retroceso, solo el título.
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Row(
                     children: [
-                      IconButton(
-                        onPressed: () => context.go('/home'),
-                        icon: Icon(Icons.arrow_back_ios_new_rounded,
-                            color: context.text.bodyMedium?.color, size: 20),
-                      ),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Capítulos',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: context.colors.onSurface,
-                            ),
-                          ),
-                          Text(
-                            'Tu aventura de aprendizaje',
-                            style: TextStyle(
-                              fontFamily: 'Nunito',
-                              fontSize: 13,
-                              color: context.text.bodyMedium?.color,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Aprender',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: context.colors.onSurface,
+                        ),
                       ),
                     ],
                   ).animate().fadeIn(duration: 400.ms),

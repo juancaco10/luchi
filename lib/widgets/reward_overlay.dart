@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../core/theme/firefly_colors.dart';
 
-/// Full-screen reward overlay shown when completing missions/chapters.
+/// Full-screen reward overlay shown when completing chapters.
 /// Fades in with a celebration animation and auto-dismisses.
 class RewardOverlay extends StatelessWidget {
   final int points;

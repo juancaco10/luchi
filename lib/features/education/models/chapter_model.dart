@@ -87,7 +87,7 @@ class ChapterModel {
           description:
               'Descubre los secretos de estos increíbles insectos bioluminiscentes que iluminan las noches de verano.',
           videoUrl:
-              'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+              'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
           orderIndex: 1,
           pointsReward: 15,
           isUnlocked: true,
@@ -103,7 +103,7 @@ class ChapterModel {
           description:
               'Aprende sobre las principales amenazas que enfrentan las luciérnagas: contaminación lumínica, pesticidas y pérdida de hábitat.',
           videoUrl:
-              'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+              'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
           orderIndex: 2,
           pointsReward: 20,
           facts: [
@@ -118,7 +118,7 @@ class ChapterModel {
           description:
               'Descubre acciones sencillas y reales que tú y tu familia pueden hacer en casa para proteger su hábitat.',
           videoUrl:
-              'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+              'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
           orderIndex: 3,
           pointsReward: 25,
           facts: [
@@ -133,7 +133,7 @@ class ChapterModel {
           description:
               'Demuestra todo lo aprendido en el reto final y graduación como Guardián Oficial de las Luciérnagas.',
           videoUrl:
-              'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4',
+              'https://download.samplelib.com/mp4/sample-15s.mp4',
           orderIndex: 4,
           pointsReward: 30,
           facts: [

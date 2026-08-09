@@ -307,6 +307,13 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
       _showSnack('Guardado, se enviará cuando haya conexión');
       await Future.delayed(const Duration(seconds: 1));
       if (mounted) context.go('/home');
+    } else {
+      // 'error': el servidor rechazó el avistamiento (validación, sesión).
+      // No se encoló — mostrar el motivo y quedarse en el formulario para
+      // poder corregirlo o reintentar.
+      _showSnack(
+        ref.read(sightingsProvider).error ?? 'No se pudo guardar el avistamiento.',
+      );
     }
   }
 

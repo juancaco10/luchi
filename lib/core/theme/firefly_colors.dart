@@ -20,7 +20,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     required this.primaryGradient,
     required this.greenGradient,
     required this.cardGradient,
-    required this.missionGradient,
     required this.cardShadow,
     required this.glowShadow,
     required this.greenGlowShadow,
@@ -38,7 +37,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
   final Gradient primaryGradient;
   final Gradient greenGradient;
   final Gradient cardGradient;
-  final Gradient missionGradient;
   final List<BoxShadow> cardShadow;
   final List<BoxShadow> glowShadow;
   final List<BoxShadow> greenGlowShadow;
@@ -56,7 +54,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     primaryGradient: DarkPalette.primaryGradient,
     greenGradient: DarkPalette.greenGradient,
     cardGradient: DarkPalette.cardGradient,
-    missionGradient: DarkPalette.missionGradient,
     cardShadow: DarkPalette.cardShadow,
     glowShadow: DarkPalette.primaryGlowShadow,
     greenGlowShadow: DarkPalette.greenGlowShadow,
@@ -75,7 +72,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     primaryGradient: DarkPalette.primaryGradient,
     greenGradient: DarkPalette.greenGradient,
     cardGradient: LightPalette.cardGradient,
-    missionGradient: DarkPalette.missionGradient,
     cardShadow: LightPalette.cardShadow,
     glowShadow: LightPalette.primaryGlowShadow,
     greenGlowShadow: DarkPalette.greenGlowShadow,
@@ -95,7 +91,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     Gradient? primaryGradient,
     Gradient? greenGradient,
     Gradient? cardGradient,
-    Gradient? missionGradient,
     List<BoxShadow>? cardShadow,
     List<BoxShadow>? glowShadow,
     List<BoxShadow>? greenGlowShadow,
@@ -113,7 +108,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
       primaryGradient: primaryGradient ?? this.primaryGradient,
       greenGradient: greenGradient ?? this.greenGradient,
       cardGradient: cardGradient ?? this.cardGradient,
-      missionGradient: missionGradient ?? this.missionGradient,
       cardShadow: cardShadow ?? this.cardShadow,
       glowShadow: glowShadow ?? this.glowShadow,
       greenGlowShadow: greenGlowShadow ?? this.greenGlowShadow,
@@ -138,8 +132,6 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
           Gradient.lerp(primaryGradient, other.primaryGradient, t)!,
       greenGradient: Gradient.lerp(greenGradient, other.greenGradient, t)!,
       cardGradient: Gradient.lerp(cardGradient, other.cardGradient, t)!,
-      missionGradient:
-          Gradient.lerp(missionGradient, other.missionGradient, t)!,
       cardShadow: t < 0.5 ? cardShadow : other.cardShadow,
       glowShadow: t < 0.5 ? glowShadow : other.glowShadow,
       greenGlowShadow: t < 0.5 ? greenGlowShadow : other.greenGlowShadow,

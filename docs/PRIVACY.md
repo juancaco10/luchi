@@ -25,12 +25,18 @@ Este documento describe el diseño objetivo; el código actual **no** lo cumple 
 
 **Estado actual (a corregir, ver plan de mejoras Fase 1 y 2):**
 - El token se guarda hoy en SharedPreferences en texto plano.
-- El backend (`GET /sightings`, auditado en `docs/BACKEND_AUDIT.md`) devuelve coordenadas exactas junto con el nombre de usuario a cualquier cuenta autenticada.
 - No existe pantalla de consentimiento parental en el onboarding.
+- La revisión legal formal (COPPA/GDPR-K/RGPD) sigue pendiente — ver checklist.
 
 **Resuelto:**
 - El recorte de EXIF de las fotos ya está implementado en dos capas — `sighting_form_screen.dart` re-codifica la imagen al elegirla (`imageQuality: 85`, `maxWidth: 1600`), y `backend/api/routes/uploads.php` la vuelve a decodificar y re-codificar con GD antes de guardarla, lo que descarta cualquier metadato EXIF (ubicación GPS de precisión completa, datos del dispositivo) que hubiera sobrevivido a la primera capa.
 - El GPS es opt-in explícito por avistamiento, con una explicación siempre visible en pantalla (`_LocationCard` en `sighting_form_screen.dart`) antes de que el interruptor "Compartir mi ubicación exacta" pueda disparar el permiso nativo. La alternativa (punto al azar dentro de la ciudad del perfil, `randomPointNear` en `sighting_geocoding.dart`) es funcionalmente equivalente para el mapa, así que negarse no degrada la experiencia ni bloquea el envío.
+- **El mapa/feed comunitario ya no está deshabilitado.** `GET /sightings` (antes `410` a propósito) ahora devuelve avistamientos reales, pero solo bajo las tres condiciones que este documento exigía para poder abrirlo — ver `backend/api/routes/sightings.php`:
+  1. **Moderación previa**: todo avistamiento nace con `moderation_status = 'pending'` y no aparece en el feed hasta que un moderador humano lo aprueba en `backend/admin/moderation.php` (acceso restringido a cuentas con `is_moderator = 1`, activado a mano en la base — no hay forma de auto-concedérselo desde la app). Editar un avistamiento ya aprobado lo devuelve a `pending` automáticamente.
+  2. **Sin nombre de usuario**: la respuesta de `GET /sightings` nunca incluye `user_id` ni `user_name`. Solo `is_mine` (booleano, calculado en el servidor) distingue lo propio de lo ajeno, y solo sobre uno mismo.
+  3. **Coordenadas redondeadas en el servidor**: `blurCoord()` recorta `lat`/`lng` a 3 decimales antes de responder, como segunda capa de defensa además del difuminado del cliente. `location_name` se recorta a nivel ciudad (`cityLevelLocation()`).
+  - Corazones (`sighting_likes`) siguen la misma regla: solo se puede dar corazón a algo `approved`, y un corazón por persona (`UNIQUE KEY`), sin que quede expuesto quién lo dio a nadie más que al propio autor del corazón.
+  - Migración: `backend/database/migrations/04_2026_sightings_social.sql`.
 
 ## Requisitos de cliente
 
@@ -41,19 +47,23 @@ Este documento describe el diseño objetivo; el código actual **no** lo cumple 
 - **Sin histórico de posición**: no guardar ningún log de posiciones GPS del dispositivo más allá del momento puntual en que el usuario decide compartirla para un avistamiento — nunca en segundo plano, nunca fuera de ese envío.
 - **Borrado de cuenta**: la pantalla de ajustes (`settings_screen.dart`) debe ofrecer una vía para solicitar borrado de cuenta y datos asociados (aunque hoy dependa de un backend que todavía no lo implementa).
 
-## Requisitos de backend (cuando se retome, ver `docs/BACKEND_AUDIT.md`)
+## Requisitos de backend
 
-- `GET /sightings` no debe devolver coordenadas de precisión completa ni `user_name` real; devolver un alias o nada, y coordenadas ya redondeadas server-side como segunda capa de defensa (defensa en profundidad, no confiar solo en el cliente).
-- Implementar moderación real (`is_pending`) antes de publicar un avistamiento en el mapa comunitario.
-- Endpoint de borrado de cuenta que elimine o anonimice avistamientos y datos personales asociados.
+- ~~`GET /sightings` no debe devolver coordenadas de precisión completa ni `user_name` real~~ — hecho, ver "Resuelto" arriba.
+- ~~Implementar moderación real antes de publicar un avistamiento en el mapa comunitario~~ — hecho (`moderation_status`, `backend/admin/moderation.php`).
+- Endpoint de borrado de cuenta que elimine o anonimice avistamientos y datos personales asociados. **Sigue pendiente**: con el feed comunitario abierto, esto pasa de ser una mejora a ser más urgente — hoy borrar una cuenta no retira sus avistamientos ya aprobados del feed.
 - Retención mínima: definir un plazo de expiración de datos de cuentas inactivas.
+- La cola de moderación no tiene límite de tiempo: un avistamiento puede quedarse en `pending` indefinidamente si nadie lo revisa. Antes de un lanzamiento real hace falta un proceso (aunque sea manual) que garantice que se revisa en un plazo razonable, o el feed comunitario se queda vacío en la práctica.
 
 ## Checklist antes de cualquier release pública
 
-- [ ] Pantalla de consentimiento parental implementada y enlazada desde onboarding
-- [ ] Coordenadas difuminadas en el cliente antes de cualquier envío
-- [ ] Mapa comunitario sin nombres de usuario
+- [ ] Pantalla de consentimiento parental implementada y enlazada desde onboarding — **bloqueante**: el feed comunitario ya publica contenido entre usuarios sin que esto exista todavía.
+- [x] Coordenadas difuminadas en el cliente antes de cualquier envío
+- [x] Mapa/feed comunitario sin nombres de usuario
 - [x] EXIF recortado de las fotos antes de subir
+- [x] Moderación previa a la publicación en el feed comunitario
+- [ ] Proceso que garantice que la cola de moderación se revisa en un plazo razonable (hoy es manual y sin SLA)
 - [ ] Token en almacenamiento seguro
+- [ ] Endpoint de borrado de cuenta que retire también sus avistamientos del feed
 - [ ] Política de privacidad pública redactada y enlazada en la tienda de apps
 - [ ] Revisión legal formal (COPPA/GDPR-K/RGPD según mercado de lanzamiento)

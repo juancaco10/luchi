@@ -5,8 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../providers/profile_provider.dart';
+import '../utils/avatar_image.dart';
+import '../widgets/avatar_picker_sheet.dart';
+import '../../../features/auth/models/user_model.dart';
 import '../../../features/auth/providers/auth_provider.dart';
-import '../../../features/missions/providers/missions_provider.dart';
 import '../../../features/education/providers/chapters_provider.dart';
 import '../../../features/sightings/providers/sightings_provider.dart';
 import '../../../widgets/level_progress_bar.dart';
@@ -18,10 +20,9 @@ class ProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final missions = ref.watch(missionsProvider);
     final chapters = ref.watch(chaptersProvider);
     final sightings = ref.watch(sightingsProvider);
-    final badges = allBadges;
+    final badges = ref.watch(badgesProvider).badges;
 
     final points = user?.points ?? 0;
     final progress = AppConstants.getLevelProgress(points);
@@ -74,28 +75,13 @@ class ProfileScreen extends ConsumerWidget {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
                     child: Column(
                       children: [
-                        // Avatar
-                        Container(
-                          width: isSmallScreen ? 80 : 96,
-                          height: isSmallScreen ? 80 : 96,
-                          decoration: BoxDecoration(
-                            gradient: context.firefly.primaryGradient,
-                            shape: BoxShape.circle,
-                            boxShadow: context.firefly.glowShadow,
-                          ),
-                          child: Center(
-                            child: Text(
-                              (user?.name.isNotEmpty == true)
-                                  ? user!.name[0].toUpperCase()
-                                  : '?',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: isSmallScreen ? 36 : 42,
-                                fontWeight: FontWeight.w800,
-                                color: context.colors.onPrimary,
-                              ),
-                            ),
-                          ),
+                        // Avatar — imagen elegida en AvatarPickerSheet si la
+                        // hay, si no la inicial del nombre como antes. El
+                        // lápiz siempre está encima: cambiar de avatar debe
+                        // ser tan descubrible como verlo.
+                        _ProfileAvatar(
+                          user: user,
+                          size: isSmallScreen ? 80 : 96,
                         )
                             .animate()
                             .scale(
@@ -223,14 +209,6 @@ class ProfileScreen extends ConsumerWidget {
                     child: Row(
                       children: [
                         _MiniStat(
-                          emoji: '🎯',
-                          value: '${missions.completedCount}',
-                          label: 'Misiones',
-                          color: context.colors.primary,
-                          isSmallScreen: isSmallScreen,
-                        ),
-                        const SizedBox(width: 10),
-                        _MiniStat(
                           emoji: '📖',
                           value:
                               '${chapters.chapters.where((c) => c.isCompleted).length}',
@@ -280,8 +258,7 @@ class ProfileScreen extends ConsumerWidget {
                     delegate: SliverChildBuilderDelegate(
                       (ctx, i) {
                         final badge = badges[i];
-                        final unlocked = badge.isUnlocked(points);
-                        return _BadgeCard(badge: badge, unlocked: unlocked)
+                        return _BadgeCard(badge: badge)
                             .animate(
                               delay: Duration(milliseconds: 350 + i * 60),
                             )
@@ -296,6 +273,89 @@ class ProfileScreen extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Círculo del avatar del perfil, con lápiz de edición superpuesto.
+/// `ConsumerWidget` propio en vez de recibir el callback por parámetro:
+/// así puede abrir `AvatarPickerSheet` sin que `ProfileScreen` tenga que
+/// pasarle un `BuildContext` de más abajo en el árbol.
+class _ProfileAvatar extends ConsumerWidget {
+  const _ProfileAvatar({required this.user, required this.size});
+
+  final UserModel? user;
+  final double size;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final image = avatarImageFor(user?.avatarUrl);
+
+    return GestureDetector(
+      onTap: () => AvatarPickerSheet.show(context),
+      child: Stack(
+        children: [
+          Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              gradient: image == null ? context.firefly.primaryGradient : null,
+              shape: BoxShape.circle,
+              boxShadow: context.firefly.glowShadow,
+            ),
+            child: image != null
+                ? ClipOval(
+                    child: Image(
+                      image: image,
+                      fit: BoxFit.cover,
+                      width: size,
+                      height: size,
+                      // Si el avatar guardado no resuelve (asset borrado,
+                      // foto de Google caída), cae a la inicial en vez de
+                      // dejar un hueco roto.
+                      errorBuilder: (context, error, stack) =>
+                          _AvatarInitial(user: user, size: size),
+                    ),
+                  )
+                : _AvatarInitial(user: user, size: size),
+          ),
+          Positioned(
+            bottom: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: context.colors.primary,
+                shape: BoxShape.circle,
+                border: Border.all(color: context.colors.surface, width: 2),
+              ),
+              child: Icon(Icons.edit, size: size * 0.16, color: Colors.black),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AvatarInitial extends StatelessWidget {
+  const _AvatarInitial({required this.user, required this.size});
+
+  final UserModel? user;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Text(
+        (user?.name.isNotEmpty == true) ? user!.name[0].toUpperCase() : '?',
+        style: TextStyle(
+          fontFamily: 'Nunito',
+          fontSize: size * 0.44,
+          fontWeight: FontWeight.w800,
+          color: context.colors.onPrimary,
+        ),
       ),
     );
   }
@@ -408,75 +468,106 @@ class _MiniStat extends StatelessWidget {
 }
 
 class _BadgeCard extends StatelessWidget {
-  final BadgeDefinition badge;
-  final bool unlocked;
+  final BadgeModel badge;
 
-  const _BadgeCard({required this.badge, required this.unlocked});
+  const _BadgeCard({required this.badge});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
-      decoration: BoxDecoration(
-        color: unlocked
-            ? context.colors.primary.withValues(alpha: 0.1)
-            : context.firefly.cardSurface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
+    final unlocked = badge.earned;
+    return Tooltip(
+      // La descripción ahora es literalmente la condición real
+      // (`condition_type`/`condition_value` del servidor), no una frase
+      // inventada aparte que podía no coincidir con lo que de verdad la
+      // desbloqueaba.
+      message: badge.description,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
           color: unlocked
-              ? context.colors.primary.withValues(alpha: 0.35)
-              : context.firefly.cardBorder,
-          width: unlocked ? 1.5 : 1,
-        ),
-        boxShadow: unlocked ? context.firefly.glowShadow : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Opacity(
-            opacity: unlocked ? 1.0 : 0.35,
-            child: Text(
-              badge.emoji,
-              style: const TextStyle(fontSize: 28),
-            ),
+              ? context.colors.primary.withValues(alpha: 0.1)
+              : context.firefly.cardSurface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: unlocked
+                ? context.colors.primary.withValues(alpha: 0.35)
+                : context.firefly.cardBorder,
+            width: unlocked ? 1.5 : 1,
           ),
-          const SizedBox(height: 4),
-          Expanded(
-            child: Center(
+          boxShadow: unlocked ? context.firefly.glowShadow : null,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Opacity(
+              opacity: unlocked ? 1.0 : 0.35,
               child: Text(
-                badge.name,
+                badge.emoji,
+                style: const TextStyle(fontSize: 28),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Expanded(
+              child: Center(
+                child: Text(
+                  badge.name,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontSize: 10.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w700,
+                    color: unlocked ? context.colors.onSurface : context.text.bodySmall?.color,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ),
+            if (unlocked)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                decoration: BoxDecoration(
+                  color: context.firefly.greenGlow,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  '✓',
+                  style: TextStyle(
+                    fontSize: 9.5,
+                    color: context.colors.secondary,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              )
+            else
+              Text(
+                _lockedHint(badge),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontFamily: 'Nunito',
-                  fontSize: 10.5,
-                  height: 1.15,
-                  fontWeight: FontWeight.w700,
-                  color: unlocked ? context.colors.onSurface : context.text.bodySmall?.color,
+                  fontSize: 9,
+                  color: context.text.bodySmall?.color?.withValues(alpha: 0.6),
                 ),
-                maxLines: 2,
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ),
-          if (unlocked)
-            Container(
-              margin: const EdgeInsets.only(top: 2),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
-              decoration: BoxDecoration(
-                color: context.firefly.greenGlow,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text(
-                '✓',
-                style: TextStyle(
-                  fontSize: 9.5,
-                  color: context.colors.secondary,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  /// Pista corta bajo el nombre, para no depender solo del tooltip (que en
+  /// móvil requiere mantener presionado, poco descubrible para 6–12 años).
+  String _lockedHint(BadgeModel b) {
+    return switch (b.conditionType) {
+      'points' => '${b.conditionValue} pts',
+      'game_stars' => '${b.conditionValue} ⭐',
+      'chapters' => '${b.conditionValue} cap.',
+      'sightings' => '${b.conditionValue} avist.',
+      _ => '',
+    };
   }
 }

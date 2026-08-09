@@ -16,9 +16,9 @@ class LoadResult<T> {
 }
 
 /// Absorbe el algoritmo "pide a la API, cachea si sale bien, si falla usa
-/// caché, y si tampoco hay caché usa datos de ejemplo" — repetido antes
-/// carácter por carácter entre `chapters_provider.dart` y
-/// `missions_provider.dart`.
+/// caché, y si tampoco hay caché usa datos de ejemplo" que usa
+/// `chapters_provider.dart` (antes también lo repetía, carácter por
+/// carácter, el ya eliminado `missions_provider.dart`).
 ///
 /// `seed` solo se sirve si `AppConstants.allowSeedData` está activo (false
 /// en release por defecto): son datos de ejemplo con vídeos de muestra de

@@ -81,9 +81,13 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        HomeHeader(userName: userName, isSmallScreen: isSmallScreen),
+                        HomeHeader(
+                          userName: userName,
+                          isSmallScreen: isSmallScreen,
+                          avatarUrl: user?.avatarUrl,
+                        ),
                         SizedBox(height: 12 * scale),
-                        const ProgressCard(completedChapters: 2, totalChapters: 5), // Mock data for now
+                        const ProgressCard(),
                         SizedBox(height: 12 * scale),
                         MainActions(scale: scale),
                         SizedBox(height: 12 * scale),

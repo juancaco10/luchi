@@ -21,7 +21,7 @@ class MainActions extends StatelessWidget {
             iconDark: 'assets/images/icon_jugar_3d.png',
             themeColor: const Color(0xFF90F055), // Bright green
             lightGradientColors: const [Color(0xFFE2F9D8), Color(0xFFF1FDF0)],
-            onTap: () => context.go('/game/level-1'),
+            onTap: () => context.go('/game'),
             scale: scale,
           ),
         ),
