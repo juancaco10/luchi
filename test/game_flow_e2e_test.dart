@@ -9,18 +9,18 @@ import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:guardianes_luciernagas/core/network/api_client.dart';
-import 'package:guardianes_luciernagas/core/storage/local_storage.dart';
-import 'package:guardianes_luciernagas/core/theme/firefly_colors.dart';
-import 'package:guardianes_luciernagas/core/utils/constants.dart';
-import 'package:guardianes_luciernagas/features/games/data/game_catalog.dart';
-import 'package:guardianes_luciernagas/features/games/data/quiz_question_bank.dart';
-import 'package:guardianes_luciernagas/features/games/models/game_id.dart';
-import 'package:guardianes_luciernagas/features/games/models/level_config.dart';
-import 'package:guardianes_luciernagas/features/games/providers/games_progress_provider.dart';
-import 'package:guardianes_luciernagas/features/games/screens/level_select_screen.dart';
-import 'package:guardianes_luciernagas/features/games/screens/map_hub_screen.dart';
-import 'package:guardianes_luciernagas/features/games/screens/quiz_game_screen.dart';
+import 'package:Luchi/core/network/api_client.dart';
+import 'package:Luchi/core/storage/local_storage.dart';
+import 'package:Luchi/core/theme/firefly_colors.dart';
+import 'package:Luchi/core/utils/constants.dart';
+import 'package:Luchi/features/games/data/game_catalog.dart';
+import 'package:Luchi/features/games/data/quiz_question_bank.dart';
+import 'package:Luchi/features/games/models/game_id.dart';
+import 'package:Luchi/features/games/models/level_config.dart';
+import 'package:Luchi/features/games/providers/games_progress_provider.dart';
+import 'package:Luchi/features/games/screens/level_select_screen.dart';
+import 'package:Luchi/features/games/screens/map_hub_screen.dart';
+import 'package:Luchi/features/games/screens/quiz_game_screen.dart';
 
 class _NullHttpAdapter implements HttpClientAdapter {
   @override

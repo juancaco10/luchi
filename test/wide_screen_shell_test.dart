@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:guardianes_luciernagas/app.dart';
+import 'package:Luchi/app.dart';
 
 /// `WideScreenShell` envuelve toda la app desde el `builder` del
 /// MaterialApp. Su contrato tiene dos mitades y una es un "no hagas nada":
