@@ -1,6 +1,6 @@
 # Screen Inventory
 
-Last updated: 2026-08-25
+Last updated: 2026-08-30
 
 Scope: inventory derived from `lib/app.dart`, feature screen files under `lib/features/**/screens/`, and the widgets/screens they directly compose.
 
@@ -11,6 +11,7 @@ Scope: inventory derived from `lib/app.dart`, feature screen files under `lib/fe
 - Out-of-shell routed screens: 12
 - Non-routed UI surfaces with product impact: `SightingDetailsModal`, `AvatarPickerSheet`, delete-account sheets, nickname sheet
 - Primary navigation source: [lib/app.dart](D:/Mis-Juegos-git-2026/app_luchi_luciernagas/lib/app.dart)
+- **Nota de producto (2026-08-30)**: la pestaña **Jugar** (`/game`) abre ahora directamente la **selección de nivel del quiz** (`LevelSelectScreen(explorar)`), no el hub de minijuegos. Los otros 4 minijuegos siguen en el código bajo `/game/:gameId` pero ocultos de la navegación.
 
 ## Route Inventory
 
@@ -23,8 +24,8 @@ Scope: inventory derived from `lib/app.dart`, feature screen files under `lib/fe
 | RegisterScreen | `lib/features/auth/screens/register_screen.dart` | `/register` | Auth | No | Mejorable | Real backend route exists. Needs full validation/error-state audit. |
 | HomeScreen | `lib/features/home/screens/home_screen.dart` | `/home` | Dashboard | Yes | Mejorable | Uses current user, chapters, sightings feed, gamification widgets. |
 | ChaptersListScreen | `lib/features/education/screens/chapters_list_screen.dart` | `/chapters` | Education | Yes | Mejorable | Backed by cached list repository + local cache. |
-| ChapterDetailScreen | `lib/features/education/screens/chapter_detail_screen.dart` | `/chapters/:id` | Education | Yes | Mejorable | Completes chapter, video playback, unlock flow. Placeholder/seed video risk exists. |
-| MapHubScreen | `lib/features/games/screens/map_hub_screen.dart` | `/game` | Games hub | Yes | Mejorable | Reads local game progress and auth profile state. |
+| ChapterDetailScreen | `lib/features/education/screens/chapter_detail_screen.dart` | `/chapters/:id` | Education | Yes | Mejorable | Completes chapter, video playback, unlock flow. Videos ahora son assets locales empaquetados (`assets/videos/{id}.mp4`), no URLs de red. |
+| LevelSelectScreen (quiz) | `lib/features/games/screens/level_select_screen.dart` | `/game` | Games | Yes | Mejorable | **Puerta de "Jugar"**: abre la rejilla de 10 niveles del quiz (`GameId.explorar`). Antes era el hub (`MapHubScreen`). |
 | LevelSelectScreen | `lib/features/games/screens/level_select_screen.dart` | `/game/:gameId` | Games | Yes | Mejorable | Driven by `gameProgressProvider`. |
 | QuizGameScreen / GuideGameScreen / SyncGameScreen / ProtectGameScreen / RestoreGameScreen | `lib/features/games/screens/*` | `/game/:gameId/play/:level` | Games runtime | Yes | Mejorable | Single dispatcher route mounts 5 different gameplay screens. |
 | MapScreen | `lib/features/sightings/screens/map_screen.dart` | `/map` | Sightings/community | Yes | Mejorable | Uses `flutter_map`; community feed source. Needs tile/policy/perf audit. |
@@ -43,7 +44,7 @@ Scope: inventory derived from `lib/app.dart`, feature screen files under `lib/fe
 | --- | --- | --- | --- |
 | 0 | `/home` | HomeScreen | `lib/features/home/screens/home_screen.dart` |
 | 1 | `/chapters` | ChaptersListScreen | `lib/features/education/screens/chapters_list_screen.dart` |
-| 2 | `/game` | MapHubScreen | `lib/features/games/screens/map_hub_screen.dart` |
+| 2 | `/game` | LevelSelectScreen (quiz) | `lib/features/games/screens/level_select_screen.dart` |
 | 3 | `/map` | MapScreen | `lib/features/sightings/screens/map_screen.dart` |
 | 4 | `/feed` | CommunityFeedScreen | `lib/features/sightings/screens/community_feed_screen.dart` |
 
@@ -71,7 +72,6 @@ Source: `redirect` in `lib/app.dart`
 - `SplashScreen` uses a fixed wait and direct `LocalStorage` checks instead of awaiting auth refresh; risk of stale session routing and slow startup UX.
 - `LoginScreen` exposes a visible forgot-password affordance, but no backend recovery flow exists yet.
 - `SettingsScreen` includes only a subset of expected settings; many product-level controls requested in the audit prompt do not exist in code today.
-- `ChapterDetailScreen` depends on remote/sample video URLs that are still placeholder content in schema and mock data.
 - `MapScreen` and `CommunityFeedScreen` are privacy-sensitive surfaces because they expose user-generated content between accounts in a child-oriented product.
 - `SightingFormScreen` is feature-rich and central to release readiness, but requires deeper pass on permission denial, background interruption, duplicate submission, offline sync and photo moderation behavior.
 

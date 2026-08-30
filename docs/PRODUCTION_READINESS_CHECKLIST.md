@@ -4,9 +4,9 @@ Ver [FINAL_PREPRODUCTION_REPORT.md](FINAL_PREPRODUCTION_REPORT.md) para el detal
 
 ## Build
 
-- [x] `flutter analyze` limpio (0 errores, 0 warnings)
-- [x] tests críticos pasan (11/11)
-- [x] AAB release compila y firma (`app-release.aab`, 130.8 MB, exit code 0)
+- [x] `flutter analyze` limpio (0 errores; solo `info` de deprecados/const no bloqueantes)
+- [x] tests pasan (11/11) — imports reparados tras renombrar el paquete a `luchi`
+- [x] AAB release compila y firma (`app-release.aab`, 161 MB con videos locales)
 - [ ] versión (`pubspec.yaml: version:`) revisada antes de subir a Play Console
 - [x] firma release configurada (`key.properties` + keystore presentes, no versionados)
 
@@ -51,7 +51,9 @@ Ver [FINAL_PREPRODUCTION_REPORT.md](FINAL_PREPRODUCTION_REPORT.md) para el detal
 ## Capítulos y Quiz
 
 - [x] manejo de error de vídeo (spinner infinito corregido)
-- [x] marcar capítulo completado, offline-first
+- [x] videos locales empaquetados en el APK (`assets/videos/{id}.mp4`), Aprender funciona sin conexión
+- [x] marcar capítulo completado, offline-first (progreso conservado en caché local)
+- [x] 8 capítulos; las 8 preguntas obligatorias del cliente están en el banco del quiz
 
 ## Avistamientos
 
@@ -64,9 +66,15 @@ Ver [FINAL_PREPRODUCTION_REPORT.md](FINAL_PREPRODUCTION_REPORT.md) para el detal
 
 ## Mapa
 
-- [x] implementado, detrás de `AppConstants.communityEnabled = false`
+- [x] implementado, con `AppConstants.communityEnabled = true` (activo)
+- [x] basemap de OpenStreetMap (`tile.openstreetmap.org`), gratis y sin API key (sustituye a CartoDB que exigía key)
 - [ ] clustering de marcadores — recomendado antes de activar la comunidad en producción
 - [x] botones que apuntan a `/map` avisan en vez de navegar en silencio
+
+## Estado de flags (constants.dart, 2026-08-30)
+
+- `communityEnabled = true`, `preciseLocationEnabled = true`, `publicSightingsEnabled = true`, `adsEnabled = false`.
+- **Confirmar con producto** que la comunidad/ubicación precisa deben estar activas en el lanzamiento.
 
 ## Offline / Caché / Sync
 

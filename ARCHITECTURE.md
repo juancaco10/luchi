@@ -1,104 +1,98 @@
 # ARCHITECTURE.md
 
+Mapa de capas y flujo de datos del cliente Flutter y su backend PHP/MySQL.
+Fuente de verdad de la estructura del código; la lista de pantallas y su
+estado está en [docs/SCREEN_INVENTORY.md](docs/SCREEN_INVENTORY.md).
+
 ## Capas
 
 ```
 lib/
-├── main.dart                 # bootstrap: portrait lock, LocalStorage.init(), ProviderScope
-├── app.dart                  # MaterialApp.router + GoRouter (todas las rutas y transiciones)
-├── core/
+├── main.dart                  # bootstrap: portrait lock, LocalStorage.init(), ProviderScope
+├── app.dart                   # MaterialApp.router + GoRouter (todas las rutas y transiciones)
+│
+├── core/                      # código transversal, sin dependencia de features
+│   ├── data/
+│   │   └── cached_list_repository.dart   # patrón "API → caché → seed" reutilizable
 │   ├── network/
-│   │   ├── api_client.dart       # Dio singleton + interceptores (auth/logging/errores)
-│   │   └── api_endpoints.dart    # paths de la API PHP
+│   │   ├── api_client.dart    # Dio singleton + interceptores (auth/logging/errores)
+│   │   ├── api_endpoints.dart # paths de la API PHP
+│   │   └── sync_service.dart  # drena la cola offline de avistamientos (arranque + reconexión)
+│   ├── session/
+│   │   └── user_scoped_providers.dart   # providers namespaced por usuario activo
 │   ├── storage/
-│   │   └── local_storage.dart    # SharedPreferences (sesión) + Hive (caché/cola offline)
-│   ├── theme/                    # app_colors.dart, app_theme.dart (Material3 oscuro)
+│   │   └── local_storage.dart # SharedPreferences (sesión) + Hive (caché/cola offline)
+│   ├── theme/
+│   │   ├── app_theme.dart     # ThemeData claro/oscuro con Nunito
+│   │   ├── firefly_colors.dart # extensiones ThemeExtension (context.colors/text/firefly)
+│   │   ├── palettes.dart      # DarkPalette / LightPalette (tokens por tema)
+│   │   └── theme_provider.dart # switch de tema persistente
 │   └── utils/
-│       └── constants.dart        # baseUrl, timeouts, keys, gamificación, UI tokens
-├── features/
-│   ├── auth/          {models, providers, screens}  # splash, onboarding, login, register
-│   ├── home/           screens                       # dashboard
-│   ├── education/      {models, providers, screens}  # capítulos, detalle, quiz (level_one)
-│   ├── missions/       {models, providers, screens}  # misiones diarias/semanales
-│   ├── profile/        {providers, screens}          # perfil, insignias, ajustes
-│   └── sightings/      {models, providers, screens}  # avistamientos GPS+foto, mapa
-└── widgets/            # componentes compartidos entre features
+│       └── constants.dart     # baseUrl, timeouts, keys, gamificación, UI tokens, assets
+│
+├── features/                  # feature-first; cada una con models/providers/screens/widgets
+│   ├── auth/         # splash, onboarding, consentimiento parental, login, register, nickname
+│   ├── education/    # Aprender: capítulos + detalle (video local) — 8 capítulos empaquetados
+│   ├── games/        # minijuegos (quiz + 4 ocultos de la navegación tras decisión de producto)
+│   ├── home/         # dashboard (Jugar / Aprender / Mapa, progreso, avistamientos recientes)
+│   ├── profile/      # perfil, ajustes, avatares
+│   └── sightings/    # formulario GPS+foto, mapa, feed, mis avistamientos
+│
+└── widgets/                  # componentes compartidos entre features
+    ├── ad_banner.dart         # banner de anuncios (apagado, adsEnabled=false)
+    ├── custom_button.dart
+    ├── firefly_background.dart # partículas de luciérnaga
+    ├── hardware_back_route.dart
+    ├── level_progress_bar.dart
+    ├── points_display.dart
+    ├── reward_overlay.dart
+    └── screen_fitter.dart     # escala para pantallas bajas
 ```
 
-Fuera de `lib/`: `backend/` (API PHP/MySQL, ver `docs/BACKEND_AUDIT.md`), `assets/images/`.
+Fuera de `lib/`: `backend/` (API PHP/MySQL desplegada en Hostinger, ver
+[docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md)), `assets/images/`, `assets/videos/`
+(videos de los 8 capítulos, empaquetados en el APK), `landing_page/`.
 
-## Flujo de datos: patrón de tres niveles (API → caché → mock)
+## Temas (desde Fase 2)
 
-`chapters_provider.dart` y `missions_provider.dart` implementan el mismo patrón (hoy duplicado, candidato a extraerse — ver plan de mejoras Fase 4):
+No existe `AppColors` ni `Color(0x...)` sueltos en pantallas: todo pasa por
+`Theme.of(context)` vía las extensiones de `lib/core/theme/firefly_colors.dart`:
+`context.colors` (ColorScheme), `context.text` (TextTheme), `context.firefly`
+(tokens de marca: glow, gradientes, cardShadow). Los valores por tema viven en
+`lib/core/theme/palettes.dart` (`DarkPalette` / `LightPalette`).
 
-1. Intentar `GET` vía `ApiClient` contra `AppConstants.baseUrl` (endpoint de `api_endpoints.dart`).
-2. Si responde bien → parsear y **cachear en Hive** (`chapters_box` / `missions_box`).
-3. Si la llamada falla (hoy siempre falla: `baseUrl` es un placeholder) → leer la última caché de Hive.
-4. Si la caché está vacía (primer arranque) → `ChapterModel.getMockChapters()` / `MissionModel.getMockMissions()`.
+## Estado de aplicación vs. estado efímero
 
-`sightings_provider.dart` escribe con `LocalStorage.queueSighting()` en `sightings_box` como cola offline; `lib/core/network/sync_service.dart` la drena al arrancar y al reconectar (arreglado en Fase 1) — no solo al cambiar de conectividad como antes.
+- **Estado que sobrevive a un `pop()` o lo usa otra pantalla → Riverpod**
+  (`StateNotifierProvider`, `Provider`, `Provider.family`).
+- **Estado efímero de UI** (animaciones locales, formularios, temporizador del
+  quiz) → `setState` dentro del widget. No mezclar.
 
-## Estado y navegación
+## Flujo de datos: patrones
 
-- **Riverpod**, sin codegen: `StateNotifierProvider` por feature (`authProvider`, `chaptersProvider`, `missionsProvider`, `sightingsProvider`), más `Provider.family` para lookup por id (`chapterByIdProvider`, `missionByIdProvider`) y `Provider`s derivados (`currentUserProvider`, `profileProvider`).
-- **GoRouter** declarativo en `lib/app.dart`. Guard global (`redirect`) lee `authProvider` (no `LocalStorage` directo, arreglado en Fase 1) contra una allowlist fail-safe de rutas públicas (`/splash /onboarding /login /register`) — cualquier ruta no listada exige sesión. `refreshListenable` (`_AuthRouterRefresh`) escucha `authProvider` y fuerza una re-evaluación inmediata en logout, no solo en la siguiente navegación.
+- **Capítulos (Aprender)**: los 8 capítulos y sus videos viven empaquetados en
+  el APK (`ChapterModel.getMockChapters()` → `assets/videos/{id}.mp4`), así
+  Aprender funciona sin conexión. El progreso del niño (completado/desbloqueado)
+  se conserva en la caché local de Hive y se aplica sobre la lista fija.
+  `chapters_provider.dart` ya **no** depende del backend para la lista.
+- **Avistamientos**: `sightings_provider.dart` escribe en `sightings_box` como
+  cola offline; `lib/core/network/sync_service.dart` la drena al arrancar y al
+  reconectar. Borra por clave individual (`removePendingSighting`).
+- **Juegos**: el progreso (estrellas por nivel) vive en `games_box` de Hive,
+  es local del jugador y nunca se limpia salvo al cerrar sesión.
 
-### Rutas
+## Rutas
 
-| path | name | pantalla | protegida |
-|---|---|---|---|
-| `/splash` | splash | SplashScreen | no |
-| `/onboarding` | onboarding | OnboardingScreen | no |
-| `/login` | login | LoginScreen | no |
-| `/register` | register | RegisterScreen | no |
-| `/home` | home | HomeScreen | sí |
-| `/chapters` | chapters | ChaptersListScreen | sí |
-| `/chapters/:id` | chapter-detail | ChapterDetailScreen | sí |
-| `/game/level-1` | game-level-1 | LevelOneScreen (quiz) | no* |
-| `/missions` | missions | MissionsScreen | sí |
-| `/missions/:id` | mission-detail | MissionDetailScreen | sí |
-| `/profile` | profile | ProfileScreen | sí |
-| `/settings` | settings | SettingsScreen | no* |
-| `/sightings/new` | sighting-form | SightingFormScreen | sí (prefijo `/sightings`) |
-| `/map` | map | MapScreen | sí |
+Todas centralizadas en [lib/app.dart](lib/app.dart) con GoRouter
+(`routerProvider`). Sin `Navigator.push` directo salvo diálogos/bottom sheets.
+Tras decisión de producto, la pestaña **Jugar** abre la selección de nivel del
+**quiz** directamente (`/game` → `LevelSelectScreen(explorar)`); los otros 4
+minijuegos quedan vivos en el código bajo `/game/:gameId` pero sin exposición
+en la navegación.
 
-\* `game-level-1` y `settings` no están en `protectedRoutes` de `app.dart` pese a requerir sesión en la práctica — inconsistencia a revisar.
+## Backend
 
-## Persistencia
-
-- **SharedPreferences**: `auth_token` (texto plano — mover a `flutter_secure_storage`, plan Fase 1), `current_user` (JSON), `onboarding_done`.
-- **Hive** (boxes sin tipar, JSON crudo): `chapters_box`, `missions_box`, `sightings_box` (esta última también como cola offline de escritura).
-- **No hay SQLite.**
-
-## Backend (documentado, no gestionado desde este repo)
-
-PHP 8 + PDO + MySQL, sin framework. Ver auditoría completa y estado real (no arranca hoy) en [docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md).
-
-### Endpoints
-
-| método | path | requiere auth |
-|---|---|---|
-| POST | `/register` | no |
-| POST | `/login` | no |
-| GET | `/me` | sí |
-| GET | `/chapters` | sí |
-| POST | `/complete-chapter` | sí |
-| GET | `/missions` | sí |
-| POST | `/complete-mission` | sí |
-| POST | `/sightings` | sí |
-| GET | `/sightings` | sí |
-| GET | `/my-sightings` | sí |
-
-Auth: JWT HS256 hecho a mano (`backend/api/middleware/auth.php`), `password_hash` bcrypt costo 12, expiry 30 días, sin refresh/revocación.
-
-### Esquema (`backend/database/schema.sql`)
-
-8 tablas InnoDB/utf8mb4: `users, chapters, user_chapters, missions, user_missions, sightings, badges, user_badges`. Índices: `users.email` (único), `uq_user_chapter`, `uq_user_mission`, `uq_user_badge` (compuestos únicos), `sightings.idx_user`, `sightings.idx_coords(lat,lng)`. El script empieza con `DROP TABLE IF EXISTS` de las 8 tablas — reimportar borra datos existentes.
-
-## Gamificación
-
-Fuente de verdad: `lib/core/utils/constants.dart`.
-
-- Puntos: misión diaria **+10**, misión semanal **+30**, capítulo completado **+15**, avistamiento **+20**.
-- Niveles por puntos acumulados: **Observador** (0) → **Explorador** (100) → **Guardián** (200) → **Maestro Guardián** (400).
-- `getLevelForPoints(points)` y `getLevelProgress(points)` son las únicas funciones que deben calcular esto; no reimplementar el umbral en una pantalla.
+Ver [docs/BACKEND_AUDIT.md](docs/BACKEND_AUDIT.md) para el estado real. El
+backend PHP **sí arranca** (`php -l backend/api/index.php` limpio), tiene rate
+limiting de login, `DELETE /me`, y responde en Hostinger. No se toca desde este
+repo Flutter salvo instrucción explícita.

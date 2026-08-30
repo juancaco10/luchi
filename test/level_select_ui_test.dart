@@ -8,12 +8,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:Luchi/core/network/api_client.dart';
-import 'package:Luchi/core/theme/firefly_colors.dart';
-import 'package:Luchi/core/utils/constants.dart';
-import 'package:Luchi/features/games/models/game_id.dart';
-import 'package:Luchi/features/games/providers/games_progress_provider.dart';
-import 'package:Luchi/features/games/screens/level_select_screen.dart';
+import 'package:luchi/core/network/api_client.dart';
+import 'package:luchi/core/theme/firefly_colors.dart';
+import 'package:luchi/core/utils/constants.dart';
+import 'package:luchi/features/games/models/game_id.dart';
+import 'package:luchi/features/games/providers/games_progress_provider.dart';
+import 'package:luchi/features/games/screens/level_select_screen.dart';
 
 /// Adaptador HTTP de mentira: toda llamada a la red responde 400 al instante,
 /// sin tocar internet ni dejar timers colgando.

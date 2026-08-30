@@ -76,11 +76,9 @@ Las rutas **no** llevan prefijo `/auth` (`/login`, no `/auth/login`).
 
 ## Gotchas observadas
 
-- `_ErrorInterceptor` en `lib/core/network/api_client.dart` descarta el
-  campo `error` que devuelve el backend y llama a `clearToken()` en
-  **cualquier** 401. Efecto: un 401 en una pantalla cualquiera cierra la
-  sesión y te manda al login sin avisar.
-- `ProgressCard` en `home_screen.dart` está hardcodeada a 2/5 capítulos;
-  la lista real tiene 4 niveles. No lo tomes como dato real.
-- El widget de avistamientos recientes desborda 1px por abajo
-  (raya amarilla/negra en debug).
+- `_ErrorInterceptor` en `lib/core/network/api_client.dart` solo traduce el error y propaga `err.response.data['error']`; **ya no** cierra sesión en cualquier 401 (arreglado). Cerrar sesión es responsabilidad del call site de auth.
+- `ProgressCard` en `home_screen.dart` ya lee `chaptersProvider` real (8 capítulos), no está hardcodeado.
+- El paquete Dart se llama `luchi` (minúsculas); los tests importan `package:luchi/...`.
+- La pestaña "Jugar" (`/game`) abre la selección de nivel del quiz; los otros 4 minijuegos están ocultos de la navegación.
+- El mapa usa tiles de OpenStreetMap (`tile.openstreetmap.org`), sin API key.
+- Los videos de los capítulos son assets locales (`assets/videos/{id}.mp4`).
