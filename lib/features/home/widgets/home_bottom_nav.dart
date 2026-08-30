@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/firefly_colors.dart';
+import '../../../core/utils/constants.dart';
 
 class HomeBottomNav extends StatelessWidget {
   const HomeBottomNav({super.key, required this.navigationShell});
@@ -24,39 +25,46 @@ class HomeBottomNav extends StatelessWidget {
                 icon: Icons.home_rounded,
                 label: 'Inicio',
                 isActive: navigationShell.currentIndex == 0,
-                onTap: () => navigationShell.goBranch(0, initialLocation: navigationShell.currentIndex == 0),
+                onTap: () => navigationShell.goBranch(0,
+                    initialLocation: navigationShell.currentIndex == 0),
               ),
-              // Orden visual pedido: Home, Jugar, Aprender, Explorar,
-              // Opciones. El índice de rama (1=Aprender/chapters,
+              // Orden visual pedido: Home, Jugar, Aprender, Publicaciones,
+              // Explorar. El índice de rama (1=Aprender/chapters,
               // 2=Jugar/game) no cambia, solo el orden en que se dibujan.
               _buildNavItem(
                 context,
                 icon: Icons.sports_esports_rounded,
                 label: 'Jugar',
                 isActive: navigationShell.currentIndex == 2,
-                onTap: () => navigationShell.goBranch(2, initialLocation: navigationShell.currentIndex == 2),
+                onTap: () => navigationShell.goBranch(2,
+                    initialLocation: navigationShell.currentIndex == 2),
               ),
               _buildNavItem(
                 context,
                 icon: Icons.menu_book_rounded,
                 label: 'Aprender',
                 isActive: navigationShell.currentIndex == 1,
-                onTap: () => navigationShell.goBranch(1, initialLocation: navigationShell.currentIndex == 1),
+                onTap: () => navigationShell.goBranch(1,
+                    initialLocation: navigationShell.currentIndex == 1),
               ),
-              _buildNavItem(
-                context,
-                icon: Icons.map_rounded,
-                label: 'Explorar',
-                isActive: navigationShell.currentIndex == 3,
-                onTap: () => navigationShell.goBranch(3, initialLocation: navigationShell.currentIndex == 3),
-              ),
-              _buildNavItem(
-                context,
-                icon: Icons.settings_rounded,
-                label: 'Opciones',
-                isActive: navigationShell.currentIndex == 4,
-                onTap: () => navigationShell.goBranch(4, initialLocation: navigationShell.currentIndex == 4),
-              ),
+              if (AppConstants.communityEnabled) ...[
+                _buildNavItem(
+                  context,
+                  icon: Icons.dynamic_feed_rounded,
+                  label: 'Publicaciones',
+                  isActive: navigationShell.currentIndex == 4,
+                  onTap: () => navigationShell.goBranch(4,
+                      initialLocation: navigationShell.currentIndex == 4),
+                ),
+                _buildNavItem(
+                  context,
+                  icon: Icons.map_rounded,
+                  label: 'Explorar',
+                  isActive: navigationShell.currentIndex == 3,
+                  onTap: () => navigationShell.goBranch(3,
+                      initialLocation: navigationShell.currentIndex == 3),
+                ),
+              ],
             ],
           ),
         ),
@@ -71,7 +79,9 @@ class HomeBottomNav extends StatelessWidget {
     required bool isActive,
     required VoidCallback onTap,
   }) {
-    final color = isActive ? context.colors.secondary : context.colors.onSurface.withValues(alpha: 0.5);
+    final color = isActive
+        ? context.colors.secondary
+        : context.colors.onSurface.withValues(alpha: 0.5);
 
     return Semantics(
       button: true,

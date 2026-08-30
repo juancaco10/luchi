@@ -10,9 +10,8 @@ plugins {
 
 // Release signing config is read from android/key.properties, which is NOT committed
 // (see .gitignore). Copy android/key.properties.example to android/key.properties and
-// fill in your real keystore values before building a release. Until that file exists,
-// release builds fall back to the debug keystore so `flutter run --release` keeps working
-// locally, but that build must never be shipped to a store.
+// fill in your real keystore values before building a release. Store builds
+// must fail closed when this file is absent; never produce a debug-signed AAB.
 val keystoreProperties = Properties()
 val keystorePropertiesFile = rootProject.file("key.properties")
 val hasReleaseKeystore = keystorePropertiesFile.exists()
@@ -36,6 +35,7 @@ android {
 
     defaultConfig {
         applicationId = "com.guardianes.luciernagas"
+        manifestPlaceholders["appLabel"] = "Luchi"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         // nsfw_detector_flutter (filtro de contenido on-device) requiere
@@ -59,14 +59,17 @@ android {
     }
 
     buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+            manifestPlaceholders["appLabel"] = "Luchi Dev"
+        }
         release {
-            // Real signing once android/key.properties exists; debug keystore otherwise
-            // (that fallback build must never be published).
-            signingConfig = if (hasReleaseKeystore) {
-                signingConfigs.getByName("release")
-            } else {
-                signingConfigs.getByName("debug")
+            if (!hasReleaseKeystore) {
+                throw GradleException(
+                    "Missing android/key.properties. Configure a release keystore before building an AAB."
+                )
             }
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(

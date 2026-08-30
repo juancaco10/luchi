@@ -22,12 +22,16 @@
 
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
+require_once __DIR__ . '/../lib/media.php';
 
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_UPLOAD_DIMENSION = 1600; // px, lado mayor
 
 if ($method === 'POST' && $path === '/uploads/sighting-photo') {
     $user = requireAuth();
+    $db   = getDB();
+    requireIpNotRateLimited($db, 'upload', 30, 60);
+    recordIpAttempt($db, 'upload');
 
     if (!isset($_FILES['photo'])) {
         jsonError('No se recibió ninguna foto', 400);
@@ -104,12 +108,21 @@ if ($method === 'POST' && $path === '/uploads/sighting-photo') {
         jsonError('No se pudo guardar la foto', 500);
     }
 
+    // Record ownership before returning the URL. Sighting create/edit will
+    // only accept uploads present in this server-side allowlist.
+    try {
+        $db = getDB();
+        $db->prepare(
+            'INSERT INTO sighting_photo_uploads (user_id, filename, mime_type) VALUES (?, ?, ?)'
+        )->execute([(int) $user['id'], $filename, 'image/jpeg']);
+    } catch (Throwable $e) {
+        @unlink($destPath);
+        jsonError('No se pudo registrar la foto', 500);
+    }
+
     // URL pública absoluta: el dominio + el directorio donde vive este
     // index.php (normalmente /api), + uploads/sightings/<archivo>.
-    $scheme     = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-    $host       = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    $scriptDir  = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '')), '/');
-    $photoUrl   = "{$scheme}://{$host}{$scriptDir}/uploads/sightings/{$filename}";
+    $photoUrl = sightingPhotoUrl($filename);
 
     jsonResponse(['success' => true, 'photo_url' => $photoUrl], 201);
 }

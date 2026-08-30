@@ -79,15 +79,16 @@ class ChapterModel {
         isUnlocked: isUnlocked ?? this.isUnlocked,
       );
 
-  // ── Mock data (4 Niveles Temáticos Educativos) ──────────────────────
+  // ── Mock data (8 Niveles Temáticos Educativos) ──────────────────────
+  // Cada capítulo reproduce su video empaquetado en el APK
+  // (`assets/videos/n.mp4`), así Aprender funciona sin conexión.
   static List<ChapterModel> getMockChapters() => [
         const ChapterModel(
           id: 1,
-          title: 'Nivel 1: Descubriendo a las Luciérnagas',
+          title: '¿Qué es una luciérnaga?',
           description:
               'Descubre los secretos de estos increíbles insectos bioluminiscentes que iluminan las noches de verano.',
-          videoUrl:
-              'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+          videoUrl: 'assets/videos/1.mp4',
           orderIndex: 1,
           pointsReward: 15,
           isUnlocked: true,
@@ -99,42 +100,95 @@ class ChapterModel {
         ),
         const ChapterModel(
           id: 2,
-          title: 'Nivel 2: Las Sombras en la Noche (Las 5 Amenazas)',
+          title: 'Su hábitat natural',
           description:
-              'Aprende sobre las principales amenazas que enfrentan las luciérnagas: contaminación lumínica, pesticidas y pérdida de hábitat.',
-          videoUrl:
-              'https://flutter.github.io/assets-for-api-docs/assets/videos/bee.mp4',
+              'Aprende dónde viven las luciérnagas y por qué necesitan lugares oscuros y húmedos para sobrevivir.',
+          videoUrl: 'assets/videos/2.mp4',
           orderIndex: 2,
-          pointsReward: 20,
+          pointsReward: 15,
           facts: [
-            'El 20% de las especies de luciérnagas están en peligro de extinción.',
-            'La contaminación lumínica de focos y ciudades les impide comunicarse.',
-            'Las larvas viven en la tierra húmeda y sufren por el uso de pesticidas.',
+            'Prefieren zonas húmedas como prados y bordes de ríos.',
+            'La contaminación lumínica es su mayor amenaza.',
+            'Necesitan vegetación para esconderse durante el día.',
           ],
         ),
         const ChapterModel(
           id: 3,
-          title: 'Nivel 3: ¿Cómo Podemos Ayudar?',
+          title: 'Por qué están desapareciendo',
           description:
-              'Descubre acciones sencillas y reales que tú y tu familia pueden hacer en casa para proteger su hábitat.',
-          videoUrl:
-              'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
+              'Entiende las causas del declive de las luciérnagas y cómo cada uno puede hacer la diferencia.',
+          videoUrl: 'assets/videos/3.mp4',
           orderIndex: 3,
-          pointsReward: 25,
+          pointsReward: 20,
           facts: [
-            'Apagar luces exteriores innecesarias crea un hogar seguro para la noche.',
-            'Evitar pesticidas en el jardín protege a las larvas en la tierra.',
-            'Plantaciones nativas y zonas húmedas atraen a las luciérnagas.',
+            'La pérdida de hábitat afecta a gran parte de las especies.',
+            'El uso de pesticidas mata a sus larvas que viven en la tierra.',
+            'Puedes ayudar apagando luces exteriores innecesarias.',
           ],
         ),
         const ChapterModel(
           id: 4,
-          title: 'Nivel 4: Misión Guardianes de la Luz',
+          title: 'Cómo ser un Guardián',
+          description:
+              'Aprende las acciones concretas que puedes tomar para proteger a las luciérnagas en tu vecindario.',
+          videoUrl: 'assets/videos/4.mp4',
+          orderIndex: 4,
+          pointsReward: 25,
+          facts: [
+            'Cada pequeño Guardián suma para proteger la biodiversidad.',
+            'Apagar luces innecesarias crea un hogar seguro para la noche.',
+            'Plantaciones nativas y zonas húmedas atraen a las luciérnagas.',
+          ],
+        ),
+        const ChapterModel(
+          id: 5,
+          title: 'La luz que comunica',
+          description:
+              'Descubre cómo las luciérnagas usan su luz para comunicarse y encontrar pareja en la noche.',
+          videoUrl: 'assets/videos/5.mp4',
+          orderIndex: 5,
+          pointsReward: 15,
+          facts: [
+            'Cada especie tiene su propio patrón de destellos, como una firma.',
+            'Usan su luz como un código de señas para encontrarse.',
+            'La luz artificial de la ciudad las confunde de noche.',
+          ],
+        ),
+        const ChapterModel(
+          id: 6,
+          title: 'El ciclo de vida',
+          description:
+              'Sigue el viaje de una luciérnaga desde el huevo hasta convertirse en un adulto brillante.',
+          videoUrl: 'assets/videos/6.mp4',
+          orderIndex: 6,
+          pointsReward: 20,
+          facts: [
+            'La mayor parte de su vida la pasan como larva, no como adulto.',
+            'Las larvas viven en la tierra húmeda y cazan caracoles y babosas.',
+            'Huevo, larva, pupa y adulto: su metamorfosis completa.',
+          ],
+        ),
+        const ChapterModel(
+          id: 7,
+          title: 'Cómo alimentarse sin dañar',
+          description:
+              'Aprende cómo la alimentación de las luciérnagas ayuda a mantener sano el jardín.',
+          videoUrl: 'assets/videos/7.mp4',
+          orderIndex: 7,
+          pointsReward: 15,
+          facts: [
+            'Las larvas son pequeñas cazadoras que controlan caracoles y babosas.',
+            'Evitar pesticidas protege a las larvas que viven en la tierra.',
+            'Un jardín natural les ofrece comida y refugio.',
+          ],
+        ),
+        const ChapterModel(
+          id: 8,
+          title: 'Misión Guardianes de la Luz',
           description:
               'Demuestra todo lo aprendido en el reto final y graduación como Guardián Oficial de las Luciérnagas.',
-          videoUrl:
-              'https://download.samplelib.com/mp4/sample-15s.mp4',
-          orderIndex: 4,
+          videoUrl: 'assets/videos/8.mp4',
+          orderIndex: 8,
           pointsReward: 30,
           facts: [
             '¡Cada pequeño Guardián suma para proteger la biodiversidad!',

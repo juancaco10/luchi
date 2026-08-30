@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,9 +7,10 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../widgets/ad_banner.dart';
+import '../../../widgets/hardware_back_route.dart';
 
 final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
   return await PackageInfo.fromPlatform();
@@ -16,6 +18,14 @@ final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
+
+  // No hay indicador de progreso visible mientras `deleteAccount()` está
+  // en vuelo (el bottom sheet ya se cerró en ese momento), así que sin
+  // este guard un segundo tap en "Borrar mi cuenta" podía arrancar un
+  // segundo flujo de borrado en paralelo. Estático porque esta pantalla
+  // no tiene estado propio (ConsumerWidget) y solo existe una instancia
+  // visible a la vez.
+  static bool _deletingAccount = false;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -27,7 +37,9 @@ class SettingsScreen extends ConsumerWidget {
       error: (_, __) => 'Desconocida',
     );
 
-    return Scaffold(
+    return HardwareBackRoute(
+      onBack: () => context.go('/home'),
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
@@ -37,6 +49,12 @@ class SettingsScreen extends ConsumerWidget {
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
               child: Row(
                 children: [
+                  IconButton(
+                    onPressed: () => context.go('/home'),
+                    icon: Icon(Icons.arrow_back_ios_new_rounded,
+                        color: context.text.bodyMedium?.color, size: 20),
+                  ),
+                  const SizedBox(width: 4),
                   Text(
                     'Configuración',
                     style: TextStyle(
@@ -64,6 +82,17 @@ class SettingsScreen extends ConsumerWidget {
                         title: 'Nombre',
                         subtitle: user?.name ?? '—',
                         delay: 100,
+                      ),
+                      _SettingsTile(
+                        icon: Icons.tag_rounded,
+                        iconColor: context.firefly.accent,
+                        title: 'Apodo',
+                        subtitle: (user?.hasNickname ?? false)
+                            ? user!.nickname!
+                            : 'Sin configurar',
+                        delay: 125,
+                        trailing: const Icon(Icons.chevron_right_rounded),
+                        onTap: () => _showNicknameSheet(context, ref),
                       ),
                       _SettingsTile(
                         icon: Icons.email_outlined,
@@ -130,8 +159,13 @@ class SettingsScreen extends ConsumerWidget {
                           final uri = Uri.parse(
                             AppConstants.baseUrl.replaceAll(RegExp(r'/api/?$'), '/privacidad.html'),
                           );
-                          if (await canLaunchUrl(uri)) {
-                            await launchUrl(uri);
+                          final opened = await canLaunchUrl(uri) && await launchUrl(uri);
+                          if (!opened && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('No se pudo abrir la política de privacidad.'),
+                              ),
+                            );
                           }
                         },
                       ),
@@ -217,6 +251,8 @@ class SettingsScreen extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: const AdBanner(),
+      ),
     );
   }
 
@@ -288,6 +324,7 @@ class SettingsScreen extends ConsumerWidget {
   /// No borra nada aquí — solo habilita pasar al paso 2 para evitar que un
   /// toque accidental (o un niño explorando la app) llegue a un borrado real.
   void _confirmDeleteAccount(BuildContext context, WidgetRef ref) {
+    if (_deletingAccount) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -351,21 +388,28 @@ class SettingsScreen extends ConsumerWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
+                      if (_deletingAccount) return;
+                      _deletingAccount = true;
                       Navigator.pop(context);
-                      final ok = await ref.read(authProvider.notifier).deleteAccount();
-                      if (context.mounted) {
-                        if (ok) {
-                          context.go('/login');
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: const Text('Error al borrar la cuenta. Verifica tu conexión.', style: TextStyle(fontFamily: 'Nunito')),
-                              backgroundColor: context.colors.error,
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          );
+                      try {
+                        final ok =
+                            await ref.read(authProvider.notifier).deleteAccount();
+                        if (context.mounted) {
+                          if (ok) {
+                            context.go('/login');
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: const Text('Error al borrar la cuenta. Verifica tu conexión.', style: TextStyle(fontFamily: 'Nunito')),
+                                backgroundColor: context.colors.error,
+                                behavior: SnackBarBehavior.floating,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                            );
+                          }
                         }
+                      } finally {
+                        _deletingAccount = false;
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -385,8 +429,27 @@ class SettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showAboutDialog(BuildContext context, String versionStr) {
-    showDialog(
+  /// Edita el apodo desde ajustes. Misma validación que en la pantalla de
+  /// primer login (nickname_setup_screen.dart): máximo 12 caracteres y sin
+  /// espacios — es lo que se muestra en las tarjetas de avistamientos.
+  void _showNicknameSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: context.colors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (sheetContext) => _NicknameSheet(
+        current: ref.read(currentUserProvider)?.nickname,
+        onChanged: (newNickname) async {
+          return await ref.read(authProvider.notifier).updateNickname(newNickname);
+        },
+      ),
+    );
+  }
+
+  void _showAboutDialog(BuildContext context, String versionStr) {    showDialog(
       context: context,
       builder: (_) => AlertDialog(
         backgroundColor: context.colors.surface,
@@ -526,6 +589,138 @@ class _DeleteAccountStep1SheetState extends State<_DeleteAccountStep1Sheet> {
                     backgroundColor: context.colors.error,
                   ),
                   child: const Text('Continuar'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Nickname Sheet ────────────────────────────────────────────────
+
+class _NicknameSheet extends ConsumerStatefulWidget {
+  const _NicknameSheet({required this.current, required this.onChanged});
+
+  final String? current;
+  final Future<bool> Function(String) onChanged;
+
+  @override
+  ConsumerState<_NicknameSheet> createState() => _NicknameSheetState();
+}
+
+class _NicknameSheetState extends ConsumerState<_NicknameSheet> {
+  late final TextEditingController _ctrl =
+      TextEditingController(text: widget.current ?? '');
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  bool get _canSave => _ctrl.text.trim().isNotEmpty;
+
+  Future<void> _save() async {
+    setState(() => _saving = true);
+    final ok = await widget.onChanged(_ctrl.text.trim());
+    if (!mounted) return;
+    if (ok) {
+      Navigator.pop(context);
+    } else {
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('No se pudo guardar el apodo. Revisa tu conexión.',
+              style: TextStyle(fontFamily: 'Nunito')),
+          backgroundColor: context.colors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        24,
+        24,
+        24,
+        24 + MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Center(child: Text('🦋', style: TextStyle(fontSize: 44))),
+          const SizedBox(height: 12),
+          Text(
+            'Tu apodo',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: context.colors.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Así te llamarán en tus avistamientos y en el feed. Máximo '
+            '${AppConstants.maxNicknameLength} caracteres, sin espacios.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 13,
+              color: context.text.bodyMedium?.color,
+            ),
+          ),
+          const SizedBox(height: 18),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            maxLength: AppConstants.maxNicknameLength,
+            textCapitalization: TextCapitalization.none,
+            inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
+            onChanged: (_) => setState(() {}),
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w800,
+              color: context.colors.onSurface,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Tu apodo',
+              counterText: '',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancelar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: (_canSave && !_saving) ? _save : null,
+                  child: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Guardar'),
                 ),
               ),
             ],

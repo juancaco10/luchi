@@ -19,7 +19,6 @@ class ProgressCard extends ConsumerWidget {
     final total = chapters.length;
     final completed = chapters.where((c) => c.isCompleted).length;
     final progress = total == 0 ? 0.0 : completed / total;
-    final finished = total > 0 && completed == total;
 
     return Material(
       color: Colors.transparent,
@@ -85,20 +84,6 @@ class ProgressCard extends ConsumerWidget {
                   minHeight: 10,
                   backgroundColor: context.colors.surface,
                   valueColor: AlwaysStoppedAnimation(context.firefly.success),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                total == 0
-                    ? 'Cargando capítulos…'
-                    : finished
-                        ? '¡Completaste los $total capítulos! Sigue jugando para ganar más puntos.'
-                        : '$completed de $total capítulos completados · '
-                            'completa uno para desbloquear el siguiente',
-                style: TextStyle(
-                  fontFamily: 'Nunito',
-                  fontSize: 13,
-                  color: context.colors.onSurface.withValues(alpha: 0.7),
                 ),
               ),
             ],

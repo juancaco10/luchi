@@ -9,7 +9,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:guardianes_luciernagas/core/network/api_client.dart';
-import 'package:guardianes_luciernagas/core/storage/local_storage.dart';
 import 'package:guardianes_luciernagas/core/theme/firefly_colors.dart';
 import 'package:guardianes_luciernagas/core/utils/constants.dart';
 import 'package:guardianes_luciernagas/features/games/models/game_id.dart';

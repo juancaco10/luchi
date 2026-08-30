@@ -21,10 +21,27 @@ function formatUser(array $user): array
         'level'      => (int) $user['level'],
         'levelName'  => getLevelName((int) $user['points']),
         'avatar_url' => $user['avatar_url'],
+        'nickname'   => $user['nickname'],
         'country'    => $user['country'],
         'city'       => $user['city'],
         'created_at' => $user['created_at'],
     ];
+}
+
+/** Stores a technical declaration; legal verification remains a separate concern. */
+function requiredConsent(array $body): array
+{
+    $consent = $body['parental_consent'] ?? null;
+    if (!is_array($consent) || ($consent['accepted'] ?? false) !== true) {
+        jsonError('Se requiere consentimiento parental antes de crear una cuenta', 403);
+    }
+
+    $timestamp = $consent['timestamp'] ?? '';
+    $policy = trim((string) ($consent['policy_version'] ?? ''));
+    if (!is_string($timestamp) || strtotime($timestamp) === false || $policy === '' || strlen($policy) > 64) {
+        jsonError('Datos de consentimiento inválidos');
+    }
+    return [gmdate('Y-m-d H:i:s', strtotime($timestamp)), $policy];
 }
 
 // ── POST /register ────────────────────────────────────────────────
@@ -35,6 +52,7 @@ if ($method === 'POST' && $path === '/register') {
     $name     = sanitize($body['name']     ?? '');
     $email    = strtolower(trim($body['email']    ?? ''));
     $password = $body['password'] ?? '';
+    [$consentAt, $consentPolicy] = requiredConsent($body);
 
     // Validation
     if (empty($name) || strlen($name) < 2) {
@@ -48,6 +66,7 @@ if ($method === 'POST' && $path === '/register') {
     }
 
     $db = getDB();
+    requireIpNotRateLimited($db, 'register', 10, 60);
 
     // Check duplicate
     $check = $db->prepare('SELECT id FROM users WHERE email = ?');
@@ -56,12 +75,16 @@ if ($method === 'POST' && $path === '/register') {
         jsonError('Ya existe una cuenta con ese correo', 409);
     }
 
+    recordIpAttempt($db, 'register');
+
     // Insert
     $hash = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
     $stmt = $db->prepare(
-        'INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)'
+        'INSERT INTO users (name, email, password_hash, parental_consent_status,
+          parental_consent_at, parental_consent_policy_version, parental_consent_method)
+         VALUES (?, ?, ?, 1, ?, ?, "in_app_declaration")'
     );
-    $stmt->execute([$name, $email, $hash]);
+    $stmt->execute([$name, $email, $hash, $consentAt, $consentPolicy]);
     $userId = (int) $db->lastInsertId();
 
     $user = $db->prepare('SELECT * FROM users WHERE id = ?');
@@ -226,12 +249,15 @@ if ($method === 'POST' && $path === '/auth/google') {
             $stmt->execute([$existing['id']]);
             $user = $stmt->fetch();
         } else {
+            [$consentAt, $consentPolicy] = requiredConsent($body);
             // 3. Cuenta nueva. Sin contraseña: password_hash queda NULL.
             $insert = $db->prepare(
-                'INSERT INTO users (name, email, google_sub, auth_provider, avatar_url)
-                 VALUES (?, ?, ?, \'google\', ?)'
+                'INSERT INTO users (name, email, google_sub, auth_provider, avatar_url,
+                  parental_consent_status, parental_consent_at,
+                  parental_consent_policy_version, parental_consent_method)
+                 VALUES (?, ?, ?, \'google\', ?, 1, ?, ?, "in_app_declaration")'
             );
-            $insert->execute([$name, $email, $googleSub, $avatarUrl]);
+            $insert->execute([$name, $email, $googleSub, $avatarUrl, $consentAt, $consentPolicy]);
             $userId = (int) $db->lastInsertId();
 
             $stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
@@ -251,15 +277,23 @@ if ($method === 'POST' && $path === '/auth/google') {
 // Crea un usuario invitado y devuelve una sesión.
 
 if ($method === 'POST' && $path === '/auth/guest') {
+    $body = json_decode(file_get_contents('php://input'), true) ?? [];
+    [$consentAt, $consentPolicy] = requiredConsent($body);
     $db = getDB();
+    // Sin este límite, POST /auth/guest crea una cuenta nueva por
+    // llamada sin fricción alguna — creación masiva de usuarios trivial.
+    requireIpNotRateLimited($db, 'guest', 10, 60);
+    recordIpAttempt($db, 'guest');
     $guestId = rand(10000, 99999);
     $name = "Invitado $guestId";
     $email = "invitado_$guestId@luciernagas.local";
 
     $insert = $db->prepare(
-        'INSERT INTO users (name, email, auth_provider) VALUES (?, ?, \'guest\')'
+        'INSERT INTO users (name, email, auth_provider, parental_consent_status,
+          parental_consent_at, parental_consent_policy_version, parental_consent_method)
+         VALUES (?, ?, \'guest\', 1, ?, ?, "in_app_declaration")'
     );
-    $insert->execute([$name, $email]);
+    $insert->execute([$name, $email, $consentAt, $consentPolicy]);
     $userId = (int) $db->lastInsertId();
 
     $stmt = $db->prepare('SELECT * FROM users WHERE id = ?');
@@ -307,6 +341,19 @@ if ($method === 'PUT' && $path === '/me') {
         $params[] = $country;
         $sets[]   = 'city = ?';
         $params[] = $city;
+    }
+
+    if (array_key_exists('nickname', $body)) {
+        $nickname = trim((string) $body['nickname']);
+        // Apodo corto para el feed: 1-12 caracteres, sin espacios (debe
+        // caber en una sola línea de las tarjetas de avistamientos). Se
+        // respeta el estilo del usuario tal cual lo escribe — no se
+        // capitaliza — y se guarda el mismo valor que luego se muestra.
+        if ($nickname === '' || mb_strlen($nickname) > 12 || preg_match('/\s/', $nickname)) {
+            jsonError('El apodo debe tener entre 1 y 12 caracteres, sin espacios');
+        }
+        $sets[]   = 'nickname = ?';
+        $params[] = $nickname;
     }
 
     if (array_key_exists('avatar_url', $body)) {
@@ -371,31 +418,49 @@ if ($method === 'PUT' && $path === '/me/game-progress') {
     $body  = json_decode(file_get_contents('php://input'), true) ?? [];
     $stars = filter_var($body['stars'] ?? null, FILTER_VALIDATE_INT);
 
-    if ($stars === false || $stars === null || $stars < 0) {
-        jsonError('stars debe ser un entero mayor o igual a 0');
+    // 5 minijuegos × 10 niveles (AppConstants.levelsPerGame) × 3 estrellas
+    // por nivel. Un total por encima de esto no es alcanzable jugando y
+    // solo puede venir de un cliente manipulado (Hive editado a mano,
+    // APK parcheado) — se rechaza en vez de aceptarlo silenciosamente.
+    $maxGameStars = 5 * 10 * 3;
+
+    if ($stars === false || $stars === null || $stars < 0 || $stars > $maxGameStars) {
+        jsonError('stars debe ser un entero entre 0 y ' . $maxGameStars);
     }
 
     $db = getDB();
 
-    $stmt = $db->prepare('SELECT game_stars FROM users WHERE id = ?');
-    $stmt->execute([$user['id']]);
-    $previousStars = (int) $stmt->fetchColumn();
+    // Transacción con `FOR UPDATE`: sin el lock de fila, dos llamadas
+    // concurrentes (doble tap, reintento de red superpuesto) podrían leer
+    // el mismo `previousStars` antes de que ninguna escriba, y la que
+    // termine después pisaría el delta de la otra (lost update).
+    $db->beginTransaction();
+    try {
+        $stmt = $db->prepare('SELECT game_stars FROM users WHERE id = ? FOR UPDATE');
+        $stmt->execute([$user['id']]);
+        $previousStars = (int) $stmt->fetchColumn();
 
-    // Nunca dejar que el total baje: el cliente siempre envía su máximo
-    // conocido, así que un valor menor solo puede venir de un dispositivo
-    // desactualizado o un reintento fuera de orden — no de progreso
-    // perdido de verdad.
-    $newStars = max($previousStars, $stars);
-    $delta    = $newStars - $previousStars;
+        // Nunca dejar que el total baje: el cliente siempre envía su máximo
+        // conocido, así que un valor menor solo puede venir de un dispositivo
+        // desactualizado o un reintento fuera de orden — no de progreso
+        // perdido de verdad.
+        $newStars = max($previousStars, $stars);
+        $delta    = $newStars - $previousStars;
 
-    // Mismo valor por estrella que AppConstants.pointsGameStar en el
-    // cliente (lib/core/utils/constants.dart) — deben mantenerse en sync.
-    $pointsGained = $delta * 5;
+        // Mismo valor por estrella que AppConstants.pointsGameStar en el
+        // cliente (lib/core/utils/constants.dart) — deben mantenerse en sync.
+        $pointsGained = $delta * 5;
 
-    $db->prepare('UPDATE users SET game_stars = ?, points = points + ? WHERE id = ?')
-       ->execute([$newStars, $pointsGained, $user['id']]);
+        $db->prepare('UPDATE users SET game_stars = ?, points = points + ? WHERE id = ?')
+           ->execute([$newStars, $pointsGained, $user['id']]);
 
-    $totalPoints = syncUserProgress($db, (int) $user['id']);
+        $totalPoints = syncUserProgress($db, (int) $user['id']);
+
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        jsonError('No se pudo guardar el progreso', 500);
+    }
 
     jsonResponse([
         'success'       => true,

@@ -1,7 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'core/storage/local_storage.dart';
+import 'core/utils/constants.dart';
 import 'app.dart';
 
 void main() async {
@@ -25,6 +28,13 @@ void main() async {
 
   // Initialize local storage
   await LocalStorage.instance.init();
+
+  // Sin await: el banner (lib/widgets/ad_banner.dart) espera a que el SDK
+  // esté listo por su cuenta antes de cargar el primer anuncio, así que no
+  // hace falta bloquear el arranque de la app por esto.
+  if (AppConstants.adsEnabled) {
+    unawaited(MobileAds.instance.initialize());
+  }
 
   runApp(
     const ProviderScope(

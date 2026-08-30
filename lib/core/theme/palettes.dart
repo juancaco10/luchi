@@ -86,25 +86,48 @@ abstract class LightPalette {
   static const Color surface = Color(0xFFFFFFFF);
   static const Color cardSurface = Color(0xFFE8EEF5);
 
-  static const Color primary = Color(0xFFD4A800); // primaryDark en AppColors
-  static const Color primaryGlow = Color(0x40F5D020);
+  // Antes amarillo (D4A800), heredado sin adaptar del tema oscuro: sobre el
+  // fondo casi blanco de este tema, cualquier ícono/acento en amarillo queda
+  // lavado. El verde es el acento real del modo claro desde aquí.
+  static const Color primary = Color(0xFF2E9E3A);
+  static const Color primaryLight = Color(0xFF72E26E); // solo rellenos/glows, nunca texto suelto
+  static const Color primaryGlow = Color(0x402E9E3A);
 
-  static const Color secondary = Color(0xFF7CB342); // yellowish green
+  static const Color secondary = Color(0xFF2E9E3A);
+  static const Color secondaryGlow = Color(0x402E9E3A);
 
   static const Color accent = Color(0xFF5B8BF5);
+  static const Color accentGlow = Color(0x405B8BF5);
 
-  static const Color textPrimary = Color(0xFF000000);
-  static const Color textSecondary = Color(0xFF000000);
-  static const Color textMuted = Color(0xFF000000);
-  static const Color textOnPrimary = Color(0xFFFFFFFF);
+  // Antes los tres en negro puro (#000000): sin jerarquía entre texto
+  // principal/secundario/atenuado, un mismo negro para todo.
+  static const Color textPrimary = Color(0xFF0B1220);
+  static const Color textSecondary = Color(0xFF4A5568);
+  static const Color textMuted = Color(0xFF7A8699);
+  // Blanco sobre el verde de arriba da 3.46:1 (insuficiente para texto de
+  // botón); oscuro da 6.1:1. Mismo patrón que ya usa el tema oscuro (amarillo
+  // brillante + texto casi negro encima).
+  static const Color textOnPrimary = Color(0xFF0A2A10);
 
   static const Color success = Color(0xFF4CAF50);
   static const Color warning = Color(0xFFFF9800);
   static const Color error = Color(0xFFEF5350);
   static const Color errorLight = Color(0xFFE57373);
 
-  static const Color border = Color(0xFF3A4E7A);
-  static const Color divider = Color(0xFF3A4E7A);
+  static const Color border = Color(0xFFD6DEE9);
+  static const Color divider = Color(0xFFE3E9F2);
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF72E26E), Color(0xFF2E9E3A)],
+  );
+
+  static const LinearGradient greenGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF72E26E), Color(0xFF2E9E3A)],
+  );
 
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -122,5 +145,9 @@ abstract class LightPalette {
 
   static List<BoxShadow> primaryGlowShadow = [
     const BoxShadow(color: primaryGlow, blurRadius: 20, spreadRadius: 2),
+  ];
+
+  static List<BoxShadow> greenGlowShadow = [
+    const BoxShadow(color: secondaryGlow, blurRadius: 16, spreadRadius: 1),
   ];
 }

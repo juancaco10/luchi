@@ -48,6 +48,11 @@ CREATE TABLE users (
   -- no hay forma de concedérselo a uno mismo desde la app.
   is_moderator  TINYINT(1)          NOT NULL DEFAULT 0,
   avatar_url    VARCHAR(500)        NULL,
+  nickname      VARCHAR(12)         NULL,
+  parental_consent_status TINYINT(1) NOT NULL DEFAULT 0,
+  parental_consent_at DATETIME NULL DEFAULT NULL,
+  parental_consent_policy_version VARCHAR(64) NULL,
+  parental_consent_method VARCHAR(32) NULL,
   country       VARCHAR(100)        NULL,
   city          VARCHAR(120)        NULL,
   created_at    TIMESTAMP           NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -147,6 +152,19 @@ CREATE TABLE sighting_likes (
   INDEX idx_sighting (sighting_id),
   FOREIGN KEY (sighting_id) REFERENCES sightings(id) ON DELETE CASCADE,
   FOREIGN KEY (user_id)     REFERENCES users(id)     ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Server-generated images may only be attached by their uploader.
+CREATE TABLE sighting_photo_uploads (
+  id                    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id               INT UNSIGNED NOT NULL,
+  filename              VARCHAR(64) NOT NULL UNIQUE,
+  mime_type             VARCHAR(32) NOT NULL DEFAULT 'image/jpeg',
+  attached_sighting_id  INT UNSIGNED NULL UNIQUE,
+  created_at            TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_upload_user (user_id),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (attached_sighting_id) REFERENCES sightings(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── badges ───────────────────────────────────────────────────────

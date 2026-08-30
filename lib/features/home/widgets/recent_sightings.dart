@@ -2,23 +2,47 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/firefly_colors.dart';
+import '../../../../core/utils/constants.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../features/sightings/models/sighting_model.dart';
 import '../../../features/sightings/providers/sightings_provider.dart';
 import '../../../features/sightings/utils/sighting_format.dart';
+import '../../../features/sightings/widgets/like_button.dart';
 import '../../../features/profile/utils/avatar_image.dart';
 import 'sighting_details_modal.dart';
 
-class RecentSightings extends ConsumerWidget {
+class RecentSightings extends ConsumerStatefulWidget {
   const RecentSightings({super.key, this.scale = 1.0});
 
   /// Factor de escala para el alto de la lista — ver ScreenFitter.
   final double scale;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<RecentSightings> createState() => _RecentSightingsState();
+}
+
+class _RecentSightingsState extends ConsumerState<RecentSightings> {
+  @override
+  void initState() {
+    super.initState();
+    // Refresco silencioso cada vez que el home vuelve a montar esta
+    // sección (entrar a la pestaña, volver de otra pantalla): antes solo
+    // se pedía si la lista estaba vacía, así que una vez cargada el feed
+    // quedaba congelado el resto de la sesión y los avistamientos de
+    // otros usuarios tardaban en aparecer. `silent: true` evita spinner
+    // si ya hay datos, y el provider mismo limita la frecuencia
+    // (`AppConstants.feedRefreshMinInterval`).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(sightingsProvider.notifier).loadCommunitySightings(silent: true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final state = ref.watch(sightingsProvider);
-    final sightings = state.sightings.take(8).toList();
+    final latest = ref.watch(sightingsProvider.notifier).mergedFeed;
+    final cards = latest.take(8).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,14 +55,14 @@ class RecentSightings extends ConsumerWidget {
                 Container(
                   width: 8,
                   height: 8,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFF72E26E),
+                  decoration: BoxDecoration(
+                    color: context.colors.secondary,
                     shape: BoxShape.circle,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Avistamientos recientes',
+                  'Últimas publicaciones',
                   style: context.text.titleMedium?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -52,13 +76,29 @@ class RecentSightings extends ConsumerWidget {
             // InkWell + padding queda claro que es un botón y responde en
             // toda su píldora, no solo en el texto.
             Material(
-              color: const Color(0xFF72E26E).withValues(alpha: 0.12),
+              color: context.colors.secondary.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
-                onTap: () => context.go('/sightings'),
+                // El mapa muestra los avistamientos de todos; la lista
+                // propia se alcanza desde ahí ("Mis avistamientos").
+                // /map redirige a /home mientras comunidad está
+                // deshabilitada (AppConstants.communityEnabled) — avisar
+                // en vez de dejar el tap sin efecto aparente.
+                onTap: () {
+                  if (!AppConstants.communityEnabled) {
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(const SnackBar(
+                        content: Text(
+                            'El mapa comunitario estará disponible próximamente.'),
+                      ));
+                    return;
+                  }
+                  context.go('/map');
+                },
                 borderRadius: BorderRadius.circular(20),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -67,12 +107,12 @@ class RecentSightings extends ConsumerWidget {
                         style: TextStyle(
                           fontFamily: 'Nunito',
                           fontWeight: FontWeight.w800,
-                          color: Color(0xFF72E26E),
+                          color: context.colors.secondary,
                           fontSize: 13,
                         ),
                       ),
-                      SizedBox(width: 2),
-                      Icon(Icons.chevron_right_rounded, color: Color(0xFF72E26E), size: 16),
+                      const SizedBox(width: 2),
+                      Icon(Icons.chevron_right_rounded, color: context.colors.secondary, size: 16),
                     ],
                   ),
                 ),
@@ -82,14 +122,16 @@ class RecentSightings extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 180 * scale,
-          child: sightings.isEmpty
-              ? _EmptyState(isLoading: state.isLoading)
+          height: 180 * widget.scale,
+          child: cards.isEmpty
+              ? _EmptyState(
+                  isLoading: state.isLoading || state.isLoadingCommunity,
+                )
               : ListView.separated(
                   scrollDirection: Axis.horizontal,
-                  itemCount: sightings.length,
+                  itemCount: cards.length,
                   separatorBuilder: (context, index) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) => _SightingCard(sighting: sightings[index]),
+                  itemBuilder: (context, index) => _SightingCard(sighting: cards[index]),
                 ),
         ),
       ],
@@ -128,7 +170,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                'Aún no tienes avistamientos. ¡Registra el primero!',
+                'Aún no hay avistamientos publicados. ¡Sé el primero!',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 13,
@@ -154,11 +196,17 @@ class _SightingCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final locationFull = sightingLocationLabel(sighting);
     final locationShort = sightingShortLocationLabel(sighting);
-    // Foto real del autor: solo para avistamientos propios (la del usuario
-    // actual, de Google o el avatar elegido). Lo ajeno del feed se muestra
-    // anónimo siempre — nunca la foto de otro niño.
+    // Autor visible por decisión de producto (docs/PRIVACY.md): lo propio
+    // usa la foto real del usuario (Google o avatar elegido) y lo ajeno, la
+    // del autor; si un autor no tiene avatar, cae el anónimo. El servidor
+    // solo manda el primer nombre, nunca el completo.
     final user = ref.watch(currentUserProvider);
-    final authorImage = sighting.isMine ? avatarImageFor(user?.avatarUrl) : null;
+    final authorName = sighting.isMine
+        ? (user?.displayName ?? 'Explorador')
+        : (sighting.authorName ?? 'Un guardián del bosque');
+    final authorImage = sighting.isMine
+        ? avatarImageFor(user?.avatarUrl)
+        : avatarImageFor(sighting.authorAvatar);
 
     return GestureDetector(
       onTap: () => SightingDetailsModal.show(context, sighting, locationFull, ref.read(sightingsProvider).sightings.length),
@@ -267,36 +315,64 @@ class _SightingCard extends ConsumerWidget {
                 right: 10,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-                      children: [
-                        // Avatar del autor, más grande. Lo propio usa la
-                        // foto real del usuario (Google o avatar elegido);
-                        // lo ajeno, un icono anónimo.
-                        ClipOval(
-                          child: SizedBox(
-                            width: 28,
-                            height: 28,
-                            child: authorImage != null
-                                ? Image(
-                                    image: authorImage,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (c, e, s) =>
-                                        const Icon(Icons.person, size: 16),
-                                  )
-                                : Container(
-                                    color: Colors.white.withValues(alpha: 0.2),
-                                    child: Icon(
-                                      sighting.isMine
-                                          ? Icons.person
-                                          : Icons.eco_rounded,
-                                      size: 16,
-                                      color: Colors.white,
+                    // Autor: foto más grande con el primer nombre debajo.
+                    // Lo propio usa tu foto real (Google o avatar elegido);
+                    // lo ajeno, la del autor — el servidor manda
+                    // `author_avatar` en el feed. `Expanded` hace que el
+                    // nombre ceda espacio cuando el corazón a la derecha
+                    // ocupa más (contadores de 3 cifras, etc.) — antes con
+                    // ancho fijo de 82px desbordaba la tarjeta en pantallas
+                    // estrechas.
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 34,
+                              height: 34,
+                              child: authorImage != null
+                                  ? Image(
+                                      image: authorImage,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) =>
+                                          const Icon(Icons.person, size: 18),
+                                    )
+                                  : Container(
+                                      color: Colors.white.withValues(alpha: 0.2),
+                                      child: Icon(
+                                        sighting.isMine
+                                            ? Icons.person
+                                            : Icons.eco_rounded,
+                                        size: 18,
+                                        color: Colors.white,
+                                      ),
                                     ),
-                                  ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
+                          const SizedBox(height: 3),
+                          Text(
+                            authorName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontFamily: 'Nunito',
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Derecha: cantidad de luciérnagas encima del corazón.
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
                         Text(
                           'x${sighting.quantity}',
                           style: const TextStyle(
@@ -307,13 +383,14 @@ class _SightingCard extends ConsumerWidget {
                             shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
                           ),
                         ),
+                        const SizedBox(height: 3),
+                        // No se ofrece dar corazón a algo `isPending`: todavía
+                        // no existe en el servidor (`toggleLike` fallaría con
+                        // un id nulo), así que aquí solo hay hueco vacío hasta
+                        // que sincronice.
+                        if (!sighting.isPending) LikeButton(sighting: sighting),
                       ],
                     ),
-                    // No se ofrece dar corazón a algo `isPending`: todavía
-                    // no existe en el servidor (`toggleLike` fallaría con
-                    // un id nulo), así que aquí solo hay hueco vacío hasta
-                    // que sincronice.
-                    if (!sighting.isPending) _LikeButton(sighting: sighting),
                   ],
                 ),
               ),
@@ -326,88 +403,10 @@ class _SightingCard extends ConsumerWidget {
 }
 
 /// Corazón + contador, en la esquina donde antes había un '✨' decorativo.
-/// `GestureDetector` propio para que tocarlo no abra el modal (el de la
-/// tarjeta entera) — solo da o quita el corazón.
-class _LikeButton extends ConsumerStatefulWidget {
-  const _LikeButton({required this.sighting});
-
-  final SightingModel sighting;
-
-  @override
-  ConsumerState<_LikeButton> createState() => _LikeButtonState();
-}
-
-class _LikeButtonState extends ConsumerState<_LikeButton>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pop = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 220),
-    lowerBound: 0,
-    upperBound: 0.35,
-  );
-
-  @override
-  void dispose() {
-    _pop.dispose();
-    super.dispose();
-  }
-
-  Future<void> _tap() async {
-    if (widget.sighting.id == null) return;
-    final wasLiked = widget.sighting.likedByMe;
-    if (!wasLiked) {
-      // Solo hace el pop al dar corazón, no al quitarlo — el gesto
-      // afirmativo se celebra, el negativo no necesita ceremonia.
-      _pop.forward(from: 0).then((_) => _pop.reverse());
-    }
-    await ref.read(sightingsProvider.notifier).toggleLike(widget.sighting.id!);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final liked = widget.sighting.likedByMe;
-    final count = widget.sighting.likesCount;
-    return GestureDetector(
-      onTap: _tap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        // Área táctil un poco mayor que el icono visible, sin desplazar el
-        // layout — el icono real ya ronda los 14px.
-        padding: const EdgeInsets.all(4),
-        child: AnimatedBuilder(
-          animation: _pop,
-          builder: (context, child) => Transform.scale(
-            scale: 1 + _pop.value,
-            child: child,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                liked ? Icons.favorite : Icons.favorite_border,
-                size: 20,
-                color: liked ? const Color(0xFFFF5C7A) : Colors.white,
-                shadows: const [Shadow(color: Colors.black54, blurRadius: 4)],
-              ),
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: const TextStyle(
-                  fontFamily: 'Nunito',
-                  fontSize: 12,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                  shadows: [Shadow(color: Colors.black54, blurRadius: 4)],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
+/// Ver `LikeButton` (features/sightings/widgets) — compartido con el feed
+/// de publicaciones. `GestureDetector` propio para que tocarlo no abra el
+/// modal (el de la tarjeta entera) — solo da o quita el corazón.
+///
 /// Foto del avistamiento si la hay; si no, un degradado con el emoji de
 /// luciérnaga — muchos avistamientos no tendrán foto, la sección es
 /// opcional en el formulario.

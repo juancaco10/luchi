@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
-import '../../../core/storage/local_storage.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/firefly_background.dart';
 
@@ -67,7 +66,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Future<void> _finish() async {
-    await LocalStorage.instance.setOnboardingDone();
     if (!mounted) return;
     context.go('/onboarding/consent');
   }
@@ -269,7 +267,10 @@ class _OnboardingPageWidget extends StatelessWidget {
                             letterSpacing: -0.5,
                           ),
                         ),
-                      ).animate(delay: 200.ms).fadeIn().slideY(begin: 0.3, end: 0),
+                      )
+                          .animate(delay: 200.ms)
+                          .fadeIn()
+                          .slideY(begin: 0.3, end: 0),
 
                       const SizedBox(height: 16),
 
@@ -283,7 +284,10 @@ class _OnboardingPageWidget extends StatelessWidget {
                           color: context.text.bodyMedium?.color,
                           height: 1.5,
                         ),
-                      ).animate(delay: 350.ms).fadeIn().slideY(begin: 0.3, end: 0),
+                      )
+                          .animate(delay: 350.ms)
+                          .fadeIn()
+                          .slideY(begin: 0.3, end: 0),
 
                       // Responsive space for bottom controls bar
                       const SizedBox(height: 160),

@@ -73,7 +73,7 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
 
   void _load() {
     try {
-      final raw = LocalStorage.instance.gamesBox.get(_stateKey);
+      final raw = LocalStorage.instance.gamesBox?.get(_stateKey);
       if (raw is! Map) return;
 
       final progress = <GameId, GameProgress>{};
@@ -107,13 +107,16 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
       // Un progreso corrupto o de un formato anterior no debe tumbar la app:
       // se arranca en blanco (mejor perder el progreso que no poder jugar),
       // pero se deja constancia en consola en vez de fallar en silencio.
-      debugPrint('GamesProgressNotifier._load falló, se arranca en blanco: $e\n$st');
+      debugPrint(
+          'GamesProgressNotifier._load falló, se arranca en blanco: $e\n$st');
     }
   }
 
   Future<void> _persist() async {
+    final box = LocalStorage.instance.gamesBox;
+    if (box == null) return;
     try {
-      await LocalStorage.instance.gamesBox.put(_stateKey, {
+      await box.put(_stateKey, {
         'games': {
           for (final entry in state.progress.entries)
             entry.key.slug: entry.value.toJson(),
@@ -130,7 +133,7 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
       // volcado real a disco. Es la única caja de Hive de la app que guarda
       // progreso irrecuperable si se pierde (las demás son caché de algo
       // que se puede volver a descargar), así que aquí sí vale el costo.
-      await LocalStorage.instance.gamesBox.flush();
+      await box.flush();
     } catch (e, st) {
       // El estado en memoria (lo que ve el jugador en esta sesión) ya se
       // actualizó antes de llamar aquí; si falla el guardado en disco no
@@ -155,9 +158,8 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
     final gainedStars =
         result.won ? (result.stars - previous.starsFor(level)).clamp(0, 3) : 0;
 
-    final updated = result.won
-        ? previous.withResult(level, result.stars)
-        : previous;
+    final updated =
+        result.won ? previous.withResult(level, result.stars) : previous;
 
     // ── Racha diaria ──────────────────────────────────────────
     final today = _today();
@@ -199,7 +201,8 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
       try {
         await _ref.read(authProvider.notifier).addPoints(pointsGained);
       } catch (e, st) {
-        debugPrint('recordResult: addPoints falló (progreso ya guardado): $e\n$st');
+        debugPrint(
+            'recordResult: addPoints falló (progreso ya guardado): $e\n$st');
       }
     }
 
@@ -247,6 +250,8 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
   /// conexión) corrige solo lo que faltó, sin duplicar nada — el propio
   /// backend descarta cualquier valor que no sea mayor al que ya tenía.
   void _syncGameStars() {
+    // Tests and pre-bootstrap state have no authenticated session to sync.
+    if (!LocalStorage.instance.isInitialized) return;
     // No `await` a propósito: se dispara y se sigue, ver comentario arriba.
     unawaited(_trySyncGameStars(state.totalStars));
   }
@@ -266,7 +271,7 @@ class GamesProgressNotifier extends StateNotifier<GamesState> {
   /// son del jugador, no del juego.
   Future<void> resetAll() async {
     state = const GamesState();
-    await LocalStorage.instance.gamesBox.clear();
+    await LocalStorage.instance.gamesBox?.clear();
   }
 
   static DateTime _today() {

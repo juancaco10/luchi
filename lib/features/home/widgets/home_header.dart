@@ -50,6 +50,20 @@ class HomeHeader extends ConsumerWidget {
                 _iconButton(context, Icons.notifications_none_rounded, semanticLabel: 'Notificaciones'),
                 const SizedBox(width: 8),
 
+                // Antes vivía dentro del perfil (había que entrar ahí
+                // primero); se movió aquí para que Ajustes quede a un toque
+                // desde el inicio. `push`, no `go`: Ajustes es una ruta
+                // fuera del shell y con `go` se reemplaza toda la pila, así
+                // que el botón de retroceso de Android cerraba la app en vez
+                // de volver al home.
+                _iconButton(
+                  context,
+                  Icons.settings_rounded,
+                  semanticLabel: 'Configuración',
+                  onTap: () => context.push('/settings'),
+                ),
+                const SizedBox(width: 8),
+
                 // Avatar
                 Semantics(
                   button: true,

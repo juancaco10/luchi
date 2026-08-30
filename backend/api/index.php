@@ -65,18 +65,6 @@ $path   = '/' . trim($path, '/');
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ── Test Endpoint (Safe) ──────────────────────────────────────────
-if ($path === '/test-db' && $method === 'GET') {
-    try {
-        $db = getDB();
-        http_response_code(200);
-        echo json_encode(['status' => 'success', 'message' => '¡Conexión a la base de datos exitosa!']);
-    } catch (Throwable $e) {
-        http_response_code(500);
-        echo json_encode(['status' => 'error', 'message' => 'Error de conexión. Revisa database.php']);
-    }
-    exit;
-}
-
 // ── Shared helpers ────────────────────────────────────────────────
 require_once __DIR__ . '/lib/gamification.php';
 

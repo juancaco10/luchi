@@ -9,6 +9,10 @@ class UserModel {
   final String levelName;
   final String? avatarUrl;
   final String? createdAt;
+  /// Apodo corto (máx. 12 caracteres) elegido por el usuario al entrar:
+  /// cómo quiere que lo llamen en el feed y en la app. `displayName` es
+  /// lo que se muestra siempre — apodo si lo hay, primer nombre si no.
+  final String? nickname;
   // País/ciudad del perfil — requisito para publicar un avistamiento (ver
   // location_setup_screen.dart). `hasLocation` es lo que el redirect de
   // GoRouter usa para decidir si mandar a esa pantalla.
@@ -24,12 +28,20 @@ class UserModel {
     required this.levelName,
     this.avatarUrl,
     this.createdAt,
+    this.nickname,
     this.country,
     this.city,
   });
 
   bool get hasLocation =>
       (country?.trim().isNotEmpty ?? false) && (city?.trim().isNotEmpty ?? false);
+
+  bool get hasNickname => (nickname?.trim().isNotEmpty ?? false);
+
+  /// Cómo pedirle que lo llamen: el apodo si lo eligió, si no su primer
+  /// nombre. Es el valor que se muestra en el saludo del home, en las
+  /// tarjetas de avistamientos propios y en el modal de detalle.
+  String get displayName => hasNickname ? nickname!.trim() : name.split(' ').first;
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json['id'] as int? ?? 0,
@@ -40,6 +52,7 @@ class UserModel {
         levelName: json['levelName'] as String? ?? 'Observador',
         avatarUrl: json['avatar_url'] as String?,
         createdAt: json['created_at'] as String?,
+        nickname: json['nickname'] as String?,
         country: json['country'] as String?,
         city: json['city'] as String?,
       );
@@ -53,6 +66,7 @@ class UserModel {
         'levelName': levelName,
         'avatar_url': avatarUrl,
         'created_at': createdAt,
+        'nickname': nickname,
         'country': country,
         'city': city,
       };
@@ -66,6 +80,7 @@ class UserModel {
     String? levelName,
     String? avatarUrl,
     String? createdAt,
+    String? nickname,
     String? country,
     String? city,
   }) =>
@@ -78,6 +93,7 @@ class UserModel {
         levelName: levelName ?? this.levelName,
         avatarUrl: avatarUrl ?? this.avatarUrl,
         createdAt: createdAt ?? this.createdAt,
+        nickname: nickname ?? this.nickname,
         country: country ?? this.country,
         city: city ?? this.city,
       );

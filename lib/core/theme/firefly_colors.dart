@@ -61,20 +61,20 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
 
   static final light = FireflyColors(
     glow: LightPalette.primaryGlow,
-    greenGlow: DarkPalette.secondaryGlow,
+    greenGlow: LightPalette.secondaryGlow,
     cardSurface: LightPalette.cardSurface,
     cardBorder: LightPalette.border,
     accent: LightPalette.accent,
-    accentGlow: DarkPalette.accentGlow,
+    accentGlow: LightPalette.accentGlow,
     success: LightPalette.success,
     warning: LightPalette.warning,
     backgroundGradient: null,
-    primaryGradient: DarkPalette.primaryGradient,
-    greenGradient: DarkPalette.greenGradient,
+    primaryGradient: LightPalette.primaryGradient,
+    greenGradient: LightPalette.greenGradient,
     cardGradient: LightPalette.cardGradient,
     cardShadow: LightPalette.cardShadow,
     glowShadow: LightPalette.primaryGlowShadow,
-    greenGlowShadow: DarkPalette.greenGlowShadow,
+    greenGlowShadow: LightPalette.greenGlowShadow,
   );
 
   @override

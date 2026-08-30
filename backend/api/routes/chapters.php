@@ -70,24 +70,34 @@ if ($method === 'POST' && $path === '/complete-chapter') {
     $chapter = $stmt->fetch();
     if (!$chapter) jsonError('Capítulo no encontrado', 404);
 
-    // Idempotent insert
-    $stmt = $db->prepare(
-        'INSERT IGNORE INTO user_chapters (user_id, chapter_id) VALUES (?, ?)'
-    );
-    $stmt->execute([$user['id'], $chapterId]);
-    $wasNew = $stmt->rowCount() > 0;
-
-    $pointsEarned = 0;
-    $totalPoints  = (int) $user['points'];
-    if ($wasNew) {
-        $pointsEarned = (int) $chapter['points_reward'];
+    // Idempotent insert. Envuelto en transacción: si `syncUserProgress`
+    // fallara a mitad, no debe quedar el capítulo marcado como completado
+    // sin sus puntos otorgados.
+    $db->beginTransaction();
+    try {
         $stmt = $db->prepare(
-            'UPDATE users SET points = points + ? WHERE id = ?'
+            'INSERT IGNORE INTO user_chapters (user_id, chapter_id) VALUES (?, ?)'
         );
-        $stmt->execute([$pointsEarned, $user['id']]);
+        $stmt->execute([$user['id'], $chapterId]);
+        $wasNew = $stmt->rowCount() > 0;
 
-        // Re-read points, then sync level and badges (lib/gamification.php)
-        $totalPoints = syncUserProgress($db, (int) $user['id']);
+        $pointsEarned = 0;
+        $totalPoints  = (int) $user['points'];
+        if ($wasNew) {
+            $pointsEarned = (int) $chapter['points_reward'];
+            $stmt = $db->prepare(
+                'UPDATE users SET points = points + ? WHERE id = ?'
+            );
+            $stmt->execute([$pointsEarned, $user['id']]);
+
+            // Re-read points, then sync level and badges (lib/gamification.php)
+            $totalPoints = syncUserProgress($db, (int) $user['id']);
+        }
+
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        jsonError('No se pudo registrar el capítulo', 500);
     }
 
     jsonResponse([

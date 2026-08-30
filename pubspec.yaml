@@ -1,7 +1,7 @@
-name: guardianes_luciernagas
+name: Luchi
 description: Guardianes de las Luciérnagas — Educational app for children about firefly conservation.
 publish_to: 'none'
-version: 1.0.0+8
+version: 1.0.0+17
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -69,6 +69,10 @@ dependencies:
   flame: ^1.38.0
   audioplayers: ^6.1.0
 
+  # Ads (banner fijo sobre el menú inferior). IDs de prueba de Google en
+  # constants.dart hasta que se disponga del ID real de AdMob.
+  google_mobile_ads: ^5.2.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -87,6 +91,9 @@ flutter:
     # `assets/images/` no es recursiva, por eso hace falta esta línea aparte
     # — sin ella los avatares no cargan aunque el archivo exista.
     - assets/images/avatars/
+    # Videos educativos de los capítulos (1.mp4…8.mp4), empaquetados en el
+    # APK para que el quiz/aprender funcione sin conexión.
+    - assets/videos/
     # NOTE: .env is intentionally NOT bundled as an asset. Anything in assets/
     # ships inside the APK/web bundle and is trivially extractable. The API
     # base URL is now injected at build time via --dart-define (see

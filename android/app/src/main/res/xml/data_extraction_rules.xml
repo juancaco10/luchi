@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  App de menores: sin backup en la nube ni transferencia de dispositivo a
+  dispositivo. android:allowBackup="false" en el manifest ya desactiva
+  ambos, esto es la segunda capa explícita que exige API 31+.
+-->
+<data-extraction-rules>
+    <cloud-backup disableIfNoEncryptionCapability="true">
+        <exclude domain="root" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+    </device-transfer>
+</data-extraction-rules>

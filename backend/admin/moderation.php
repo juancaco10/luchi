@@ -18,6 +18,11 @@
 
 declare(strict_types=1);
 
+session_set_cookie_params([
+    'httponly' => true,
+    'secure' => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+    'samesite' => 'Lax',
+]);
 session_start();
 
 require_once __DIR__ . '/../api/config/database.php';
@@ -30,8 +35,19 @@ function h(?string $s): string
 $db = getDB();
 $error = null;
 
+if (empty($_SESSION['csrf_token'])) {
+    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+}
+
+function validCsrfToken(): bool
+{
+    $submitted = $_POST['csrf_token'] ?? '';
+    return is_string($submitted)
+        && hash_equals($_SESSION['csrf_token'] ?? '', $submitted);
+}
+
 // ── Login ────────────────────────────────────────────────────────
-if (isset($_POST['login'])) {
+if (isset($_POST['login']) && validCsrfToken()) {
     $email    = trim((string) ($_POST['email'] ?? ''));
     $password = (string) ($_POST['password'] ?? '');
 
@@ -72,7 +88,7 @@ if ($isLoggedIn) {
 }
 
 // ── Acciones (aprobar / rechazar) ───────────────────────────────────
-if ($isLoggedIn && isset($_POST['action'], $_POST['sighting_id'])) {
+if ($isLoggedIn && isset($_POST['action'], $_POST['sighting_id']) && validCsrfToken()) {
     $status = $_POST['action'] === 'approve' ? 'approved' : 'rejected';
     $id     = (int) $_POST['sighting_id'];
 
@@ -132,6 +148,7 @@ $pending = $isLoggedIn
   <h1>🔥 Moderación de avistamientos</h1>
   <p class="muted">Acceso solo para cuentas moderadoras.</p>
   <form class="login" method="post">
+    <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
     <input type="email" name="email" placeholder="Email" required autofocus>
     <input type="password" name="password" placeholder="Contraseña" required>
     <button class="login-btn" type="submit" name="login" value="1">Entrar</button>
@@ -170,6 +187,7 @@ $pending = $isLoggedIn
           · <?= h($s['created_at']) ?>
         </div>
         <form method="post" class="actions">
+          <input type="hidden" name="csrf_token" value="<?= h($_SESSION['csrf_token']) ?>">
           <input type="hidden" name="sighting_id" value="<?= (int) $s['id'] ?>">
           <button class="approve" type="submit" name="action" value="approve">Aprobar</button>
           <button class="reject" type="submit" name="action" value="reject">Rechazar</button>

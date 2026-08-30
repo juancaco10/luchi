@@ -23,10 +23,19 @@ class SightingModel {
 
   /// `true` para todo lo que viene de `/my-sightings` o se creó en este
   /// dispositivo; `false` solo para lo ajeno del feed comunitario
-  /// (`GET /sightings`, que nunca revela de quién es). Determina si la UI
-  /// puede mostrar tu nombre/avatar o debe usar el anónimo — ver
-  /// `sighting_details_modal.dart`.
+  /// (`GET /sightings`). Determina si la UI puede mostrar tu nombre/avatar
+  /// o debe usar el anónimo — ver `sighting_details_modal.dart`.
   final bool isMine;
+
+  /// Primer nombre del autor, solo viene en el feed comunitario
+  /// (`GET /sightings`, decisión de producto — ver docs/PRIVACY.md). El
+  /// servidor nunca manda el nombre completo ni el `user_id`.
+  final String? authorName;
+
+  /// Avatar del autor tal cual lo eligió: nombre de archivo de un avatar
+  /// predefinido (`avatar04.png`) o URL http (Google). Solo viene en el
+  /// feed comunitario; se resuelve con `avatarImageFor`.
+  final String? authorAvatar;
 
   /// Solo viene informado en `/my-sightings` (es tu propio contenido, ver
   /// por qué algo tuyo no sale aún en el feed no es una fuga). En el feed
@@ -49,6 +58,8 @@ class SightingModel {
     this.likesCount = 0,
     this.likedByMe = false,
     this.isMine = true,
+    this.authorName,
+    this.authorAvatar,
     this.moderationStatus = 'approved',
   });
 
@@ -69,10 +80,16 @@ class SightingModel {
         archivedAt: json['archived_at'] as String?,
         likesCount: (json['likes_count'] as num?)?.toInt() ?? 0,
         likedByMe: json['liked_by_me'] as bool? ?? false,
-        // Ausente (p. ej. una fila creada offline antes de sincronizar) se
-        // trata como propio: es la única interpretación posible para algo
-        // que todavía no vino del servidor.
-        isMine: json['is_mine'] as bool? ?? true,
+        // Lo creado offline SIEMPRE trae `is_mine: true` explícito (lo pone
+        // `toJson()` antes de encolarlo) — este `?? false` solo cubre datos
+        // ajenos al esquema actual (p. ej. una copia vieja en caché del
+        // feed, guardada por una versión de la app anterior a que el
+        // backend mandara este campo). Ante la duda, más vale mostrarlo
+        // como ajeno que atribuirle a este usuario la foto/apodo de una
+        // publicación que podría no ser suya.
+        isMine: json['is_mine'] as bool? ?? false,
+        authorName: json['author_name'] as String?,
+        authorAvatar: json['author_avatar'] as String?,
         moderationStatus: json['moderation_status'] as String? ?? 'approved',
       );
 
@@ -91,6 +108,8 @@ class SightingModel {
         'likes_count': likesCount,
         'liked_by_me': likedByMe,
         'is_mine': isMine,
+        'author_name': authorName,
+        'author_avatar': authorAvatar,
         'moderation_status': moderationStatus,
       };
 
@@ -114,6 +133,8 @@ class SightingModel {
     int? likesCount,
     bool? likedByMe,
     bool? isMine,
+    String? authorName,
+    String? authorAvatar,
     String? moderationStatus,
   }) =>
       SightingModel(
@@ -133,6 +154,8 @@ class SightingModel {
         likesCount: likesCount ?? this.likesCount,
         likedByMe: likedByMe ?? this.likedByMe,
         isMine: isMine ?? this.isMine,
+        authorName: authorName ?? this.authorName,
+        authorAvatar: authorAvatar ?? this.authorAvatar,
         moderationStatus: moderationStatus ?? this.moderationStatus,
       );
 }

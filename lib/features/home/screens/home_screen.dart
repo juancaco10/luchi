@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../sightings/providers/sightings_provider.dart';
 import '../../../../core/theme/firefly_colors.dart';
 
 import '../widgets/home_header.dart';
@@ -16,7 +17,7 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
-    final userName = user?.name.split(' ').first ?? 'Explorador';
+    final userName = user?.displayName ?? 'Explorador';
     final size = MediaQuery.of(context).size;
     final isSmallScreen = size.width < 360;
 
@@ -74,25 +75,55 @@ class HomeScreen extends ConsumerWidget {
                 // margen (o con la sección de avistamientos más alta, como
                 // ahora que muestra foto) puede no alcanzar a compensar del
                 // todo — sin el scroll, eso sería un overflow duro.
-                child: SingleChildScrollView(
-                  child: ScreenFitter(
-                    naturalHeight: 720,
-                    builder: (context, scale) => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        HomeHeader(
-                          userName: userName,
-                          isSmallScreen: isSmallScreen,
-                          avatarUrl: user?.avatarUrl,
-                        ),
-                        SizedBox(height: 12 * scale),
-                        const ProgressCard(),
-                        SizedBox(height: 12 * scale),
-                        MainActions(scale: scale),
-                        SizedBox(height: 12 * scale),
-                        RecentSightings(scale: scale),
-                      ],
+                // Pull-to-refresh: trae de nuevo tanto lo propio como el
+                // feed comunitario sin esperar al refresco silencioso
+                // automático — mismo par de llamadas que usa el mapa.
+                child: RefreshIndicator(
+                  onRefresh: () async {
+                    // loadSightings/loadCommunitySightings ya traducen los
+                    // errores de red a su propio estado; este try/catch es
+                    // solo para que un fallo inesperado (JSON malformado,
+                    // etc.) no quede como una excepción no manejada.
+                    try {
+                      await Future.wait([
+                        ref.read(sightingsProvider.notifier).loadSightings(),
+                        ref
+                            .read(sightingsProvider.notifier)
+                            .loadCommunitySightings(),
+                      ]);
+                    } catch (_) {
+                      // Ya se refleja en sightingsProvider.state.error.
+                    }
+                  },
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics(),
+                    ),
+                    child: ScreenFitter(
+                      // 720 antes del banner de anuncios fijo (ver
+                      // lib/widgets/ad_banner.dart, colocado en app.dart):
+                      // ese espacio hay que restárselo a la pantalla
+                      // disponible, así que se sube el "alto natural" de
+                      // referencia para que todo encoja un poco más y siga
+                      // entrando sin scroll.
+                      naturalHeight: 780,
+                      builder: (context, scale) => Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          HomeHeader(
+                            userName: userName,
+                            isSmallScreen: isSmallScreen,
+                            avatarUrl: user?.avatarUrl,
+                          ),
+                          SizedBox(height: 12 * scale),
+                          const ProgressCard(),
+                          SizedBox(height: 12 * scale),
+                          MainActions(scale: scale),
+                          SizedBox(height: 12 * scale),
+                          RecentSightings(scale: scale),
+                        ],
+                      ),
                     ),
                   ),
                 ),

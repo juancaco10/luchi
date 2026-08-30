@@ -3,9 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
-import '../../../core/theme/theme_provider.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/firefly_background.dart';
+import '../../../core/storage/local_storage.dart';
 
 class ParentalConsentScreen extends StatefulWidget {
   const ParentalConsentScreen({super.key});
@@ -16,10 +16,24 @@ class ParentalConsentScreen extends StatefulWidget {
 
 class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
   bool _agreedToTerms = false;
+  bool _saving = false;
 
-  void _proceed() {
-    if (_agreedToTerms) {
+  Future<void> _proceed() async {
+    if (!_agreedToTerms || _saving) return;
+    setState(() => _saving = true);
+    try {
+      await LocalStorage.instance.recordParentalConsent();
+      await LocalStorage.instance.setOnboardingDone();
+      if (!mounted) return;
       context.go('/login');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('No pudimos guardar tu confirmación. Intenta de nuevo.'),
+        ));
     }
   }
 
@@ -73,7 +87,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
 
             SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -103,7 +118,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                           color: context.colors.surface,
                           borderRadius: BorderRadius.circular(24),
                           border: Border.all(
-                            color: context.colors.primary.withValues(alpha: 0.2),
+                            color:
+                                context.colors.primary.withValues(alpha: 0.2),
                           ),
                           boxShadow: [
                             BoxShadow(
@@ -119,7 +135,7 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.privacy_tip_outlined, 
+                                  Icon(Icons.privacy_tip_outlined,
                                       color: context.colors.primary, size: 28),
                                   const SizedBox(width: 12),
                                   Expanded(
@@ -136,28 +152,35 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                               const SizedBox(height: 16),
                               Text(
                                 'Para cumplir con las normas de privacidad (COPPA y GDPR-K), necesitamos tu consentimiento antes de que tu hijo/a utilice esta aplicación.',
-                                style: context.text.bodyMedium?.copyWith(height: 1.5),
+                                style: context.text.bodyMedium
+                                    ?.copyWith(height: 1.5),
                               ),
                               const SizedBox(height: 16),
                               _InfoItem(
                                 icon: Icons.camera_alt_outlined,
                                 title: 'Fotos y Ubicación',
-                                text: 'El juego permite tomar fotos de avistamientos. Eliminamos automáticamente cualquier dato GPS oculto y la información exacta de ubicación no se comparte.',
+                                text:
+                                    'El juego permite tomar fotos de avistamientos. Eliminamos automáticamente cualquier dato GPS oculto y la información exacta de ubicación no se comparte.',
                               ),
                               _InfoItem(
                                 icon: Icons.security_rounded,
                                 title: 'Seguridad',
-                                text: 'Ninguna información personal identificable se comparte públicamente. Las fotos son moderadas.',
+                                text:
+                                    'Ninguna información personal identificable se comparte públicamente. Las fotos son moderadas.',
                               ),
                               _InfoItem(
                                 icon: Icons.delete_outline_rounded,
                                 title: 'Control Total',
-                                text: 'Puedes solicitar la eliminación de la cuenta y de todas las fotos en cualquier momento desde la configuración.',
+                                text:
+                                    'Puedes solicitar la eliminación de la cuenta y de todas las fotos en cualquier momento desde la configuración.',
                               ),
                             ],
                           ),
                         ),
-                      ).animate(delay: 150.ms).fadeIn().scale(begin: const Offset(0.95, 0.95)),
+                      )
+                          .animate(delay: 150.ms)
+                          .fadeIn()
+                          .scale(begin: const Offset(0.95, 0.95)),
                     ),
                     const SizedBox(height: 24),
                     InkWell(
@@ -168,7 +191,8 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                       },
                       borderRadius: BorderRadius.circular(12),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                        padding: const EdgeInsets.symmetric(
+                            vertical: 8, horizontal: 4),
                         child: Row(
                           children: [
                             SizedBox(
@@ -199,13 +223,20 @@ class _ParentalConsentScreenState extends State<ParentalConsentScreen> {
                           ],
                         ),
                       ),
-                    ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                    )
+                        .animate(delay: 300.ms)
+                        .fadeIn()
+                        .slideY(begin: 0.2, end: 0),
                     const SizedBox(height: 24),
                     AppButton(
                       label: 'Continuar',
                       icon: Icons.check_circle_outline_rounded,
-                      onPressed: _agreedToTerms ? _proceed : null,
-                    ).animate(delay: 400.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      isLoading: _saving,
+                      onPressed: (_agreedToTerms && !_saving) ? _proceed : null,
+                    )
+                        .animate(delay: 400.ms)
+                        .fadeIn()
+                        .slideY(begin: 0.2, end: 0),
                   ],
                 ),
               ),

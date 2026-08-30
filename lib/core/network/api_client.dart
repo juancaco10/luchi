@@ -129,15 +129,18 @@ class _LoggingInterceptor extends Interceptor {
 // on-device: opening "Nivel 1" while the token happened to be stale threw
 // the child back to the login screen with no explanation. See CLAUDE.md.
 //
-// There is currently no session-check call (no `GET /me`) anywhere in the
-// app — `ApiEndpoints.me` is only ever used for `DELETE` (delete account).
-// So there is no call site today where "the session is definitely dead"
-// can be inferred from a bare 401 fired from who-knows-which screen.
-// Ending a session belongs to the call site that actually depends on auth
-// state — login/register failure, or `deleteAccount()`, which already
-// handles its own error path. If a real session-validation endpoint is
-// added later, its call site should call `authProvider.notifier.logout()`
-// explicitly in its `catch`, the same way `deleteAccount()` does today.
+// There is currently one session-check call: `GET /me` at cold start,
+// used only to refresh the local profile cache (`auth_provider.dart`
+// `_refreshUserFromBackend`). It deliberately does NOT end the session on
+// 401 (offline or stale token just keeps the cache). `ApiEndpoints.me` is
+// otherwise only used for `DELETE` (delete account). So there is no call
+// site today where "the session is definitely dead" can be inferred from a
+// bare 401 fired from who-knows-which screen. Ending a session belongs to
+// the call site that actually depends on auth state — login/register
+// failure, or `deleteAccount()`, which already handles its own error path.
+// If another real session-validation endpoint is added later, its call
+// site should call `authProvider.notifier.logout()` explicitly in its
+// `catch`, the same way `deleteAccount()` does today.
 class _ErrorInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {

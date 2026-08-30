@@ -5,13 +5,16 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 import 'core/storage/local_storage.dart';
 import 'core/network/sync_service.dart';
+import 'core/utils/constants.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/models/user_model.dart';
+import 'features/sightings/providers/sightings_provider.dart';
 import 'features/auth/screens/splash_screen.dart';
 import 'features/auth/screens/onboarding_screen.dart';
 import 'features/auth/screens/parental_consent_screen.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'features/auth/screens/register_screen.dart';
+import 'features/auth/screens/nickname_setup_screen.dart';
 import 'features/home/screens/home_screen.dart';
 import 'features/home/widgets/home_bottom_nav.dart';
 import 'features/education/screens/chapters_list_screen.dart';
@@ -28,17 +31,52 @@ import 'features/sightings/screens/sighting_form_screen.dart';
 import 'features/sightings/screens/my_sightings_screen.dart';
 import 'features/sightings/screens/map_screen.dart';
 import 'features/sightings/screens/location_setup_screen.dart';
+import 'features/sightings/screens/community_feed_screen.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/profile/screens/settings_screen.dart';
+import 'widgets/ad_banner.dart';
 
-class GuardianesApp extends ConsumerWidget {
+class GuardianesApp extends ConsumerStatefulWidget {
   const GuardianesApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GuardianesApp> createState() => _GuardianesAppState();
+}
+
+/// Observa el ciclo de vida de la app para refrescar el feed comunitario
+/// al volver a primer plano — sin esto, dejar la app en segundo plano un
+/// rato y volver mostraba el feed congelado en lo que había al arrancar,
+/// igual que pasaba al no refrescar nunca en el home (ver
+/// `recent_sightings.dart`). No hay polling: solo estos dos disparadores
+/// (reapertura de pantalla + resumed) más el pull-to-refresh manual.
+class _GuardianesAppState extends ConsumerState<GuardianesApp>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // Silencioso: no debe mostrar spinner sobre lo que ya estaba en
+      // pantalla, y el propio provider limita la frecuencia.
+      ref.read(sightingsProvider.notifier).loadCommunitySightings(silent: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Keep sync service alive
     ref.watch(syncServiceProvider);
-    
+
     final themeMode = ref.watch(themeProvider);
     final router = ref.watch(routerProvider);
 
@@ -140,14 +178,25 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authState = ref.read(authProvider);
       final isLoggedIn = authState is AuthAuthenticated;
       final onboardingDone = LocalStorage.instance.onboardingDone;
+      final parentalConsentDone = LocalStorage.instance.parentalConsentDone;
       final goingTo = state.matchedLocation;
+
+      if (!AppConstants.communityEnabled &&
+          (goingTo == '/map' || goingTo == '/feed')) {
+        return '/home';
+      }
 
       // Let splash always show
       if (goingTo == '/splash') return null;
 
       // Show onboarding if first time
-      if (!onboardingDone && goingTo != '/onboarding') {
+      if (!onboardingDone &&
+          goingTo != '/onboarding' &&
+          goingTo != '/onboarding/consent') {
         return '/onboarding';
+      }
+      if (!parentalConsentDone && goingTo != '/onboarding/consent') {
+        return '/onboarding/consent';
       }
 
       // Allowlist de rutas públicas en vez de una lista de rutas protegidas
@@ -155,12 +204,35 @@ final routerProvider = Provider<GoRouter>((ref) {
       // registrarla aquí, con la lista de protegidas quedaba pública por
       // defecto (falla insegura); con la allowlist queda protegida por
       // defecto (falla segura).
-      const publicRoutes = {'/splash', '/onboarding', '/onboarding/consent', '/login', '/register'};
+      const publicRoutes = {
+        '/splash',
+        '/onboarding',
+        '/onboarding/consent',
+        '/login',
+        '/register'
+      };
       final isPublic = publicRoutes.contains(goingTo);
 
       if (!isLoggedIn && !isPublic) return '/login';
       if (isLoggedIn && (goingTo == '/login' || goingTo == '/register')) {
         return '/home';
+      }
+
+      // Puerta del apodo: tras el primer login se pregunta cómo quiere que
+      // lo llamen (nickname_setup_screen.dart) — es lo que sale en el feed
+      // de avistamientos, así que conviene pedirlo antes de abrir el home.
+      // `nicknamePromptOmitted` es la válvula de escape por sesión: si el
+      // usuario omite la pregunta, se va al home igual y se vuelve a
+      // preguntar en la próxima sesión (el flag se resetea en cada login).
+      // `refreshPending` espera al refresco de perfil del arranque (`GET
+      // /me`, ver `_refreshUserFromBackend`): sin él, una caché local
+      // vieja hacía preguntar un apodo que ya existe en el backend.
+      if (authState is AuthAuthenticated &&
+          goingTo == '/home' &&
+          !authState.user.hasNickname &&
+          !ref.read(authProvider.notifier).nicknamePromptOmitted &&
+          !ref.read(authProvider.notifier).refreshPending) {
+        return '/nickname-setup';
       }
 
       // Puerta antes de publicar: país/ciudad son requisito para el primer
@@ -192,35 +264,51 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         name: 'splash',
-        pageBuilder: (context, state) => _fadeTransition(state, const SplashScreen()),
+        pageBuilder: (context, state) =>
+            _fadeTransition(state, const SplashScreen()),
       ),
       GoRoute(
         path: '/onboarding',
         name: 'onboarding',
-        pageBuilder: (context, state) => _fadeTransition(state, const OnboardingScreen()),
+        pageBuilder: (context, state) =>
+            _fadeTransition(state, const OnboardingScreen()),
       ),
       GoRoute(
         path: '/onboarding/consent',
         name: 'parental-consent',
-        pageBuilder: (context, state) => _slideTransition(state, const ParentalConsentScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const ParentalConsentScreen()),
       ),
       GoRoute(
         path: '/login',
         name: 'login',
-        pageBuilder: (context, state) => _slideTransition(state, const LoginScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const LoginScreen()),
       ),
       GoRoute(
         path: '/register',
         name: 'register',
-        pageBuilder: (context, state) => _slideTransition(state, const RegisterScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const RegisterScreen()),
       ),
-      
+
       // Main app navigation with persistent bottom bar
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {
+          // El banner se oculta solo dentro de un capítulo abierto
+          // (`/chapters/:id`) — el resto de pestañas y sub-rutas del shell
+          // (incluida "Elegir nivel") sí lo muestran. `/chapters` a secas
+          // (la lista) no debe matchear, de ahí el '/' de más.
+          final showBanner = !state.matchedLocation.startsWith('/chapters/');
           return Scaffold(
             body: navigationShell,
-            bottomNavigationBar: HomeBottomNav(navigationShell: navigationShell),
+            bottomNavigationBar: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (showBanner) const AdBanner(),
+                HomeBottomNav(navigationShell: navigationShell),
+              ],
+            ),
           );
         },
         branches: [
@@ -229,7 +317,8 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/home',
                 name: 'home',
-                pageBuilder: (context, state) => _fadeTransition(state, const HomeScreen()),
+                pageBuilder: (context, state) =>
+                    _fadeTransition(state, const HomeScreen()),
               ),
             ],
           ),
@@ -238,14 +327,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/chapters',
                 name: 'chapters',
-                pageBuilder: (context, state) => _slideTransition(state, const ChaptersListScreen()),
+                pageBuilder: (context, state) =>
+                    _slideTransition(state, const ChaptersListScreen()),
                 routes: [
                   GoRoute(
                     path: ':id',
                     name: 'chapter-detail',
                     pageBuilder: (context, state) => _slideTransition(
                       state,
-                      ChapterDetailScreen(chapterId: state.pathParameters['id']!),
+                      ChapterDetailScreen(
+                          chapterId: state.pathParameters['id']!),
                     ),
                   ),
                 ],
@@ -257,17 +348,26 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/game',
                 name: 'game-lobby',
-                pageBuilder: (context, state) => _fadeTransition(state, const MapHubScreen()),
+                // "Jugar" abre directamente la selección de nivel del quiz
+                // (Exploración Nocturna). Los otros juegos siguen vivos en
+                // el código bajo `/game/:gameId`, pero no se exponen al
+                // usuario: el hub que los mostraba ya no es la puerta.
+                pageBuilder: (context, state) => _fadeTransition(
+                  state,
+                  const LevelSelectScreen(gameId: GameId.explorar),
+                ),
                 routes: [
                   GoRoute(
                     path: ':gameId',
                     name: 'game-level-select',
                     pageBuilder: (context, state) {
-                      final id = GameId.fromSlug(state.pathParameters['gameId']);
+                      final id =
+                          GameId.fromSlug(state.pathParameters['gameId']);
                       if (id == null) {
                         return _fadeTransition(state, const MapHubScreen());
                       }
-                      return _slideTransition(state, LevelSelectScreen(gameId: id));
+                      return _slideTransition(
+                          state, LevelSelectScreen(gameId: id));
                     },
                   ),
                 ],
@@ -279,16 +379,18 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/map',
                 name: 'map',
-                pageBuilder: (context, state) => _slideTransition(state, const MapScreen()),
+                pageBuilder: (context, state) =>
+                    _slideTransition(state, const MapScreen()),
               ),
             ],
           ),
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: '/settings',
-                name: 'settings',
-                pageBuilder: (context, state) => _slideTransition(state, const SettingsScreen()),
+                path: '/feed',
+                name: 'feed',
+                pageBuilder: (context, state) =>
+                    _fadeTransition(state, const CommunityFeedScreen()),
               ),
             ],
           ),
@@ -301,8 +403,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'game-play',
         pageBuilder: (context, state) {
           final id = GameId.fromSlug(state.pathParameters['gameId']);
-          final level =
-              int.tryParse(state.pathParameters['level'] ?? '') ?? 1;
+          final level = int.tryParse(state.pathParameters['level'] ?? '') ?? 1;
           if (id == null) {
             return _fadeTransition(state, const MapHubScreen());
           }
@@ -312,29 +413,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/profile',
         name: 'profile',
-        pageBuilder: (context, state) => _slideTransition(state, const ProfileScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const ProfileScreen()),
       ),
       GoRoute(
         path: '/sightings',
         name: 'my-sightings',
-        pageBuilder: (context, state) => _slideTransition(state, const MySightingsScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const MySightingsScreen()),
       ),
       GoRoute(
         path: '/sightings/location-setup',
         name: 'sighting-location-setup',
-        pageBuilder: (context, state) => _slideTransition(state, const LocationSetupScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const LocationSetupScreen()),
+      ),
+      GoRoute(
+        path: '/nickname-setup',
+        name: 'nickname-setup',
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const NicknameSetupScreen()),
+      ),
+      // Ajustes ya no es pestaña del menú inferior: se alcanza desde el
+      // perfil (ver profile_screen.dart), por eso vive fuera del shell.
+      GoRoute(
+        path: '/settings',
+        name: 'settings',
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const SettingsScreen()),
       ),
       GoRoute(
         path: '/sightings/new',
         name: 'sighting-form',
-        pageBuilder: (context, state) => _slideTransition(state, const SightingFormScreen()),
+        pageBuilder: (context, state) =>
+            _slideTransition(state, const SightingFormScreen()),
       ),
       GoRoute(
         path: '/sightings/:id/edit',
         name: 'sighting-edit',
         pageBuilder: (context, state) => _slideTransition(
           state,
-          SightingFormScreen(sightingId: int.parse(state.pathParameters['id']!)),
+          SightingFormScreen(
+              sightingId: int.parse(state.pathParameters['id']!)),
         ),
       ),
     ],

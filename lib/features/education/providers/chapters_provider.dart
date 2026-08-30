@@ -1,8 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/chapter_model.dart';
-import '../../../core/data/cached_list_repository.dart';
-import '../../../core/network/api_client.dart';
-import '../../../core/network/api_endpoints.dart';
 import '../../../core/storage/local_storage.dart';
 
 // ── State ─────────────────────────────────────────────────────────
@@ -48,31 +45,41 @@ const _unset = Object();
 // ── Notifier ──────────────────────────────────────────────────────
 
 class ChaptersNotifier extends StateNotifier<ChaptersState> {
-  ChaptersNotifier(this._ref) : super(const ChaptersState()) {
+  ChaptersNotifier() : super(const ChaptersState()) {
     loadChapters();
   }
 
-  final Ref _ref;
-
   Future<void> loadChapters() async {
-    state = state.copyWith(isLoading: true, error: null);
+    // Los capítulos y sus videos viven empaquetados en el APK
+    // (`ChapterModel.getMockChapters()` → `assets/videos/{id}.mp4`), así
+    // "Aprender" funciona sin conexión y no depende del backend. El backend
+    // solo guarda el progreso (qué capítulos completó el usuario); ese
+    // estado se conserva en la caché local y se aplica sobre la lista fija.
+    final seed = ChapterModel.getMockChapters();
 
-    final result = await loadCachedList<ChapterModel>(
-      api: _ref.read(apiClientProvider),
-      path: ApiEndpoints.chapters,
-      envelopeKey: 'chapters',
-      fromJson: ChapterModel.fromJson,
-      toJson: (c) => c.toJson(),
-      readCache: LocalStorage.instance.getCachedChapters,
-      writeCache: LocalStorage.instance.cacheChapters,
-      seed: ChapterModel.getMockChapters,
-    );
+    // Estado de progreso persistido (is_completed/is_unlocked) de la última
+    // vez; se pisa sobre los capítulos locales para no perder el avance del
+    // niño aunque se reabra la app.
+    final cachedRaw = LocalStorage.instance.getCachedChapters();
+    final cached = cachedRaw.isNotEmpty
+        ? cachedRaw.map(ChapterModel.fromJson).toList()
+        : const <ChapterModel>[];
 
     state = state.copyWith(
-      chapters: result.items,
+      chapters: seed.map((c) {
+        final prev = cached.firstWhere((x) => x.id == c.id, orElse: () => c);
+        return c.copyWith(
+          isCompleted: prev.isCompleted,
+          isUnlocked: prev.isUnlocked,
+        );
+      }).toList(),
       isLoading: false,
-      error: result.error?.message,
-      isStale: result.isStale,
+      isStale: false,
+    );
+
+    // Persistir el progreso ya conocido para que siga consistente.
+    LocalStorage.instance.cacheChapters(
+      state.chapters.map((c) => c.toJson()).toList(),
     );
   }
 
@@ -100,7 +107,7 @@ class ChaptersNotifier extends StateNotifier<ChaptersState> {
 // ── Providers ─────────────────────────────────────────────────────
 
 final chaptersProvider = StateNotifierProvider<ChaptersNotifier, ChaptersState>(
-  (ref) => ChaptersNotifier(ref),
+  (ref) => ChaptersNotifier(),
 );
 
 final chapterByIdProvider = Provider.family<ChapterModel?, String>((ref, id) {

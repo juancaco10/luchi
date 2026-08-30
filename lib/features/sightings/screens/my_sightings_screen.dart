@@ -5,8 +5,10 @@ import '../../../core/theme/firefly_colors.dart';
 import '../models/sighting_model.dart';
 import '../providers/sightings_provider.dart';
 import '../utils/sighting_format.dart';
-
-enum _DateFilter { today, week, month, all }
+import '../utils/sighting_actions.dart';
+import '../widgets/sighting_date_filter.dart';
+import '../../../widgets/hardware_back_route.dart';
+import '../../../widgets/ad_banner.dart';
 
 /// Sede de editar / archivar / filtrar por fecha para los avistamientos
 /// propios — no existía ninguna pantalla de lista antes de esto, solo el
@@ -19,25 +21,9 @@ class MySightingsScreen extends ConsumerStatefulWidget {
 }
 
 class _MySightingsScreenState extends ConsumerState<MySightingsScreen> {
-  _DateFilter _filter = _DateFilter.all;
+  SightingDateFilter _filter = SightingDateFilter.all;
   bool _showingArchived = false;
   bool _archivedLoaded = false;
-
-  bool _matchesFilter(SightingModel s) {
-    final date = DateTime.tryParse(s.createdAt);
-    if (date == null) return true;
-    final now = DateTime.now();
-    switch (_filter) {
-      case _DateFilter.today:
-        return date.year == now.year && date.month == now.month && date.day == now.day;
-      case _DateFilter.week:
-        return now.difference(date).inDays < 7;
-      case _DateFilter.month:
-        return date.year == now.year && date.month == now.month;
-      case _DateFilter.all:
-        return true;
-    }
-  }
 
   void _toggleArchivedView() {
     if (!_archivedLoaded) {
@@ -47,59 +33,16 @@ class _MySightingsScreenState extends ConsumerState<MySightingsScreen> {
     setState(() => _showingArchived = !_showingArchived);
   }
 
-  Future<void> _archive(SightingModel s, bool archived) async {
-    final notifier = ref.read(sightingsProvider.notifier);
-    final ok = await notifier.setArchived(s.id!, archived);
-    if (!mounted) return;
-    // Sin esto, archivar varios avistamientos seguidos apila un SnackBar
-    // detrás de otro (cada uno espera a que termine el anterior) — se
-    // percibe como "el cartel no se va nunca" aunque cada uno individual sí
-    // tenga una duración normal.
-    ScaffoldMessenger.of(context).clearSnackBars();
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            archived ? 'Avistamiento archivado' : 'Avistamiento restaurado',
-            // `cardSurface` cambia de oscuro a claro según el tema; sin un
-            // color de texto explícito que la acompañe, el SnackBar caía en
-            // el color por defecto de Material, que no siempre contrasta
-            // con ese fondo — en modo oscuro quedaba prácticamente ilegible.
-            style: TextStyle(fontFamily: 'Nunito', color: context.colors.onSurface),
-          ),
-          backgroundColor: context.firefly.cardSurface,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          action: archived
-              ? SnackBarAction(
-                  label: 'Deshacer',
-                  textColor: context.colors.primary,
-                  onPressed: () => ref.read(sightingsProvider.notifier).setArchived(s.id!, false),
-                )
-              : null,
-        ),
-      );
-    } else {
-      final error = ref.read(sightingsProvider).error;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(error ?? 'No se pudo completar la acción',
-              style: const TextStyle(fontFamily: 'Nunito', color: Colors.white)),
-          backgroundColor: context.colors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(sightingsProvider);
     final source = _showingArchived ? state.archivedSightings : state.sightings;
-    final visible = _showingArchived ? source : source.where(_matchesFilter).toList();
+    final visible =
+        _showingArchived ? source : source.where((s) => _filter.matches(s)).toList();
 
-    return Scaffold(
+    return HardwareBackRoute(
+      onBack: () => context.go('/home'),
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: Column(
@@ -148,42 +91,23 @@ class _MySightingsScreenState extends ConsumerState<MySightingsScreen> {
             if (!_showingArchived)
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _FilterChip(
-                        label: 'Hoy',
-                        selected: _filter == _DateFilter.today,
-                        onTap: () => setState(() => _filter = _DateFilter.today),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterChip(
-                        label: 'Esta semana',
-                        selected: _filter == _DateFilter.week,
-                        onTap: () => setState(() => _filter = _DateFilter.week),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterChip(
-                        label: 'Este mes',
-                        selected: _filter == _DateFilter.month,
-                        onTap: () => setState(() => _filter = _DateFilter.month),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterChip(
-                        label: 'Todos',
-                        selected: _filter == _DateFilter.all,
-                        onTap: () => setState(() => _filter = _DateFilter.all),
-                      ),
-                    ],
-                  ),
+                child: SightingDateFilterChips(
+                  selected: _filter,
+                  onChanged: (f) => setState(() => _filter = f),
                 ),
               ),
             const SizedBox(height: 8),
             Expanded(
               child: state.isLoading && source.isEmpty
                   ? const Center(child: CircularProgressIndicator())
-                  : visible.isEmpty
+                  : (!_showingArchived && state.error != null && source.isEmpty)
+                      ? _ErrorState(
+                          message: state.error!,
+                          onRetry: () => ref
+                              .read(sightingsProvider.notifier)
+                              .loadSightings(),
+                        )
+                      : visible.isEmpty
                       ? _EmptyState(showingArchived: _showingArchived)
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
@@ -193,7 +117,8 @@ class _MySightingsScreenState extends ConsumerState<MySightingsScreen> {
                             sighting: visible[index],
                             isArchived: _showingArchived,
                             onEdit: () => context.go('/sightings/${visible[index].id}/edit'),
-                            onArchive: (archived) => _archive(visible[index], archived),
+                            onArchive: (archived) =>
+                                archiveSighting(context, ref, visible[index], archived),
                           ),
                         ),
             ),
@@ -212,28 +137,40 @@ class _MySightingsScreenState extends ConsumerState<MySightingsScreen> {
                 style: TextStyle(fontFamily: 'Nunito', fontSize: 14, fontWeight: FontWeight.w700),
               ),
             ),
+      bottomNavigationBar: const AdBanner(),
+      ),
     );
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+class _ErrorState extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  const _ErrorState({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
-    return ChoiceChip(
-      label: Text(label),
-      selected: selected,
-      onSelected: (_) => onTap(),
-      labelStyle: TextStyle(
-        fontFamily: 'Nunito',
-        fontSize: 13,
-        fontWeight: FontWeight.w700,
-        color: selected ? context.colors.onPrimary : context.text.bodyMedium?.color,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('☁️', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Nunito',
+                fontSize: 15,
+                color: context.text.bodyMedium?.color,
+              ),
+            ),
+            const SizedBox(height: 16),
+            OutlinedButton(onPressed: onRetry, child: const Text('Reintentar')),
+          ],
+        ),
       ),
     );
   }

@@ -13,6 +13,8 @@ import '../../../features/education/providers/chapters_provider.dart';
 import '../../../features/sightings/providers/sightings_provider.dart';
 import '../../../widgets/level_progress_bar.dart';
 import '../../../widgets/firefly_background.dart';
+import '../../../widgets/hardware_back_route.dart';
+import '../../../widgets/ad_banner.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -22,7 +24,8 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final chapters = ref.watch(chaptersProvider);
     final sightings = ref.watch(sightingsProvider);
-    final badges = ref.watch(badgesProvider).badges;
+    final badgesState = ref.watch(badgesProvider);
+    final badges = badgesState.badges;
 
     final points = user?.points ?? 0;
     final progress = AppConstants.getLevelProgress(points);
@@ -33,7 +36,9 @@ class ProfileScreen extends ConsumerWidget {
     final mediaQuery = MediaQuery.of(context);
     final isSmallScreen = mediaQuery.size.width < 360;
 
-    return Scaffold(
+    return HardwareBackRoute(
+      onBack: () => context.go('/home'),
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
@@ -64,6 +69,10 @@ class ProfileScreen extends ConsumerWidget {
                           ),
                         ),
                         const Spacer(),
+                        // El acceso a Ajustes se movió al header del home
+                        // (junto a la campana de notificaciones): un toque
+                        // menos para llegar, sin tener que entrar al perfil
+                        // primero. Ver home_header.dart.
                       ],
                     ).animate().fadeIn(duration: 400.ms),
                   ),
@@ -126,11 +135,11 @@ class ProfileScreen extends ConsumerWidget {
                     child: Container(
                       padding: EdgeInsets.all(isSmallScreen ? 14 : 18),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [Color(0xFF1E2D50), Color(0xFF131929)],
-                        ),
+                        // Antes un gradiente azul-marino fijo: en modo claro
+                        // el texto de abajo (color de tema, pensado para
+                        // fondo claro) quedaba oscuro sobre un fondo también
+                        // oscuro. `cardGradient` ya es theme-aware.
+                        gradient: context.firefly.cardGradient,
                         borderRadius:
                             BorderRadius.circular(AppConstants.cardRadius),
                         border: Border.all(
@@ -153,7 +162,7 @@ class ProfileScreen extends ConsumerWidget {
                               Container(
                                 width: 1,
                                 height: 40,
-                                color: Colors.white10,
+                                color: context.firefly.cardBorder,
                               ),
                               Expanded(
                                 child: _StatBubble(
@@ -246,33 +255,59 @@ class ProfileScreen extends ConsumerWidget {
                 ),
 
                 // ── Badges Grid (Fully Responsive Aspect Ratio) ────────
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
-                  sliver: SliverGrid(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isSmallScreen ? 2 : 3,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: isSmallScreen ? 0.95 : 0.82,
+                if (badgesState.isLoading && badges.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 32),
+                      child: Center(child: CircularProgressIndicator()),
                     ),
-                    delegate: SliverChildBuilderDelegate(
-                      (ctx, i) {
-                        final badge = badges[i];
-                        return _BadgeCard(badge: badge)
-                            .animate(
-                              delay: Duration(milliseconds: 350 + i * 60),
-                            )
-                            .fadeIn()
-                            .scale(begin: const Offset(0.85, 0.85));
-                      },
-                      childCount: badges.length,
+                  )
+                else if (badges.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+                      child: Text(
+                        badgesState.isStale
+                            ? 'Sin conexión. No pudimos cargar tus insignias.'
+                            : 'Todavía no tienes insignias. ¡Sigue jugando y aprendiendo!',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          color: context.text.bodyMedium?.color,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 30),
+                    sliver: SliverGrid(
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: isSmallScreen ? 2 : 3,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio: isSmallScreen ? 0.95 : 0.82,
+                      ),
+                      delegate: SliverChildBuilderDelegate(
+                        (ctx, i) {
+                          final badge = badges[i];
+                          return _BadgeCard(badge: badge)
+                              .animate(
+                                delay: Duration(milliseconds: 350 + i * 60),
+                              )
+                              .fadeIn()
+                              .scale(begin: const Offset(0.85, 0.85));
+                        },
+                        childCount: badges.length,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
           ),
         ],
+      ),
+      bottomNavigationBar: const AdBanner(),
       ),
     );
   }

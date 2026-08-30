@@ -11,6 +11,7 @@ import '../providers/chapters_provider.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/reward_overlay.dart';
+import '../../../widgets/hardware_back_route.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 
@@ -27,6 +28,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
   VideoPlayerController? _videoController;
   ChewieController? _chewieController;
   bool _videoInitialized = false;
+  bool _videoError = false;
   bool _videoFinished = false;
   bool _showReward = false;
   bool _chapterCompleted = false;
@@ -41,24 +43,35 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
     final chapter = ref.read(chapterByIdProvider(widget.chapterId));
     if (chapter == null) return;
 
-    _videoController = VideoPlayerController.networkUrl(
-      Uri.parse(chapter.videoUrl),
-    );
-    await _videoController!.initialize();
-    if (!mounted) return;
+    try {
+      // Los capítulos reproducen su video empaquetado en el APK
+      // (`assets/videos/{id}.mp4`), así Aprender funciona sin conexión. Solo
+      // si `videoUrl` del modelo es una URL externa (backend sin bundle) se
+      // cae a reproducción por red.
+      final isAsset = chapter.videoUrl.startsWith('assets/');
+      _videoController = isAsset
+          ? VideoPlayerController.asset(chapter.videoUrl)
+          : VideoPlayerController.networkUrl(Uri.parse(chapter.videoUrl));
+      await _videoController!.initialize();
+      if (!mounted) return;
 
-    _chewieController = ChewieController(
-      videoPlayerController: _videoController!,
-      aspectRatio: 16 / 9,
-      autoPlay: false,
-      looping: false,
-      showControls: true,
-      placeholder: Container(color: context.firefly.cardSurface),
-    );
+      _chewieController = ChewieController(
+        videoPlayerController: _videoController!,
+        aspectRatio: 16 / 9,
+        autoPlay: false,
+        looping: false,
+        showControls: true,
+        placeholder: Container(color: context.firefly.cardSurface),
+      );
 
-    _videoController!.addListener(_videoListener);
+      _videoController!.addListener(_videoListener);
 
-    if (mounted) setState(() => _videoInitialized = true);
+      if (mounted) setState(() => _videoInitialized = true);
+    } catch (_) {
+      // Vídeo caído, URL rota o sin conexión: sin esto el niño se queda
+      // mirando un spinner girando para siempre sin ninguna explicación.
+      if (mounted) setState(() => _videoError = true);
+    }
   }
 
   void _videoListener() {
@@ -115,13 +128,18 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
     final chapter = ref.watch(chapterByIdProvider(widget.chapterId));
 
     if (chapter == null) {
-      return Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: const Center(child: Text('Capítulo no encontrado')),
+      return HardwareBackRoute(
+        onBack: () => context.go('/chapters'),
+        child: Scaffold(
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+          body: const Center(child: Text('Capítulo no encontrado')),
+        ),
       );
     }
 
-    return Scaffold(
+    return HardwareBackRoute(
+      onBack: () => context.go('/chapters'),
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Stack(
         children: [
@@ -150,9 +168,36 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
                       : Container(
                           color: context.firefly.cardSurface,
                           child: Center(
-                            child: CircularProgressIndicator(
-                              color: context.colors.primary,
-                            ),
+                            child: _videoError
+                                ? Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.cloud_off_rounded,
+                                          color: context.colors.onSurface
+                                              .withOpacity(0.6),
+                                          size: 36),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'No pudimos cargar el vídeo.\nRevisa tu conexión.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: context.colors.onSurface
+                                              .withOpacity(0.8),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      TextButton(
+                                        onPressed: () {
+                                          setState(() => _videoError = false);
+                                          _initVideo();
+                                        },
+                                        child: const Text('Reintentar'),
+                                      ),
+                                    ],
+                                  )
+                                : CircularProgressIndicator(
+                                    color: context.colors.primary,
+                                  ),
                           ),
                         ),
                 ),
@@ -305,6 +350,7 @@ class _ChapterDetailScreenState extends ConsumerState<ChapterDetailScreen> {
               message: '¡Capítulo completado!',
             ),
         ],
+      ),
       ),
     );
   }

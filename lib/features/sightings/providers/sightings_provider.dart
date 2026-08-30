@@ -6,6 +6,7 @@ import '../models/sighting_model.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_endpoints.dart';
 import '../../../core/storage/local_storage.dart';
+import '../../../core/utils/constants.dart';
 
 class SightingsState {
   final List<SightingModel> sightings;
@@ -57,10 +58,58 @@ const _unset = Object();
 
 class SightingsNotifier extends StateNotifier<SightingsState> {
   SightingsNotifier(this._ref) : super(const SightingsState()) {
+    // Hidratación síncrona desde caché en disco antes de tocar la red: el
+    // home/feed pintan la última copia conocida al instante (sin spinner,
+    // sin pantalla vacía) mientras `loadCommunitySightings` refresca en
+    // segundo plano. Si no hay caché (primera vez en este dispositivo),
+    // esto simplemente no aporta nada y el flujo normal de carga sigue
+    // igual.
+    final cached = LocalStorage.instance.getCachedCommunitySightings();
+    if (cached.isNotEmpty) {
+      state = state.copyWith(
+        communitySightings:
+            cached.map<SightingModel>((j) => SightingModel.fromJson(j)).toList(),
+      );
+    }
     loadSightings();
+    loadCommunitySightings(silent: true);
+    _retryOwnSightingsIfNeeded();
   }
 
   final Ref _ref;
+
+  // No se puede usar `state.error` para decidir el reintento: ese campo es
+  // compartido con `loadCommunitySightings`, que casi siempre termina bien
+  // (y lo pone en null) mucho antes de los 3 s de abajo, borrando la
+  // evidencia de que ESTA llamada sí falló.
+  bool _ownSightingsLoadFailed = false;
+
+  /// `loadSightings()` de arriba se llama una sola vez, en el arranque de
+  /// este provider. Un 401 pasajero justo entonces (el token recién
+  /// cacheado en memoria, sin margen alguno) la deja vacía para el resto
+  /// de la sesión: nada más vuelve a llamarla — a diferencia del feed
+  /// comunitario, que se recupera solo porque varias pantallas (home,
+  /// mapa, publicaciones) lo piden de nuevo por su cuenta. Mismo patrón de
+  /// reintento único que ya usa `map_screen.dart` para el feed.
+  Future<void> _retryOwnSightingsIfNeeded() async {
+    await Future.delayed(const Duration(seconds: 3));
+    if (_ownSightingsLoadFailed) {
+      loadSightings();
+    }
+  }
+
+  /// Últimas publicaciones de TODOS: lo propio (incluida la cola offline
+  /// pendiente) más el feed comunitario, sin duplicados — el feed también
+  /// incluye lo propio ya aprobado — y ordenado por fecha descendente.
+  /// Único punto de merge: antes esta misma lógica vivía duplicada en
+  /// `recent_sightings.dart` y `community_feed_screen.dart`.
+  List<SightingModel> get mergedFeed {
+    final seen = <String>{};
+    return <SightingModel>[
+      for (final s in [...state.sightings, ...state.communitySightings])
+        if (seen.add(s.id?.toString() ?? 'offline-${s.createdAt}')) s,
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  }
 
   Future<void> loadSightings() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -78,6 +127,7 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
           .map<SightingModel>((j) => SightingModel.fromJson(j))
           .toList();
 
+      _ownSightingsLoadFailed = false;
       state = state.copyWith(
         sightings: [...pendingSightings, ...apiSightings],
         isLoading: false,
@@ -95,12 +145,14 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
       final pendingSightings = pendingData
           .map<SightingModel>((j) => SightingModel.fromJson(j))
           .toList();
+      _ownSightingsLoadFailed = true;
       state = state.copyWith(
         sightings: pendingSightings,
         isLoading: false,
         error: message,
       );
     } catch (_) {
+      _ownSightingsLoadFailed = true;
       state = state.copyWith(
         isLoading: false,
         error: 'No se pudo cargar tus avistamientos.',
@@ -168,7 +220,7 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
       // El mapa muestra el feed comunitario: refrescarlo aquí hace que el
       // avistamiento recién creado aparezca sin reiniciar la app (aunque el
       // mapa ya esté abierto en una pestaña).
-      unawaited(loadCommunitySightings());
+      unawaited(loadCommunitySightings(silent: true));
       return 'success';
     } on DioException catch (e) {
       if (e.response != null) {
@@ -308,28 +360,59 @@ class SightingsNotifier extends StateNotifier<SightingsState> {
     }
   }
 
-  /// Carga el feed comunitario. A diferencia de `loadSightings()`, no se
-  /// llama en el constructor: solo hace falta cuando alguna pantalla
-  /// realmente lo muestra (evita una llamada de red que la mayoría de
-  /// sesiones ni usaría, igual que `loadArchivedSightings`).
-  Future<void> loadCommunitySightings() async {
-    state = state.copyWith(isLoadingCommunity: true);
+  DateTime? _lastCommunityLoadOk;
+
+  /// Carga el feed comunitario (`GET /sightings`). Se llama en el
+  /// constructor (tras hidratar desde caché) y en cada refresco disparado
+  /// por una pantalla, el ciclo de vida de la app o pull-to-refresh.
+  ///
+  /// `silent: true` es para refrescos en segundo plano (home al reabrir,
+  /// app volviendo a primer plano): no activa `isLoadingCommunity` si ya
+  /// hay datos que mostrar, así no parpadea un spinner sobre un feed que
+  /// ya está pintado. También aplica `AppConstants.feedRefreshMinInterval`
+  /// para no repetir la llamada si el último éxito fue hace muy poco (p.
+  /// ej. `recent_sightings.dart` puede volver a montarse varias veces
+  /// seguidas al navegar por las pestañas). Un refresco explícito
+  /// (`silent: false`, pull-to-refresh) ignora ese límite.
+  Future<void> loadCommunitySightings({bool silent = false}) async {
+    if (silent &&
+        _lastCommunityLoadOk != null &&
+        DateTime.now().difference(_lastCommunityLoadOk!) <
+            AppConstants.feedRefreshMinInterval) {
+      return;
+    }
+
+    final hasData = state.communitySightings.isNotEmpty;
+    if (!(silent && hasData)) {
+      state = state.copyWith(isLoadingCommunity: true);
+    }
     try {
       final response = await _ref.read(apiClientProvider).get<Map<String, dynamic>>(
         ApiEndpoints.sightings,
+        queryParameters: {'limit': AppConstants.feedPageSize},
       );
       final List data = response.data!['sightings'] as List;
       final List<SightingModel> community = data
           .map<SightingModel>((j) => SightingModel.fromJson(j as Map<String, dynamic>))
           .toList();
+      _lastCommunityLoadOk = DateTime.now();
+      // `error: null` explícito: sin esto, un fallo previo (p. ej. la
+      // primera carga sin red) dejaba el mensaje de error pegado en
+      // pantalla aunque este refresco sí funcionara — communityFeedScreen
+      // solo lo oculta cuando `error` es null.
       state = state.copyWith(
         communitySightings: community,
         isLoadingCommunity: false,
+        error: null,
       );
+      unawaited(LocalStorage.instance.cacheCommunitySightings(data.cast<Map<String, dynamic>>()));
     } on DioException catch (e) {
       final message = e.error is AppException
           ? (e.error as AppException).message
           : 'No se pudo cargar el mapa comunitario.';
+      // Si ya había datos (de red o de caché), se conservan: un fallo de
+      // refresco en segundo plano no debe vaciar lo que el usuario ya
+      // estaba viendo.
       state = state.copyWith(isLoadingCommunity: false, error: message);
     } catch (_) {
       state = state.copyWith(

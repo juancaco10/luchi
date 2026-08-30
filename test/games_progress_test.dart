@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:guardianes_luciernagas/core/storage/local_storage.dart';
 import 'package:guardianes_luciernagas/core/utils/constants.dart';
 import 'package:guardianes_luciernagas/features/games/models/game_id.dart';
 import 'package:guardianes_luciernagas/features/games/providers/games_progress_provider.dart';

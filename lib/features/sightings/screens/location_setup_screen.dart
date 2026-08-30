@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../widgets/custom_button.dart';
+import '../../../widgets/hardware_back_route.dart';
+import '../../../widgets/ad_banner.dart';
 import '../data/uy_places.dart';
 
 /// Puerta antes de publicar el primer avistamiento: país y ciudad son
@@ -64,7 +66,9 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return HardwareBackRoute(
+      onBack: () => context.go('/home'),
+      child: Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
@@ -72,6 +76,14 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: IconButton(
+                  onPressed: () => context.go('/home'),
+                  icon: Icon(Icons.arrow_back_ios_new_rounded,
+                      color: context.text.bodyMedium?.color, size: 20),
+                ),
+              ),
               Center(
                 child: Container(
                   width: 90,
@@ -182,6 +194,8 @@ class _LocationSetupScreenState extends ConsumerState<LocationSetupScreen> {
             ],
           ),
         ),
+      ),
+      bottomNavigationBar: const AdBanner(),
       ),
     );
   }

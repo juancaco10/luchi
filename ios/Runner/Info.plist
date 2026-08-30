@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- App ID real de AdMob (banner de anuncios, ver
+	     lib/widgets/ad_banner.dart y lib/core/utils/constants.dart). -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-2233716909370832~1446591370</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Si compartes tu ubicación al registrar un avistamiento, la usamos para marcar el punto exacto en el mapa. Es opcional: si no la compartes, marcamos un punto al azar dentro de tu ciudad. Nunca guardamos tu ubicación fuera de ese momento.</string>
 	<key>NSCameraUsageDescription</key>

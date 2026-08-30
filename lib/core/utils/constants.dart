@@ -47,20 +47,49 @@ abstract class AppConstants {
   static const String googleWebClientId =
       '246096129662-j68ams9ssh7d4phooq7kufpsume7db07.apps.googleusercontent.com';
 
-  static const Duration connectTimeout = Duration(seconds: 10);
-  static const Duration receiveTimeout = Duration(seconds: 15);
+  // Hostinger a veces tarda en el primer TLS handshake desde redes
+  // móviles: con 10s un GET /sightings legítimo podía morir en el teléfono
+  // mientras desde el navegador/curl respondía en <100ms. 20s/25s cubre
+  // ese arranque lento sin dejar la app colgada.
+  static const Duration connectTimeout = Duration(seconds: 20);
+  static const Duration receiveTimeout = Duration(seconds: 25);
 
   // ── Storage Keys ─────────────────────────────────────────────
   static const String tokenKey = 'auth_token';
   static const String userKey = 'current_user';
   static const String onboardingKey = 'onboarding_done';
+  static const String parentalConsentKey = 'parental_consent';
+  static const String parentalConsentAtKey = 'parental_consent_at';
+  static const String parentalConsentPolicyKey = 'parental_consent_policy';
+  static const String parentalConsentPolicyVersion = '2026-08-safe-launch';
+
+  /// Puntero a la cuenta activa (`user_id`), usado para namespacing de las
+  /// cajas Hive: dos cuentas Google en el mismo dispositivo no comparten
+  /// caché — ver `LocalStorage.openUserBoxes`.
+  static const String activeUserIdKey = 'active_user_id';
+
   static const String chaptersBox = 'chapters_box';
   static const String sightingsBox = 'sightings_box';
   static const String badgesBox = 'badges_box';
 
+  /// Caché en disco del feed comunitario (`GET /sightings`), por usuario —
+  /// pinta la última copia conocida al instante mientras se refresca en
+  /// segundo plano.
+  static const String feedBox = 'feed_box';
+
+  /// Tamaño de página del feed comunitario. Se manda explícito en la
+  /// query en vez de depender del default del backend (30, tope 50 —
+  /// ver `sightings.php`).
+  static const int feedPageSize = 30;
+
+  /// No repetir un refresco silencioso del feed si el último éxito fue
+  /// hace menos de esto — home dispara el refresco en cada `initState`,
+  /// que puede ocurrir varias veces seguidas al navegar por las pestañas.
+  static const Duration feedRefreshMinInterval = Duration(seconds: 30);
+
   /// Progreso de los minijuegos (estrellas por nivel, energía, racha).
   /// Es progreso local del jugador, no caché de servidor: nunca se limpia
-  /// en un refresco, solo en `clearAll()` al cerrar sesión.
+  /// en un refresco, solo al cerrar sesión.
   static const String gamesBox = 'games_box';
 
   // ── Gamification ─────────────────────────────────────────────
@@ -93,6 +122,11 @@ abstract class AppConstants {
 
   /// Niveles por minijuego. El catálogo debe tener exactamente estos.
   static const int levelsPerGame = 10;
+
+  /// Apodo del usuario: corto a propósito para que quepa en una línea de
+  /// las tarjetas de avistamientos (decisión de producto, 2026-08). El
+  /// backend valida el mismo límite en `PUT /me`.
+  static const int maxNicknameLength = 12;
 
   static const Map<int, String> levelNames = {
     1: 'Observador',
@@ -140,8 +174,47 @@ abstract class AppConstants {
   static const double iconRadius = 12.0;
   static const double paddingHorizontal = 20.0;
   static const double paddingVertical = 16.0;
+  static const double minTouchTarget = 48.0;
+  static const double feedPhotoHeight = 210.0;
+  static const double feedAvatarSize = 44.0;
+  // Mismo valor que usa Material para controles deshabilitados — coherente
+  // con el resto del sistema de diseño.
+  static const double disabledOpacity = 0.38;
+
+  // Safe Launch defaults. Backend authorization remains authoritative.
+  //
+  // Comunidad encendida: es el estado que docs/PRIVACY.md ya describe como
+  // vigente ("El mapa/feed comunitario ya no está deshabilitado"), bajo sus
+  // tres condiciones — sin user_id ni nombre completo en la respuesta,
+  // coordenadas redondeadas también en el servidor, y location_name
+  // recortado a nivel ciudad.
+  //
+  // `preciseLocationEnabled` en false dejaba el interruptor "Compartir mi
+  // ubicación exacta" visible y pulsable pero sin efecto alguno (un control
+  // falso). La protección real no es apagar el GPS, es el difuminado a 3
+  // decimales que hace indistinguible un punto real de uno aleatorio.
+  static const bool communityEnabled = true;
+  static const bool publicSightingsEnabled = true;
+  static const bool preciseLocationEnabled = true;
+  static const bool adsEnabled = false;
+  static const bool passwordRecoveryEnabled = false;
 
   // ── Asset Paths ──────────────────────────────────────────────
   static const String assetsImages = 'assets/images/';
   static const String assetsAnimations = 'assets/animations/';
+
+  /// Videos educativos de los capítulos, empaquetados en el APK.
+  /// El capítulo de id `n` usa `assets/videos/n.mp4`.
+  static const String assetsVideos = 'assets/videos/';
+
+  // ── Ads ──────────────────────────────────────────────────────
+  // Android ya usa el ID real del bloque de banners de AdMob. El de iOS
+  // sigue siendo el de PRUEBA oficial de Google (nunca sirve anuncios
+  // reales): cuando se cree el bloque de anuncios para iOS, reemplazar
+  // solo esta línea — el resto de la app (lib/widgets/ad_banner.dart)
+  // no necesita tocarse.
+  static const String adBannerUnitIdAndroid =
+      'ca-app-pub-2233716909370832/6136449302';
+  static const String adBannerUnitIdIOS =
+      'ca-app-pub-3940256099942544/2934735716';
 }

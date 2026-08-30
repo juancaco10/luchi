@@ -234,9 +234,12 @@ abstract class AppTheme {
       ),
 
       // ── Chip ─────────────────────────────────────────────────
+      // `selectedColor` en relleno sólido, no el tinte de `primaryGlow`
+      // (25% alpha): un chip seleccionado necesita contraste de verdad con
+      // su etiqueta, no una insinuación de color.
       chipTheme: ChipThemeData(
         backgroundColor: DarkPalette.cardSurface,
-        selectedColor: DarkPalette.primaryGlow,
+        selectedColor: DarkPalette.primary,
         disabledColor: DarkPalette.surface,
         labelStyle: const TextStyle(
           fontFamily: 'Nunito',
@@ -475,9 +478,13 @@ abstract class AppTheme {
       ),
 
       // ── Chip ─────────────────────────────────────────────────
+      // Mismo criterio que el tema oscuro: relleno sólido, no tinte. Antes
+      // era `primaryGlow` (amarillo al 25%), casi indistinguible del fondo
+      // blanco — la etiqueta seleccionada (texto blanco fijo en
+      // sighting_date_filter.dart) quedaba prácticamente ilegible encima.
       chipTheme: ChipThemeData(
         backgroundColor: LightPalette.cardSurface,
-        selectedColor: LightPalette.primaryGlow,
+        selectedColor: LightPalette.primary,
         disabledColor: LightPalette.surface,
         labelStyle: const TextStyle(
           fontFamily: 'Nunito',

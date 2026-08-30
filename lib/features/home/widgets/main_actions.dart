@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/theme/firefly_colors.dart';
+import '../../../../core/utils/constants.dart';
+
+void _goToMap(BuildContext context) {
+  // /map redirige silenciosamente a /home mientras comunidad está
+  // deshabilitada (AppConstants.communityEnabled) — sin este aviso, tocar
+  // "Mapa" parecía no hacer nada.
+  if (!AppConstants.communityEnabled) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+        content: Text('El mapa comunitario estará disponible próximamente.'),
+      ));
+    return;
+  }
+  context.go('/map');
+}
 
 class MainActions extends StatelessWidget {
   const MainActions({super.key, this.scale = 1.0});
@@ -28,8 +44,8 @@ class MainActions extends StatelessWidget {
         const SizedBox(width: 8),
         Expanded(
           child: _ActionCard(
-            title: 'CAPÍTULOS',
-            subtitle: 'Aprende y descubre',
+            title: 'APRENDER',
+            subtitle: 'Videos y descubre',
             iconLight: 'assets/images/icon_capitulos_3d.png',
             iconDark: 'assets/images/icon_capitulos_3d.png',
             themeColor: const Color(0xFFC48BFF), // Purple
@@ -47,7 +63,7 @@ class MainActions extends StatelessWidget {
             iconDark: 'assets/images/icon_mapa_3d.png',
             themeColor: const Color(0xFF4DBBFF), // Blue
             lightGradientColors: const [Color(0xFFE1F3FF), Color(0xFFF1FAFF)],
-            onTap: () => context.go('/map'),
+            onTap: () => _goToMap(context),
             scale: scale,
           ),
         ),

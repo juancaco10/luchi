@@ -49,6 +49,15 @@ class GoogleAuthService {
     }
   }
 
+  /// Cierra la sesión de Google en el SDK. Sin esto, `authenticate()`
+  /// reautentica en silencio con la última cuenta usada y el selector de
+  /// cuentas nunca vuelve a aparecer — necesario para poder entrar con una
+  /// segunda cuenta Google en el mismo dispositivo tras cerrar sesión.
+  Future<void> signOut() async {
+    await ensureInitialized();
+    await GoogleSignIn.instance.signOut();
+  }
+
   /// Web. El idToken llega aquí cuando el usuario completa el flujo en el
   /// botón renderizado por Google, no como resultado de una llamada.
   Stream<String> get idTokenOnWebSignIn {

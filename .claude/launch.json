@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "landing-preview",
+      "runtimeExecutable": "php",
+      "runtimeArgs": ["-S", "localhost:8090", "-t", "landing_page"],
+      "port": 8090
+    }
+  ]
+}

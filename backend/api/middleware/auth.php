@@ -6,6 +6,19 @@
 
 require_once __DIR__ . '/../config/database.php';
 
+// Nunca arrancar con el secreto de plantilla: si `config/database.php`
+// llega a producción sin reemplazar JWT_SECRET, cualquiera puede firmar
+// tokens válidos para cualquier usuario. Preferible un 500 explícito a
+// un servidor funcionando con la puerta abierta.
+if (!defined('JWT_SECRET')
+    || JWT_SECRET === 'CHANGE_THIS_TO_A_STRONG_RANDOM_SECRET_64_CHARS'
+    || strlen(JWT_SECRET) < 32
+) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Server misconfigured: JWT_SECRET not set']);
+    exit;
+}
+
 // ── JWT Helpers ───────────────────────────────────────────────────
 
 function base64UrlEncode(string $data): string
@@ -169,6 +182,37 @@ function recordFailedLogin(PDO $db, string $email): void
         'DELETE FROM login_attempts
          WHERE attempted_at < DATE_SUB(NOW(), INTERVAL 1 DAY)'
     );
+}
+
+// ── Rate limiting genérico por IP ─────────────────────────────────
+// /login ya se protege por (email, IP) arriba. Estos endpoints no tienen
+// un email que discriminar (invitado, subida de foto) o el email aún no
+// es de fiar (registro), así que se limitan solo por IP reutilizando la
+// misma tabla `login_attempts` con un "email" sintético por endpoint.
+
+function requireIpNotRateLimited(PDO $db, string $bucket, int $maxAttempts, int $windowMinutes): void
+{
+    $key  = "__{$bucket}__";
+    $stmt = $db->prepare(
+        'SELECT COUNT(*) FROM login_attempts
+         WHERE email = ? AND ip = ?
+           AND attempted_at > DATE_SUB(NOW(), INTERVAL ? MINUTE)'
+    );
+    $stmt->execute([$key, clientIp(), $windowMinutes]);
+
+    if ((int) $stmt->fetchColumn() >= $maxAttempts) {
+        jsonError(
+            'Demasiadas solicitudes. Espera unos minutos e inténtalo de nuevo.',
+            429
+        );
+    }
+}
+
+function recordIpAttempt(PDO $db, string $bucket): void
+{
+    $key = "__{$bucket}__";
+    $db->prepare('INSERT INTO login_attempts (email, ip) VALUES (?, ?)')
+       ->execute([$key, clientIp()]);
 }
 
 function clearLoginAttempts(PDO $db, string $email): void

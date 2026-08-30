@@ -9,6 +9,7 @@
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../middleware/auth.php';
 require_once __DIR__ . '/../lib/gamification.php';
+require_once __DIR__ . '/../lib/media.php';
 
 // ── Helpers de privacidad ─────────────────────────────────────────
 // El feed comunitario expone contenido de menores a otros menores. Estas
@@ -49,6 +50,39 @@ function isoUtc(?string $mysqlDatetime): ?string
     return $ts === false ? null : gmdate('Y-m-d\TH:i:s\Z', $ts);
 }
 
+/** Safe Launch defaults to private sightings until moderation is operated. */
+function publicSightingsEnabled(): bool
+{
+    return defined('PUBLIC_SIGHTINGS_ENABLED') && PUBLIC_SIGHTINGS_ENABLED === true;
+}
+
+/**
+ * Returns a server-owned upload filename only when it belongs to this user
+ * and is unclaimed (or already attached to the sighting being edited).
+ */
+function ownedSightingUpload(PDO $db, int $userId, ?string $photoUrl, ?int $sightingId): ?string
+{
+    if ($photoUrl === null || $photoUrl === '') return null;
+
+    $path = parse_url($photoUrl, PHP_URL_PATH);
+    $filename = is_string($path) ? basename($path) : '';
+    if (!preg_match('/^[a-f0-9]{32}\\.jpg$/', $filename)) {
+        jsonError('La foto debe provenir de una subida autorizada');
+    }
+
+    $stmt = $db->prepare(
+        'SELECT filename FROM sighting_photo_uploads
+          WHERE user_id = ? AND filename = ?
+            AND (attached_sighting_id IS NULL OR attached_sighting_id = ?)'
+    );
+    $stmt->execute([$userId, $filename, $sightingId]);
+    if (!$stmt->fetchColumn()) {
+        jsonError('La foto no existe o no pertenece a esta cuenta', 403);
+    }
+
+    return $filename;
+}
+
 /** Recalcula `likes_count` desde la tabla de verdad. */
 function refreshLikesCount(PDO $db, int $sightingId): int
 {
@@ -86,37 +120,68 @@ if ($method === 'POST' && $path === '/sightings') {
         jsonError('Cantidad inválida (1–10000)');
     }
 
+    if (mb_strlen($notes) > 280) {
+        jsonError('Las notas no pueden superar 280 caracteres');
+    }
+
     $db = getDB();
+    $photoFilename = ownedSightingUpload($db, (int) $user['id'], $photoUrl ?: null, null);
+    // Nunca confiar en la URL del cliente: el servidor siempre reconstruye
+    // la URL pública a partir del filename ya validado como propio.
+    $photoUrl = $photoFilename !== null ? sightingPhotoUrl($photoFilename) : null;
 
     // Auto-publicación (decisión de producto para una app familiar): todo
     // avistamiento nace aprobado y se ve para todos al instante. Si algún
     // día se vuelve a exigir moderación manual, quitar estas dos columnas
     // del INSERT y restaurar la condición 1 del GET /sightings.
-    $stmt = $db->prepare(
-        'INSERT INTO sightings
-            (user_id, lat, lng, quantity, notes, photo_url, location_name,
-             moderation_status, moderated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, "approved", NOW())'
-    );
-    $stmt->execute([
-        $user['id'],
-        $lat,
-        $lng,
-        $quantity,
-        $notes ?: null,
-        $photoUrl ?: null,
-        $locationName ?: null,
-    ]);
+    //
+    // Todo esto es una sola unidad: crear el avistamiento, reclamar la
+    // foto y otorgar puntos/nivel/insignias. Sin transacción, un fallo a
+    // mitad (p. ej. `syncUserProgress`) dejaría el avistamiento guardado
+    // sin sus puntos, o puntos otorgados sin avistamiento — un rollback
+    // limpio es más seguro que dejar ese estado a medias.
+    $db->beginTransaction();
+    try {
+        // Regresión detectada en auditoría: esto decía "pending", lo que
+        // dejaba todo avistamiento invisible para el resto para siempre
+        // (nada vuelve a aprobarlo), contradiciendo la auto-publicación
+        // descrita arriba y el filtro de GET /sightings más abajo.
+        $stmt = $db->prepare(
+            'INSERT INTO sightings
+                (user_id, lat, lng, quantity, notes, photo_url, location_name,
+                 moderation_status, moderated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, "approved", NOW())'
+        );
+        $stmt->execute([
+            $user['id'],
+            $lat,
+            $lng,
+            $quantity,
+            $notes ?: null,
+            $photoUrl ?: null,
+            $locationName ?: null,
+        ]);
 
-    $sightingId = (int) $db->lastInsertId();
+        $sightingId = (int) $db->lastInsertId();
+        if ($photoFilename !== null) {
+            $db->prepare(
+                'UPDATE sighting_photo_uploads SET attached_sighting_id = ? WHERE filename = ? AND user_id = ?'
+            )->execute([$sightingId, $photoFilename, $user['id']]);
+        }
 
-    // Award points
-    $pts = 20; // AppConstants.pointsSighting
-    $db->prepare('UPDATE users SET points = points + ? WHERE id = ?')
-       ->execute([$pts, $user['id']]);
+        // Award points
+        $pts = 20; // AppConstants.pointsSighting
+        $db->prepare('UPDATE users SET points = points + ? WHERE id = ?')
+           ->execute([$pts, $user['id']]);
 
-    // Re-read points, then sync level and badges (lib/gamification.php).
-    $totalPoints = syncUserProgress($db, (int) $user['id']);
+        // Re-read points, then sync level and badges (lib/gamification.php).
+        $totalPoints = syncUserProgress($db, (int) $user['id']);
+
+        $db->commit();
+    } catch (Throwable $e) {
+        $db->rollBack();
+        jsonError('No se pudo registrar el avistamiento', 500);
+    }
 
     jsonResponse([
         'success'       => true,
@@ -135,7 +200,9 @@ if ($method === 'POST' && $path === '/sightings') {
 // real. Se abre ahora, y sigue siendo seguro **solo** por estas tres
 // condiciones — si se quita cualquiera, hay que volver a cerrarlo:
 //
-//   1. No sale `user_id` ni `user_name`: nada identifica al niño autor.
+//   1. `author_name` y `author_avatar` identifican al autor (decisión de
+//      producto, ver docs/PRIVACY.md). El avatar que sale es la foto
+//      elegida por el propio usuario (Google o avatar predefinido).
 //   2. Las coordenadas se redondean aquí también, no solo en el cliente.
 //   3. `location_name` se recorta a nivel ciudad.
 //
@@ -149,11 +216,14 @@ if ($method === 'POST' && $path === '/sightings') {
 // se conserva para no dejar huérfanos los avistamientos viejos que aún
 // estén en 'pending' — nadie más los ve hasta que se aprueben.
 //
-// `is_mine` se calcula en el servidor y es el único vínculo con el autor
-// que se revela — y solo sobre uno mismo, para que la app sepa si mostrar
-// tu nombre o el anónimo.
+// `is_mine` se calcula en el servidor y le dice a la app si el post es
+// propio — para mostrar la foto/avatar con la misma lógica en todos los
+// casos, tanto en lo propio como en lo ajeno.
 
 if ($method === 'GET' && $path === '/sightings') {
+    if (!publicSightingsEnabled()) {
+        jsonError('La comunidad no está disponible en esta versión', 403);
+    }
     $user  = requireAuth();
     $db    = getDB();
 
@@ -164,8 +234,11 @@ if ($method === 'GET' && $path === '/sightings') {
         'SELECT s.id, s.user_id, s.lat, s.lng, s.quantity, s.notes,
                 s.photo_url, s.location_name, s.created_at, s.likes_count,
                 s.moderation_status,
+                u.name AS author_name, u.nickname AS author_nickname,
+                u.avatar_url AS author_avatar,
                 (l.id IS NOT NULL) AS liked_by_me
            FROM sightings s
+           LEFT JOIN users u ON u.id = s.user_id
            LEFT JOIN sighting_likes l
              ON l.sighting_id = s.id AND l.user_id = ?
           WHERE s.archived_at IS NULL
@@ -197,7 +270,15 @@ if ($method === 'GET' && $path === '/sightings') {
             // Solo lo propio pendiente llega aquí con true; lo ajeno siempre
             // está aprobado (lo impone el WHERE de arriba).
             'is_pending'    => ($s['moderation_status'] ?? 'pending') !== 'approved',
-            // Deliberadamente ausentes: user_id, user_name, updated_at.
+            // Autor visible por decisión de producto (docs/PRIVACY.md).
+            // El nombre completo del autor NO se manda: solo el apodo
+            // elegido por el usuario (si lo tiene) o su primer nombre,
+            // que es lo único que muestra la app.
+            'author_name'   => !empty($s['author_nickname'])
+                ? $s['author_nickname']
+                : (ucfirst(strtok((string) ($s['author_name'] ?? ''), ' ')) ?: null),
+            'author_avatar' => $s['author_avatar'] ?? null,
+            // Deliberadamente ausentes: user_id, updated_at.
         ], $rows),
     ]);
 }
@@ -326,6 +407,10 @@ if ($method === 'PUT' && preg_match('#^/sightings/(\d+)$#', $path, $m)) {
         jsonError('Cantidad inválida (1–10000)');
     }
 
+    if (mb_strlen($notes) > 280) {
+        jsonError('Las notas no pueden superar 280 caracteres');
+    }
+
     $db = getDB();
 
     // Comprobación de propiedad aparte del UPDATE: `rowCount()` de un
@@ -333,13 +418,24 @@ if ($method === 'PUT' && preg_match('#^/sightings/(\d+)$#', $path, $m)) {
     // MYSQL_ATTR_FOUND_ROWS), así que guardar sin modificar ningún campo
     // daría 0 filas afectadas y un 404 falso aunque el avistamiento sí
     // exista y sea del usuario.
-    $owns = $db->prepare('SELECT 1 FROM sightings WHERE id = ? AND user_id = ?');
+    $owns = $db->prepare('SELECT photo_url FROM sightings WHERE id = ? AND user_id = ?');
     $owns->execute([$sightingId, $user['id']]);
-    if (!$owns->fetchColumn()) {
+    $existingPhotoUrl = $owns->fetchColumn();
+    if ($existingPhotoUrl === false) {
         // O no existe, o no es del usuario autenticado — mismo mensaje en
         // ambos casos para no filtrar si el id pertenece a otra cuenta.
         jsonError('Avistamiento no encontrado', 404);
     }
+
+    $photoFilename = ownedSightingUpload(
+        $db,
+        (int) $user['id'],
+        $photoUrl ?: null,
+        $sightingId,
+    );
+    // Nunca confiar en la URL del cliente: el servidor siempre reconstruye
+    // la URL pública a partir del filename ya validado como propio.
+    $photoUrl = $photoFilename !== null ? sightingPhotoUrl($photoFilename) : null;
 
     // Con auto-publicación el contenido ya está visible para todos al
     // editar; no hay nada que "reabrir" para revisión.
@@ -358,6 +454,17 @@ if ($method === 'PUT' && preg_match('#^/sightings/(\d+)$#', $path, $m)) {
         $sightingId,
         $user['id'],
     ]);
+
+    if ($existingPhotoUrl !== ($photoUrl ?: null)) {
+        $db->prepare(
+            'UPDATE sighting_photo_uploads SET attached_sighting_id = NULL WHERE attached_sighting_id = ?'
+        )->execute([$sightingId]);
+        if ($photoFilename !== null) {
+            $db->prepare(
+                'UPDATE sighting_photo_uploads SET attached_sighting_id = ? WHERE filename = ? AND user_id = ?'
+            )->execute([$sightingId, $photoFilename, $user['id']]);
+        }
+    }
 
     jsonResponse(['success' => true]);
 }

@@ -17,6 +17,8 @@ class MapScreen extends ConsumerStatefulWidget {
 }
 
 class _MapScreenState extends ConsumerState<MapScreen> {
+  final MapController _mapController = MapController();
+
   @override
   void initState() {
     super.initState();
@@ -24,8 +26,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     // el constructor del provider) y se refresca al volver a entrar, así
     // los avistamientos nuevos aparecen sin reiniciar la app.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(sightingsProvider.notifier).loadCommunitySightings();
+      _loadCommunity();
     });
+  }
+
+  /// Carga el feed y, si el primer intento falló (conexión móvil lenta,
+  /// primer TLS handshake de Hostinger que se cae), reintenta una vez a
+  /// los 3s. Sin esto, un timeout puntual dejaba el mapa solo con los
+  /// puntos propios sin ninguna recuperación salvo reiniciar la app.
+  Future<void> _loadCommunity() async {
+    final notifier = ref.read(sightingsProvider.notifier);
+    await notifier.loadCommunitySightings();
+    final stillEmpty = ref.read(sightingsProvider).communitySightings.isEmpty;
+    if (!mounted || !stillEmpty) return;
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) notifier.loadCommunitySightings();
+    });
+  }
+
+  @override
+  void dispose() {
+    _mapController.dispose();
+    super.dispose();
+  }
+
+  void _zoomBy(double delta) {
+    final camera = _mapController.camera;
+    final zoom = (camera.zoom + delta).clamp(3.0, 20.0);
+    _mapController.move(camera.center, zoom);
   }
 
   @override
@@ -66,20 +94,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
       body: Stack(
         children: [
           FlutterMap(
+            mapController: _mapController,
             options: MapOptions(
               initialCenter: sightings.isNotEmpty
                   ? LatLng(sightings.first.lat, sightings.first.lng)
                   : defaultCenter,
               initialZoom: sightings.isNotEmpty ? 12.0 : 4.0,
               backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+              minZoom: 3.0,
+              maxZoom: 20.0,
             ),
             children: [
-              // Dark tile layer
+              // Basemap de OpenStreetMap: gratis y sin API key. Antes usaba
+              // CartoDB (basemaps.cartocdn.com), que pasó a exigir key y
+              // rompía el mapa con "API key required". OSM no la pide.
+              // La `key` fuerza a flutter_map a reconstruir la capa al
+              // alternar el tema.
               TileLayer(
-                urlTemplate:
-                    'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-                subdomains: const ['a', 'b', 'c', 'd'],
-                maxZoom: 20,
+                key: ValueKey(context.isDark),
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                maxZoom: 19,
+                userAgentPackageName: 'com.guardianes.luciernagas',
               ),
 
               // Sighting markers
@@ -87,8 +122,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 markers: sightings.map((s) {
                   return Marker(
                     point: LatLng(s.lat, s.lng),
-                    width: 40,
-                    height: 40,
+                    width: 26,
+                    height: 26,
                     child: _SightingMarker(
                       quantity: s.quantity,
                       isPending: s.isPending || s.moderationStatus == 'pending',
@@ -97,10 +132,10 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                 }).toList(),
               ),
 
-              RichAttributionWidget(
+              const RichAttributionWidget(
                 attributions: [
                   TextSourceAttribution(
-                    'OpenStreetMap contributors, © CARTO',
+                    '© OpenStreetMap contributors',
                   ),
                 ],
               ),
@@ -249,6 +284,28 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
+          // Escala de zoom al costado: para acercar/alejar y así
+          // "agrandar o achicar" los puntos sin pellizcar (más fácil para
+          // niños). Los marcadores siempre tienen el mismo tamaño en
+          // pantalla; el zoom es lo que separa o agrupa los puntos.
+          Positioned(
+            right: 12,
+            bottom: 116,
+            child: Column(
+              children: [
+                _ZoomButton(
+                  icon: Icons.add_rounded,
+                  onTap: () => _zoomBy(1),
+                ),
+                const SizedBox(height: 8),
+                _ZoomButton(
+                  icon: Icons.remove_rounded,
+                  onTap: () => _zoomBy(-1),
+                ),
+              ],
+            ),
+          ),
+
           // FAB to add sighting
           Positioned(
             bottom: 32,
@@ -339,9 +396,9 @@ class _SightingMarker extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: (isPending ? context.firefly.warning : context.colors.primary)
-                .withValues(alpha: 0.5),
-            blurRadius: 12,
-            spreadRadius: 1.5,
+                .withValues(alpha: 0.45),
+            blurRadius: 7,
+            spreadRadius: 0.8,
           ),
         ],
       ),
@@ -349,18 +406,46 @@ class _SightingMarker extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text('✨', style: TextStyle(fontSize: 13)),
+            const Text('✨', style: TextStyle(fontSize: 9)),
             if (quantity > 1)
               Text(
                 'x$quantity',
                 style: TextStyle(
                   fontFamily: 'Nunito',
-                  fontSize: 8,
+                  fontSize: 6,
                   fontWeight: FontWeight.w800,
                   color: context.colors.onPrimary,
                 ),
               ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Botón circular de zoom (arriba/abajo) al costado del mapa.
+class _ZoomButton extends StatelessWidget {
+  final IconData icon;
+  final VoidCallback onTap;
+
+  const _ZoomButton({required this.icon, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: context.isDark
+          ? Colors.white.withValues(alpha: 0.12)
+          : Colors.white,
+      shape: const CircleBorder(),
+      elevation: 3,
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 40,
+          height: 40,
+          child: Icon(icon, size: 24, color: context.colors.onSurface),
         ),
       ),
     );

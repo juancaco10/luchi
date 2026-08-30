@@ -14,6 +14,8 @@ import '../utils/nsfw_filter.dart';
 import '../../../features/auth/providers/auth_provider.dart';
 import '../../../widgets/custom_button.dart';
 import '../../../widgets/reward_overlay.dart';
+import '../../../widgets/hardware_back_route.dart';
+import '../../../widgets/ad_banner.dart';
 
 /// Crea un avistamiento nuevo, o edita uno existente si se pasa
 /// [sightingId] — mismo formulario para ambos, sin duplicar la UI.
@@ -93,7 +95,8 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
 
     _locationName = '$city, $country';
 
-    final cityCoords = await resolveProfileCityCoordinates(country: country, city: city);
+    final cityCoords =
+        await resolveProfileCityCoordinates(country: country, city: city);
     if (cityCoords == null) {
       // Sin conexión y el país no tiene lista fija (no es Uruguay) — no
       // hay de dónde sacar ni el punto exacto ni uno aleatorio todavía.
@@ -102,7 +105,7 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
       return;
     }
 
-    if (_shareGps) {
+    if (_shareGps && AppConstants.preciseLocationEnabled) {
       final exact = await _tryGetGpsPosition();
       if (exact != null) {
         _lat = exact.lat;
@@ -129,7 +132,8 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
         return null;
       }
 
-      final pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      final pos = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high);
       // Difuminado a 3 decimales (~100 m) antes de que la coordenada salga
       // del dispositivo — igual criterio que el resto de la app.
       return (
@@ -179,12 +183,14 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
               const SizedBox(height: 20),
               ListTile(
                 leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Tomar foto', style: TextStyle(fontFamily: 'Nunito')),
+                title: const Text('Tomar foto',
+                    style: TextStyle(fontFamily: 'Nunito')),
                 onTap: () => Navigator.pop(context, ImageSource.camera),
               ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
-                title: const Text('Elegir de la galería', style: TextStyle(fontFamily: 'Nunito')),
+                title: const Text('Elegir de la galería',
+                    style: TextStyle(fontFamily: 'Nunito')),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
               ),
             ],
@@ -217,7 +223,8 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
       setState(() => _checkingPhoto = false);
 
       if (!safe) {
-        _showSnack('Esta foto no se puede usar. Elige otra foto de luciérnagas 🌿');
+        _showSnack(
+            'Esta foto no se puede usar. Elige otra foto de luciérnagas 🌿');
         return;
       }
 
@@ -257,14 +264,17 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
     String? photoUrl = _existingPhotoUrl;
     if (_pickedPhoto != null) {
       setState(() => _uploadingPhoto = true);
-      photoUrl = await ref.read(sightingsProvider.notifier).uploadPhoto(_pickedPhoto!);
+      photoUrl =
+          await ref.read(sightingsProvider.notifier).uploadPhoto(_pickedPhoto!);
       if (mounted) setState(() => _uploadingPhoto = false);
       if (photoUrl == null && mounted) {
-        _showSnack('No se pudo subir la foto (sin conexión). Se guardará sin foto.');
+        _showSnack(
+            'No se pudo subir la foto (sin conexión). Se guardará sin foto.');
       }
     }
 
-    final notes = _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
+    final notes =
+        _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim();
 
     if (_isEditing) {
       final ok = await ref.read(sightingsProvider.notifier).updateSighting(
@@ -296,7 +306,9 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
         );
 
     if (status == 'success') {
-      await ref.read(authProvider.notifier).addPoints(AppConstants.pointsSighting);
+      await ref
+          .read(authProvider.notifier)
+          .addPoints(AppConstants.pointsSighting);
       setState(() => _showReward = true);
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
@@ -312,7 +324,8 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
       // No se encoló — mostrar el motivo y quedarse en el formulario para
       // poder corregirlo o reintentar.
       _showSnack(
-        ref.read(sightingsProvider).error ?? 'No se pudo guardar el avistamiento.',
+        ref.read(sightingsProvider).error ??
+            'No se pudo guardar el avistamiento.',
       );
     }
   }
@@ -342,178 +355,195 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
     }
 
     final isSubmitting = ref.watch(sightingsProvider).isSubmitting;
-    final busy = isSubmitting || _uploadingPhoto || _checkingPhoto || _resolvingLocation;
+    final busy =
+        isSubmitting || _uploadingPhoto || _checkingPhoto || _resolvingLocation;
 
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: Stack(
-        children: [
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    Row(
-                      children: [
-                        IconButton(
-                          onPressed: () => context.go(_isEditing ? '/sightings' : '/home'),
-                          icon: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: context.firefly.cardSurface,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: context.firefly.cardBorder),
+    return HardwareBackRoute(
+      onBack: () => context.go(_isEditing ? '/sightings' : '/home'),
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: Stack(
+          children: [
+            SafeArea(
+              child: SingleChildScrollView(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Header
+                      Row(
+                        children: [
+                          IconButton(
+                            onPressed: () =>
+                                context.go(_isEditing ? '/sightings' : '/home'),
+                            icon: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: context.firefly.cardSurface,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                    color: context.firefly.cardBorder),
+                              ),
+                              child: Icon(Icons.arrow_back_ios_new_rounded,
+                                  color: context.text.bodyMedium?.color,
+                                  size: 18),
                             ),
-                            child: Icon(Icons.arrow_back_ios_new_rounded,
-                                color: context.text.bodyMedium?.color, size: 18),
+                            style:
+                                IconButton.styleFrom(padding: EdgeInsets.zero),
                           ),
-                          style: IconButton.styleFrom(padding: EdgeInsets.zero),
-                        ),
-                        const SizedBox(width: 12),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              _isEditing ? 'Editar avistamiento' : 'Registrar avistamiento',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: context.colors.onSurface,
+                          const SizedBox(width: 12),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _isEditing
+                                    ? 'Editar avistamiento'
+                                    : 'Registrar avistamiento',
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: context.colors.onSurface,
+                                ),
                               ),
-                            ),
-                            Text(
-                              _isEditing
-                                  ? 'Corrige los datos que necesites'
-                                  : '¡Tu dato es valioso para la ciencia!',
-                              style: TextStyle(
-                                fontFamily: 'Nunito',
-                                fontSize: 12,
-                                color: context.text.bodyMedium?.color,
+                              Text(
+                                _isEditing
+                                    ? 'Corrige los datos que necesites'
+                                    : '¡Tu dato es valioso para la ciencia!',
+                                style: TextStyle(
+                                  fontFamily: 'Nunito',
+                                  fontSize: 12,
+                                  color: context.text.bodyMedium?.color,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ).animate().fadeIn(duration: 400.ms),
+                            ],
+                          ),
+                        ],
+                      ).animate().fadeIn(duration: 400.ms),
 
-                    const SizedBox(height: 28),
+                      const SizedBox(height: 28),
 
-                    // Firefly emoji hero
-                    Center(
-                      child: Container(
-                        width: 100,
-                        height: 100,
-                        decoration: BoxDecoration(
-                          color: context.firefly.glow,
-                          shape: BoxShape.circle,
-                          boxShadow: context.firefly.glowShadow,
-                        ),
-                        child: const Center(
-                          child: Text('✨', style: TextStyle(fontSize: 52)),
-                        ),
-                      )
-                          .animate()
-                          .scale(
-                            duration: 500.ms,
-                            curve: Curves.elasticOut,
-                            begin: const Offset(0.5, 0.5),
-                          )
-                          .fadeIn(),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // ── Photo section ──────────────────────────────────
-                    _SectionLabel(emoji: '📸', title: 'Foto (opcional)'),
-                    const SizedBox(height: 10),
-                    _PhotoPicker(
-                      pickedFile: _pickedPhoto,
-                      existingUrl: _existingPhotoUrl,
-                      isUploading: _uploadingPhoto,
-                      isChecking: _checkingPhoto,
-                      onTap: busy ? null : _choosePhotoSource,
-                      onRemove: () => setState(() {
-                        _pickedPhoto = null;
-                        _existingPhotoUrl = null;
-                      }),
-                    ).animate(delay: 50.ms).fadeIn(),
-
-                    const SizedBox(height: 24),
-
-                    // ── Location section ──────────────────────────────
-                    // Solo al crear: en edición la ubicación no se toca
-                    // (ver _prefillFrom).
-                    if (!_isEditing) ...[
-                      _SectionLabel(emoji: '📍', title: 'Ubicación'),
-                      const SizedBox(height: 10),
-                      _LocationCard(
-                        cityLabel: _profileCityLabel(),
-                        shareGps: _shareGps,
-                        resolving: _resolvingLocation,
-                        onChanged: busy ? null : (v) => setState(() => _shareGps = v),
-                      ).animate(delay: 100.ms).fadeIn(),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // ── Quantity section ──────────────────────────────
-                    _SectionLabel(emoji: '✨', title: '¿Cuántas viste?'),
-                    const SizedBox(height: 12),
-
-                    _QuantitySelector(
-                      quantity: _quantity,
-                      onChanged: (v) => setState(() => _quantity = v),
-                    ).animate(delay: 150.ms).fadeIn(),
-
-                    const SizedBox(height: 24),
-
-
-
-                    // ── Notes section ─────────────────────────────────
-                    _SectionLabel(emoji: '📝', title: 'Notas (opcional)'),
-                    const SizedBox(height: 10),
-
-                    TextFormField(
-                      controller: _notesCtrl,
-                      maxLines: 3,
-                      style: TextStyle(
-                          color: context.colors.onSurface, fontFamily: 'Nunito'),
-                      decoration: const InputDecoration(
-                        hintText:
-                            'Ej: Las vi cerca del río, había muchas entre los arbustos...',
-                        alignLabelWithHint: true,
+                      // Firefly emoji hero
+                      Center(
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: context.firefly.glow,
+                            shape: BoxShape.circle,
+                            boxShadow: context.firefly.glowShadow,
+                          ),
+                          child: const Center(
+                            child: Text('✨', style: TextStyle(fontSize: 52)),
+                          ),
+                        )
+                            .animate()
+                            .scale(
+                              duration: 500.ms,
+                              curve: Curves.elasticOut,
+                              begin: const Offset(0.5, 0.5),
+                            )
+                            .fadeIn(),
                       ),
-                    ).animate(delay: 250.ms).fadeIn(),
 
-                    const SizedBox(height: 32),
+                      const SizedBox(height: 28),
 
-                    // Submit button
-                    AppButton(
-                      label: _isEditing
-                          ? 'Guardar cambios'
-                          : 'Enviar avistamiento (+${AppConstants.pointsSighting} pts)',
-                      onPressed: busy ? null : _submit,
-                      isLoading: busy,
-                      icon: _isEditing ? Icons.save_rounded : Icons.send_rounded,
-                    ).animate(delay: 300.ms).fadeIn().slideY(begin: 0.2, end: 0),
+                      // ── Photo section ──────────────────────────────────
+                      _SectionLabel(emoji: '📸', title: 'Foto (opcional)'),
+                      const SizedBox(height: 10),
+                      _PhotoPicker(
+                        pickedFile: _pickedPhoto,
+                        existingUrl: _existingPhotoUrl,
+                        isUploading: _uploadingPhoto,
+                        isChecking: _checkingPhoto,
+                        onTap: busy ? null : _choosePhotoSource,
+                        onRemove: () => setState(() {
+                          _pickedPhoto = null;
+                          _existingPhotoUrl = null;
+                        }),
+                      ).animate(delay: 50.ms).fadeIn(),
 
-                    const SizedBox(height: 40),
-                  ],
+                      const SizedBox(height: 24),
+
+                      // ── Location section ──────────────────────────────
+                      // Solo al crear: en edición la ubicación no se toca
+                      // (ver _prefillFrom).
+                      if (!_isEditing) ...[
+                        _SectionLabel(emoji: '📍', title: 'Ubicación'),
+                        const SizedBox(height: 10),
+                        _LocationCard(
+                          cityLabel: _profileCityLabel(),
+                          shareGps: _shareGps,
+                          resolving: _resolvingLocation,
+                          onChanged: busy
+                              ? null
+                              : (v) => setState(() => _shareGps = v),
+                        ).animate(delay: 100.ms).fadeIn(),
+                        const SizedBox(height: 24),
+                      ],
+
+                      // ── Quantity section ──────────────────────────────
+                      _SectionLabel(emoji: '✨', title: '¿Cuántas viste?'),
+                      const SizedBox(height: 12),
+
+                      _QuantitySelector(
+                        quantity: _quantity,
+                        onChanged: (v) => setState(() => _quantity = v),
+                      ).animate(delay: 150.ms).fadeIn(),
+
+                      const SizedBox(height: 24),
+
+                      // ── Notes section ─────────────────────────────────
+                      _SectionLabel(emoji: '📝', title: 'Notas (opcional)'),
+                      const SizedBox(height: 10),
+
+                      TextFormField(
+                        controller: _notesCtrl,
+                        maxLines: 3,
+                        style: TextStyle(
+                            color: context.colors.onSurface,
+                            fontFamily: 'Nunito'),
+                        decoration: const InputDecoration(
+                          hintText:
+                              'Ej: Las vi cerca del río, había muchas entre los arbustos...',
+                          alignLabelWithHint: true,
+                        ),
+                      ).animate(delay: 250.ms).fadeIn(),
+
+                      const SizedBox(height: 32),
+
+                      // Submit button
+                      AppButton(
+                        label: _isEditing
+                            ? 'Guardar cambios'
+                            : 'Enviar avistamiento (+${AppConstants.pointsSighting} pts)',
+                        onPressed: busy ? null : _submit,
+                        isLoading: busy,
+                        icon: _isEditing
+                            ? Icons.save_rounded
+                            : Icons.send_rounded,
+                      )
+                          .animate(delay: 300.ms)
+                          .fadeIn()
+                          .slideY(begin: 0.2, end: 0),
+
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-
-          if (_showReward)
-            RewardOverlay(
-              points: AppConstants.pointsSighting,
-              message: '¡Avistamiento registrado!',
-            ),
-        ],
+            if (_showReward)
+              RewardOverlay(
+                points: AppConstants.pointsSighting,
+                message: '¡Avistamiento registrado!',
+              ),
+          ],
+        ),
+        bottomNavigationBar: const AdBanner(),
       ),
     );
   }
@@ -578,7 +608,8 @@ class _PhotoPicker extends StatelessWidget {
                 : Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.add_a_photo_outlined, color: context.text.bodyMedium?.color, size: 28),
+                      Icon(Icons.add_a_photo_outlined,
+                          color: context.text.bodyMedium?.color, size: 28),
                       const SizedBox(height: 8),
                       Text(
                         'Agregar una foto',
@@ -610,7 +641,8 @@ class _PhotoPicker extends StatelessWidget {
                   : Image.network(
                       existingUrl!,
                       fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) => progress == null
+                      loadingBuilder: (context, child, progress) => progress ==
+                              null
                           ? child
                           : const Center(child: CircularProgressIndicator()),
                       errorBuilder: (context, error, stack) => Container(
@@ -645,7 +677,8 @@ class _PhotoPicker extends StatelessWidget {
                 color: Colors.black54,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.close_rounded, color: Colors.white, size: 16),
+              child: const Icon(Icons.close_rounded,
+                  color: Colors.white, size: 16),
             ),
           ),
         ),
@@ -710,7 +743,8 @@ class _LocationCard extends StatelessWidget {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.my_location_rounded, size: 18, color: context.colors.primary),
+              Icon(Icons.my_location_rounded,
+                  size: 18, color: context.colors.primary),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -817,8 +851,8 @@ class _QuantitySelector extends StatelessWidget {
               return GestureDetector(
                 onTap: () => onChanged(v),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: quantity == v
                         ? context.firefly.glow
@@ -865,15 +899,21 @@ class _QtyButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: onTap != null ? context.firefly.cardSurface : context.firefly.cardSurface,
+          color: onTap != null
+              ? context.firefly.cardSurface
+              : context.firefly.cardSurface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: onTap != null ? context.firefly.cardBorder : context.firefly.cardBorder,
+            color: onTap != null
+                ? context.firefly.cardBorder
+                : context.firefly.cardBorder,
           ),
         ),
         child: Icon(
           icon,
-          color: onTap != null ? context.colors.onSurface : context.text.bodySmall?.color,
+          color: onTap != null
+              ? context.colors.onSurface
+              : context.text.bodySmall?.color,
           size: 20,
         ),
       ),

@@ -62,13 +62,13 @@ class _SightingDetailsModalState extends ConsumerState<SightingDetailsModal> {
     final sighting = live ?? widget.sighting;
 
     final user = ref.watch(currentUserProvider);
-    // Nunca el nombre real de otra persona: `isMine` lo decide el
-    // servidor (ver GET /sightings en backend/api/routes/sightings.php),
-    // así que un avistamiento ajeno siempre se muestra anónimo aquí, sin
-    // depender de que el cliente "recuerde" ocultarlo.
+    // Autor visible por decisión de producto (docs/PRIVACY.md): el nombre
+    // es el apodo elegido por el usuario (o su primer nombre) que manda el
+    // servidor en el feed — nunca el completo. Sin dato (p. ej. offline),
+    // cae el genérico.
     final userName = sighting.isMine
-        ? (user?.name.split(' ').first ?? 'Explorador')
-        : 'Un guardián del bosque';
+        ? (user?.displayName ?? 'Explorador')
+        : (sighting.authorName ?? 'Un guardián del bosque');
 
     return Center(
       child: Material(
@@ -165,47 +165,41 @@ class _SightingDetailsModalState extends ConsumerState<SightingDetailsModal> {
                               children: [
                                 // Foto real del autor, más grande: lo propio
                                 // usa la del usuario actual (Google o avatar
-                                // elegido); lo ajeno, anónimo siempre.
-                                sighting.isMine
-                                    ? ClipOval(
-                                        child: SizedBox(
-                                          width: 52,
-                                          height: 52,
-                                          child: Builder(builder: (context) {
-                                            final image =
-                                                avatarImageFor(user?.avatarUrl);
-                                            return image != null
-                                                ? Image(
-                                                    image: image,
-                                                    fit: BoxFit.cover,
-                                                    errorBuilder: (c, e, s) =>
-                                                        const Icon(
-                                                            Icons.person,
-                                                            size: 26),
-                                                  )
-                                                : Container(
-                                                    decoration: BoxDecoration(
-                                                      gradient: context
-                                                          .firefly
-                                                          .primaryGradient,
-                                                    ),
-                                                    child: const Center(
-                                                      child: Text('👦',
-                                                          style: TextStyle(
-                                                              fontSize: 26)),
-                                                    ),
-                                                  );
-                                          }),
-                                        ),
-                                      )
-                                    : CircleAvatar(
-                                        radius: 26,
-                                        backgroundColor:
-                                            context.firefly.cardSurface,
-                                        child: Icon(Icons.eco_rounded,
+                                // elegido); lo ajeno, la del autor tal cual
+                                // llega en el feed (`author_avatar`). Si no
+                                // hay avatar, anónimo.
+                                Builder(builder: (context) {
+                                  final image = sighting.isMine
+                                      ? avatarImageFor(user?.avatarUrl)
+                                      : avatarImageFor(sighting.authorAvatar);
+                                  return image != null
+                                      ? ClipOval(
+                                          child: SizedBox(
+                                            width: 52,
+                                            height: 52,
+                                            child: Image(
+                                              image: image,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (c, e, s) =>
+                                                  const Icon(
+                                                      Icons.person,
+                                                      size: 26),
+                                            ),
+                                          ),
+                                        )
+                                      : CircleAvatar(
+                                          radius: 26,
+                                          backgroundColor:
+                                              context.firefly.cardSurface,
+                                          child: Icon(
+                                            sighting.isMine
+                                                ? Icons.person
+                                                : Icons.eco_rounded,
                                             color: context.colors.primary,
-                                            size: 26),
-                                      ),
+                                            size: 26,
+                                          ),
+                                        );
+                                }),
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(

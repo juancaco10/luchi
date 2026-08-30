@@ -57,6 +57,19 @@ abstract final class QuizQuestionBank {
     // ── ¿Qué son? ─────────────────────────────────────────────
     QuizQuestion(
       topic: QuizTopic.queSon,
+      text: '¿Qué son las luciérnagas?',
+      options: [
+        'Escarabajos que brillan en la noche',
+        'Aves pequeñas',
+        'Peces de río',
+        'Arañas voladoras',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Son escarabajos (coleópteros) que producen su propia luz con la bioluminiscencia.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.queSon,
       text: 'Las luciérnagas son insectos del mismo grupo que las mariquitas.',
       options: ['Verdadero', 'Falso'],
       correctIndex: 0,
@@ -168,6 +181,19 @@ abstract final class QuizQuestionBank {
     // ── Cómo crecen (ciclo de vida) ───────────────────────────
     QuizQuestion(
       topic: QuizTopic.cicloVida,
+      text: '¿Cómo se alimentan y reproducen las luciérnagas?',
+      options: [
+        'Las larvas comen caracoles y se comunican con destellos para reproducirse',
+        'No comen ni se reproducen',
+        'Solo beben agua y no se reproducen',
+        'Se alimentan de azúcar y ponen huevos en el aire',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Las larvas cazan caracoles y babosas, y los adultos usan su luz para encontrarse.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.cicloVida,
       text: '¿Dónde viven las larvas de luciérnaga antes de aprender a volar?',
       options: [
         'En las nubes',
@@ -225,6 +251,19 @@ abstract final class QuizQuestionBank {
     ),
 
     // ── Dónde viven ───────────────────────────────────────────
+    QuizQuestion(
+      topic: QuizTopic.habitat,
+      text: '¿Dónde viven las luciérnagas?',
+      options: [
+        'En lugares húmedos: bosques, charcas y jardines naturales',
+        'En desiertos secos y calurosos',
+        'Solo dentro de las casas',
+        'En los postes de luz',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Necesitan humedad y vegetación para vivir y que sus larvas crezcan.',
+    ),
     QuizQuestion(
       topic: QuizTopic.habitat,
       text: '¿Qué tipo de lugar prefieren las luciérnagas para vivir felices?',
@@ -292,6 +331,19 @@ abstract final class QuizQuestionBank {
     // ── Peligros ──────────────────────────────────────────────
     QuizQuestion(
       topic: QuizTopic.amenazas,
+      text: '¿Por qué están en peligro las luciérnagas?',
+      options: [
+        'Por la contaminación lumínica, los pesticidas y la pérdida de su hábitat',
+        'Porque brillan demasiado',
+        'Porque vuelan muy rápido',
+        'Porque comen mucha fruta',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Las luces artificiales, los venenos y destruir sus bosques las están haciendo desaparecer.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.amenazas,
       text: '¿Qué problema grave afecta a las luciérnagas en la ciudad?',
       options: [
         'El ruido de los carros',
@@ -344,6 +396,45 @@ abstract final class QuizQuestionBank {
     ),
 
     // ── Cómo ayudar ───────────────────────────────────────────
+    QuizQuestion(
+      topic: QuizTopic.conservacion,
+      text: '¿Cómo podemos protegerlas?',
+      options: [
+        'Apagando luces, evitando pesticidas y cuidando la tierra húmeda',
+        'Guardándolas en frascos para mirarlas',
+        'Encendiendo muchas luces de noche',
+        'Cortando todo el pasto',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Protegerlas es darles oscuridad, no usar venenos y cuidar sus lugares húmedos.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.conservacion,
+      text: '¿Qué podemos hacer para ayudarlas?',
+      options: [
+        'Dejar un rincón del jardín con hojarasca y plantas nativas',
+        'Recogerlas y venderlas',
+        'Secar las charcas y arroyos',
+        'Usar más pesticidas',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Un rincón "silvestre" les da refugio y comida sin ningún esfuerzo extra.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.conservacion,
+      text: '¿Qué podemos hacer desde nuestros hogares?',
+      options: [
+        'Apagar luces exteriores y mantener un jardín natural',
+        'Dejar todas las luces encendidas de noche',
+        'Poner venenos para insectos',
+        'Secar la tierra de las macetas',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Desde casa, apagar luces innecesarias y cuidar el jardín ya es una gran ayuda.',
+    ),
     QuizQuestion(
       topic: QuizTopic.conservacion,
       text: '¿Cuál es la mejor acción que puedes hacer en casa esta noche?',
@@ -400,6 +491,19 @@ abstract final class QuizQuestionBank {
       options: ['Verdadero', 'Falso'],
       correctIndex: 0,
       explanation: '🪲 Menos luz artificial significa más oscuridad natural para ellas.',
+    ),
+    QuizQuestion(
+      topic: QuizTopic.conservacion,
+      text: '¿Podemos matar o atrapar a las luciérnagas?',
+      options: [
+        'No, hay que observarlas y dejarlas libres',
+        'Sí, es divertido guardarlas en frascos',
+        'Solo se pueden atrapar de día',
+        'Solo los adultos pueden atraparlas',
+      ],
+      correctIndex: 0,
+      explanation:
+          '🪲 Nunca las matamos ni las encerramos: son seres vivos que debemos proteger.',
     ),
   ];
 }

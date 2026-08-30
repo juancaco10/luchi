@@ -105,10 +105,21 @@ class _ChapterCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
+            // Antes un gradiente verde-oscuro fijo para "completado": en modo
+            // claro, el título/descripción de abajo (color de tema, pensado
+            // para fondo claro) quedaban oscuros sobre un fondo también
+            // oscuro. Se mantiene el mismo tinte oscuro sutil en modo oscuro
+            // (cero cambio visual ahí) y se agrega un equivalente claro —
+            // `context.firefly.greenGradient` es demasiado saturado para
+            // fondo de card, es el gradiente pensado para botones/insignias.
             gradient: isDone
-                ? const LinearGradient(
-                    colors: [Color(0xFF0D2A1A), Color(0xFF131929)],
-                  )
+                ? (context.isDark
+                    ? const LinearGradient(
+                        colors: [Color(0xFF0D2A1A), Color(0xFF131929)],
+                      )
+                    : const LinearGradient(
+                        colors: [Color(0xFFE8F5E9), Color(0xFFFFFFFF)],
+                      ))
                 : context.firefly.cardGradient,
             borderRadius: BorderRadius.circular(AppConstants.cardRadius),
             border: Border.all(

@@ -11,6 +11,8 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luchi — Protege la Luz del Bosque</title>
     <meta name="description" content="Una aventura educativa para niños donde aprenderás a proteger las luciérnagas y el ecosistema nocturno. Disponible en Android y Web.">
+    <link rel="icon" type="image/png" href="images/favicon.png">
+    <link rel="apple-touch-icon" href="images/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -48,7 +50,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
     <!-- Hero -->
     <header class="hero" id="inicio">
         <div class="hero-bg">
-            <img src="https://images.unsplash.com/photo-1505322022379-7c3353ee6291?auto=format&fit=crop&w=1920&q=80" alt="Bosque nocturno">
+            <img src="images/home_header_bg.png" alt="Bosque nocturno con luciérnagas">
             <div class="hero-vignette"></div>
         </div>
         <div class="hero-content">
@@ -89,7 +91,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <div class="phone-mockup">
                     <div class="phone-frame glass">
                         <div class="phone-screen">
-                            <img src="https://images.unsplash.com/photo-1518495973542-4542c06a5843?auto=format&fit=crop&w=400&q=80" alt="App Screenshot">
+                            <img src="images/screenshots/home.jpeg" alt="Pantalla de inicio de la app">
                             <div class="phone-overlay">
                                 <span class="phone-badge">Vista previa</span>
                             </div>
@@ -194,27 +196,27 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
             </div>
             <div class="gallery-grid">
                 <div class="gallery-card glass">
-                    <img src="https://images.unsplash.com/photo-1507400492013-162706c8c05e?auto=format&fit=crop&w=600&q=80" alt="Bosque de noche">
+                    <img src="images/screenshots/home.jpeg" alt="Pantalla de inicio de la app">
                     <div class="gallery-overlay">
-                        <span>Bosques Nocturnos</span>
+                        <span>Tu aventura comienza aquí</span>
                     </div>
                 </div>
                 <div class="gallery-card glass">
-                    <img src="https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?auto=format&fit=crop&w=600&q=80" alt="Atardecer campo">
+                    <img src="images/screenshots/jugar.jpeg" alt="Quiz interactivo">
                     <div class="gallery-overlay">
-                        <span>Hábitats Naturales</span>
+                        <span>Juega y pon a prueba lo aprendido</span>
                     </div>
                 </div>
                 <div class="gallery-card glass">
-                    <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?auto=format&fit=crop&w=600&q=80" alt="Sendero bosque">
+                    <img src="images/screenshots/aprender.jpeg" alt="Capítulos educativos">
                     <div class="gallery-overlay">
-                        <span>Explora y Aprende</span>
+                        <span>Aprende sobre las luciérnagas</span>
                     </div>
                 </div>
                 <div class="gallery-card glass">
-                    <img src="https://images.unsplash.com/photo-1542273917363-3b1817f69a2d?auto=format&fit=crop&w=600&q=80" alt="Árboles noche">
+                    <img src="images/screenshots/explorar.jpeg" alt="Mapa de avistamientos">
                     <div class="gallery-overlay">
-                        <span>Protege la Oscuridad</span>
+                        <span>Explora avistamientos reales</span>
                     </div>
                 </div>
             </div>

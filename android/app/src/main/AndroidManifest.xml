@@ -30,10 +30,13 @@
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
 
     <application
-        android:label="Luchi"
+        android:label="${appLabel}"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher">
+        android:roundIcon="@mipmap/ic_launcher"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="false">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -62,6 +65,15 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- App ID real de AdMob (banner de anuncios, ver
+             lib/widgets/ad_banner.dart y lib/core/utils/constants.dart) —
+             no es el ID de prueba público de Google
+             (ca-app-pub-3940256099942544~3347511713). Sin este meta-data
+             el SDK de AdMob crashea al arrancar aunque los anuncios estén
+             deshabilitados por AppConstants.adsEnabled. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-2233716909370832~1446591370"/>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

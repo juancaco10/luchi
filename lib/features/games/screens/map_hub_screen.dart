@@ -62,14 +62,19 @@ class MapHubScreen extends ConsumerWidget {
                           ),
                           child: Row(
                             children: [
+                              // `context.firefly.glow` es un token de sombra/
+                              // resplandor (25% alpha) — como color de texto
+                              // sólido queda lavado, casi invisible en modo
+                              // claro. `context.colors.primary` es el mismo
+                              // color pero al 100%, pensado para texto/ícono.
                               Icon(Icons.local_fire_department_rounded,
-                                  color: context.firefly.glow, size: 16),
+                                  color: context.colors.primary, size: 16),
                               const SizedBox(width: 4),
                               Text('${user.points}',
                                   style: TextStyle(
                                     fontFamily: 'Nunito',
                                     fontWeight: FontWeight.w800,
-                                    color: context.firefly.glow,
+                                    color: context.colors.primary,
                                   )),
                             ],
                           ),

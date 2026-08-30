@@ -23,14 +23,9 @@ class SyncService {
     // sesión anterior, nunca se drenaban hasta el siguiente cambio de red.
     _syncPending();
 
-    _sub = Connectivity().onConnectivityChanged.listen((result) {
-      // result is a List<ConnectivityResult> in newer versions of connectivity_plus
-      if (result is List<ConnectivityResult>) {
-        if (!result.contains(ConnectivityResult.none)) _syncPending();
-      } else {
-        // Fallback for older versions
-        if (result != ConnectivityResult.none) _syncPending();
-      }
+    _sub = Connectivity().onConnectivityChanged.listen((results) {
+      // connectivity_plus 6.x siempre emite List<ConnectivityResult>.
+      if (!results.contains(ConnectivityResult.none)) _syncPending();
     });
   }
 
