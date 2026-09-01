@@ -249,26 +249,44 @@ button { cursor: pointer; border: none; outline: none; font-family: var(--font-b
 /* ═══════════════════ HOW IT WORKS (STEPS) ═══════════════════ */
 .section-how { padding: 100px 0; }
 
-.steps-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 25px; }
+.steps-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 25px; margin-top: 50px;
+}
 @media (min-width: 1024px) {
     .steps-grid { grid-template-columns: repeat(4, 1fr); }
 }
 .step-card {
-    padding: 35px 30px; border-radius: 16px; display: flex; gap: 20px;
-    transition: transform 0.3s, box-shadow 0.3s; align-items: flex-start;
+    padding: 30px 24px; border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; gap: 16px; position: relative;
+    transition: transform 0.3s, box-shadow 0.3s;
 }
 .step-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 40px rgba(255, 215, 0, 0.1);
+    transform: translateY(-6px);
+    box-shadow: 0 15px 40px rgba(255, 215, 0, 0.15);
 }
+/* Línea conectora entre pasos (camino) en pantallas anchas */
+.step-card::after {
+    content: ''; position: absolute; top: 42px; left: calc(100% - 6px);
+    width: 12px; height: 2px; background: linear-gradient(90deg, var(--neon-gold), transparent);
+}
+.step-card:last-child::after { display: none; }
+@media (max-width: 1023px) {
+    .step-card::after { display: none; }
+}
+/* Insignia del número */
 .step-number {
-    font-family: var(--font-heading); font-size: 3rem; font-weight: 900;
-    color: transparent; -webkit-text-stroke: 1.5px var(--neon-gold);
-    flex-shrink: 0; line-height: 1;
-    text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+    font-family: var(--font-heading); font-size: 1.25rem; font-weight: 900;
+    color: var(--bg-main);
+    background: linear-gradient(135deg, var(--neon-gold), #ffb84d);
+    border-radius: 50%; width: 56px; height: 56px;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.35);
+    line-height: 1; flex-shrink: 0;
 }
-.step-content h3 { font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; }
-.step-content p { color: var(--text-sec); font-size: 0.9rem; line-height: 1.6; }
+.step-content h3 { font-size: 1.15rem; font-weight: 800; margin-bottom: 8px; }
+.step-content p { color: var(--text-sec); font-size: 0.92rem; line-height: 1.6; margin: 0; }
 
 /* ═══════════════════ GALLERY ═══════════════════ */
 .section-gallery { padding: 100px 0; }

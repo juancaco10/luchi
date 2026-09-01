@@ -10,7 +10,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Luchi — Protege la Luz del Bosque</title>
-    <meta name="description" content="Una aventura educativa para niños donde aprenderás a proteger las luciérnagas y el ecosistema nocturno. Disponible en Android y Web.">
+    <meta name="description" content="Una aventura educativa para niños donde aprenderás a proteger las luciérnagas y el ecosistema nocturno. Disponible en Android.">
     <link rel="icon" type="image/png" href="images/favicon.png">
     <link rel="apple-touch-icon" href="images/favicon.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -38,8 +38,8 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <li><a href="#aventura">Aventura</a></li>
                 <li><a href="#descargar">Descargar</a></li>
             </ul>
-            <a href="/app/" class="btn btn-sm btn-primary">
-                <i class="fa-solid fa-play"></i> Jugar Ahora
+            <a href="#descargar" class="btn btn-sm btn-primary">
+                <i class="fa-brands fa-google-play"></i> Descargar
             </a>
         </div>
         <button class="mobile-menu" id="mobile-menu">
@@ -81,9 +81,6 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                 <div class="hero-actions">
                     <a href="#descargar" class="btn btn-primary btn-lg">
                         <i class="fa-brands fa-google-play"></i> Descargar en Android
-                    </a>
-                    <a href="/app/" class="btn btn-secondary glass btn-lg">
-                        <i class="fa-solid fa-globe"></i> Jugar en la Web
                     </a>
                 </div>
             </div>
@@ -230,7 +227,7 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
             <div class="section-header">
                 <span class="section-tag glass-pill-sm">🚀 ¡Únete!</span>
                 <h2 class="section-title">COMIENZA TU AVENTURA <span class="glow-text">HOY</span></h2>
-                <p class="section-desc">Descarga la app en tu celular o juega directamente desde el navegador. ¡El bosque te espera!</p>
+                <p class="section-desc">Descarga la app en tu celular. ¡El bosque te espera!</p>
             </div>
             <div class="download-buttons">
                 <!-- Sin destino real todavía: no hay APK publicado ni ficha
@@ -243,13 +240,6 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                         <span class="dl-big">Google Play</span>
                     </div>
                 </span>
-                <a href="/app/" class="download-card glass">
-                    <i class="fa-solid fa-globe"></i>
-                    <div>
-                        <span class="dl-small">Jugar ahora en</span>
-                        <span class="dl-big">Navegador Web</span>
-                    </div>
-                </a>
             </div>
             <div class="trust-badges">
                 <span><i class="fa-solid fa-child"></i> Apto para niños</span>
@@ -279,15 +269,6 @@ $jsVersion  = file_exists('app.js')    ? filemtime('app.js')    : time();
                     <a href="privacidad.html">Política de Privacidad</a>
                     <a href="#">Términos de Uso</a>
                     <a href="#">Contacto</a>
-                </div>
-                <div class="footer-col">
-                    <h4>Comunidad</h4>
-                    <div class="footer-social">
-                        <a href="#"><i class="fa-brands fa-instagram"></i></a>
-                        <a href="#"><i class="fa-brands fa-youtube"></i></a>
-                        <a href="#"><i class="fa-brands fa-tiktok"></i></a>
-                        <a href="#"><i class="fa-brands fa-discord"></i></a>
-                    </div>
                 </div>
             </div>
         </div>
