@@ -37,34 +37,39 @@ class HeroBanner extends StatelessWidget {
           Semantics(
             button: true,
             label: 'Explorar ahora, ir a capítulos',
-            child: GestureDetector(
-              onTap: () => context.go('/chapters'),
-              child: Container(
-                constraints: const BoxConstraints(minHeight: 36),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  gradient: context.firefly.greenGradient,
-                  borderRadius: BorderRadius.circular(30),
-                  boxShadow: context.firefly.greenGlowShadow,
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // El fondo del botón es el mismo verde brillante en ambos
-                    // temas (greenGradient no varía con isDark), así que el
-                    // texto se fija en oscuro en vez de derivarlo del tema.
-                    Text(
-                      'Explorar ahora',
-                      style: TextStyle(
-                        fontFamily: 'Nunito',
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F1E19),
+            child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(30),
+              child: InkWell(
+                onTap: () => context.go('/chapters'),
+                borderRadius: BorderRadius.circular(30),
+                child: Container(
+                  constraints: const BoxConstraints(minHeight: 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(
+                    gradient: context.firefly.greenGradient,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: context.firefly.greenGlowShadow,
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // El fondo del botón es el mismo verde brillante en ambos
+                      // temas (greenGradient no varía con isDark), así que el
+                      // texto se fija en oscuro en vez de derivarlo del tema.
+                      Text(
+                        'Explorar ahora',
+                        style: TextStyle(
+                          fontFamily: 'Nunito',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: Color(0xFF0F1E19),
+                        ),
                       ),
-                    ),
-                    SizedBox(width: 6),
-                    Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF0F1E19)),
-                  ],
+                      SizedBox(width: 6),
+                      Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF0F1E19)),
+                    ],
+                  ),
                 ),
               ),
             ),

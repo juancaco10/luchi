@@ -184,8 +184,14 @@ class SettingsScreen extends ConsumerWidget {
                   const SizedBox(height: 28),
 
                   // ── Logout ─────────────────────────────────────
-                  GestureDetector(
+                  Material(
+                    color: Colors.transparent,
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.borderRadius),
+                    child: InkWell(
                     onTap: () => _confirmLogout(context, ref),
+                    borderRadius:
+                        BorderRadius.circular(AppConstants.borderRadius),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -213,13 +219,18 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                     ),
+                    ),
                   ).animate(delay: 450.ms).fadeIn(),
 
                   const SizedBox(height: 16),
 
                   // ── Delete Account ─────────────────────────────
-                  GestureDetector(
+                  Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
+                    child: InkWell(
                     onTap: () => _confirmDeleteAccount(context, ref),
+                    borderRadius: BorderRadius.circular(AppConstants.borderRadius),
                     child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -243,6 +254,7 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                    ),
                     ),
                   ).animate(delay: 500.ms).fadeIn(),
                 ],

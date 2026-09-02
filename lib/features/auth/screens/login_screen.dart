@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/device/device_capabilities_provider.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/theme/theme_provider.dart';
 import '../providers/auth_provider.dart';
@@ -35,7 +36,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    GoogleAuthService.instance.ensureInitialized();
+    // Sin await y sin catch, un rechazo aquí (Play Services ausente o
+    // desactualizado — el caso típico en Android TV) quedaba como un
+    // error asíncrono no capturado durante el build de esta pantalla.
+    // El login con email/contraseña sigue funcionando igual; el botón de
+    // Google además se oculta si !hasPlayServices (ver build()).
+    unawaited(
+      GoogleAuthService.instance.ensureInitialized().catchError((_) {}),
+    );
     if (kIsWeb) {
       // En web el idToken no llega como resultado de un tap propio: el
       // usuario interactúa con el botón que Google renderiza dentro de
@@ -139,6 +147,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final authState = ref.watch(authProvider);
     final isLoading = authState is AuthLoading;
     final error = authState is AuthError ? authState.message : null;
+    // Sin Google Play Services (típico en Android TV, o un teléfono con
+    // Play Services desactualizado) el flujo de Google nunca completaría
+    // — se oculta el botón en vez de dejarlo pulsable y roto; el acceso
+    // por email/contraseña e "Invitado" no dependen de esto.
+    final hasGoogleSignIn =
+        kIsWeb || ref.watch(deviceCapabilitiesProvider).hasPlayServices;
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgImage = isDark ? 'assets/images/bg1.png' : 'assets/images/bg2.png';
@@ -259,48 +273,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             // ── Botones Rápidos ─────────────────────────
                             Row(
                               children: [
-                                Expanded(
-                                  child: kIsWeb
-                                      ? Center(child: buildWebGoogleButton())
-                                          .animate(delay: 100.ms)
-                                          .fadeIn()
-                                          .slideY(begin: 0.15, end: 0)
-                                      : _OutlinedAction(
-                                          label:
-                                              _googleLoading ? '...' : 'Google',
-                                          onTap: (isLoading ||
-                                                  _googleLoading ||
-                                                  _guestLoading)
-                                              ? null
-                                              : _loginConGoogle,
-                                          leading: _googleLoading
-                                              ? SizedBox(
-                                                  width: 18,
-                                                  height: 18,
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                    strokeWidth: 2,
-                                                    color:
-                                                        context.colors.primary,
+                                if (hasGoogleSignIn) ...[
+                                  Expanded(
+                                    child: kIsWeb
+                                        ? Center(child: buildWebGoogleButton())
+                                            .animate(delay: 100.ms)
+                                            .fadeIn()
+                                            .slideY(begin: 0.15, end: 0)
+                                        : _OutlinedAction(
+                                            label: _googleLoading
+                                                ? '...'
+                                                : 'Google',
+                                            onTap: (isLoading ||
+                                                    _googleLoading ||
+                                                    _guestLoading)
+                                                ? null
+                                                : _loginConGoogle,
+                                            leading: _googleLoading
+                                                ? SizedBox(
+                                                    width: 18,
+                                                    height: 18,
+                                                    child:
+                                                        CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: context
+                                                          .colors.primary,
+                                                    ),
+                                                  )
+                                                : Text(
+                                                    'G',
+                                                    style: TextStyle(
+                                                      fontFamily: 'Nunito',
+                                                      fontSize: 20,
+                                                      fontWeight:
+                                                          FontWeight.w900,
+                                                      color: context
+                                                          .colors.primary,
+                                                    ),
                                                   ),
-                                                )
-                                              : Text(
-                                                  'G',
-                                                  style: TextStyle(
-                                                    fontFamily: 'Nunito',
-                                                    fontSize: 20,
-                                                    fontWeight: FontWeight.w900,
-                                                    color:
-                                                        context.colors.primary,
-                                                  ),
-                                                ),
-                                          filled: true,
-                                        )
-                                          .animate(delay: 100.ms)
-                                          .fadeIn()
-                                          .slideY(begin: 0.15, end: 0),
-                                ),
-                                const SizedBox(width: 12),
+                                            filled: true,
+                                          )
+                                            .animate(delay: 100.ms)
+                                            .fadeIn()
+                                            .slideY(begin: 0.15, end: 0),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
                                 Expanded(
                                   child: _OutlinedAction(
                                     label: _guestLoading ? '...' : 'Invitado',

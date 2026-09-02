@@ -100,8 +100,12 @@ class _ActionCard extends StatelessWidget {
     return Semantics(
       button: true,
       label: title,
-      child: GestureDetector(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           height: 155 * scale,
           decoration: BoxDecoration(
@@ -238,6 +242,7 @@ class _ActionCard extends StatelessWidget {
               ),
             ],
           ),
+        ),
         ),
       ),
     );

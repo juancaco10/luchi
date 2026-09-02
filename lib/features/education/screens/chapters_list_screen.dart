@@ -97,8 +97,14 @@ class _ChapterCard extends StatelessWidget {
     final isLocked = !chapter.isUnlocked;
     final isDone = chapter.isCompleted;
 
-    return GestureDetector(
+    // Material+InkWell en vez de GestureDetector: enfocable con
+    // D-pad/teclado, con el mismo onTap y sin cambiar el layout.
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(AppConstants.cardRadius),
+      child: InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppConstants.cardRadius),
       child: AnimatedOpacity(
         opacity: isLocked ? 0.5 : 1.0,
         duration: const Duration(milliseconds: 300),
@@ -237,6 +243,7 @@ class _ChapterCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

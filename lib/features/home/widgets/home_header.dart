@@ -68,27 +68,32 @@ class HomeHeader extends ConsumerWidget {
                 Semantics(
                   button: true,
                   label: 'Ir a tu perfil',
-                  child: GestureDetector(
-                    onTap: () => context.go('/profile'),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: context.colors.primary, width: 2),
-                        boxShadow: [
-                          BoxShadow(
-                            color: context.isDark
-                                ? context.colors.primary.withValues(alpha: 0.3)
-                                : Colors.black12,
-                            blurRadius: 10,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(24),
-                        child: _buildAvatar(context),
+                  child: Material(
+                    color: Colors.transparent,
+                    shape: const CircleBorder(),
+                    child: InkWell(
+                      onTap: () => context.go('/profile'),
+                      customBorder: const CircleBorder(),
+                      child: Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: context.colors.primary, width: 2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: context.isDark
+                                  ? context.colors.primary.withValues(alpha: 0.3)
+                                  : Colors.black12,
+                              blurRadius: 10,
+                              spreadRadius: 1,
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(24),
+                          child: _buildAvatar(context),
+                        ),
                       ),
                     ),
                   ),
@@ -132,21 +137,26 @@ class HomeHeader extends ConsumerWidget {
     return Semantics(
       button: true,
       label: semanticLabel,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: context.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
-            shape: BoxShape.circle,
-            boxShadow: [
-              if (!context.isDark)
-                const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
-            ],
+      child: Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: Container(
+            width: 40,
+            height: 40,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: context.isDark ? Colors.white.withValues(alpha: 0.1) : Colors.white,
+              shape: BoxShape.circle,
+              boxShadow: [
+                if (!context.isDark)
+                  const BoxShadow(color: Colors.black12, blurRadius: 4, offset: Offset(0, 2)),
+              ],
+            ),
+            child: Icon(icon, color: context.colors.onSurface, size: 20),
           ),
-          child: Icon(icon, color: context.colors.onSurface, size: 20),
         ),
       ),
     );

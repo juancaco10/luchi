@@ -5,12 +5,41 @@ import 'firefly_colors.dart';
 import 'palettes.dart';
 import '../utils/constants.dart';
 
+/// Realce de foco para navegación con D-pad/teclado/mando (Android TV,
+/// pantallas interactivas): un borde grueso del color de marca, visible
+/// desde el sofá — el tinte translúcido por defecto de Material sobre un
+/// botón ya coloreado es prácticamente invisible. Se aplica sobre el
+/// `ButtonStyle` que ya arma `styleFrom`, así que el resto de estados
+/// (hover, pressed, disabled) quedan intactos.
+ButtonStyle _withFocusRing(ButtonStyle base, Color ring) {
+  return base.copyWith(
+    side: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.focused)) {
+        return BorderSide(color: ring, width: 3);
+      }
+      return base.side?.resolve(states);
+    }),
+    overlayColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.focused)) {
+        return ring.withValues(alpha: 0.18);
+      }
+      return base.overlayColor?.resolve(states);
+    }),
+  );
+}
+
 abstract class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
       scaffoldBackgroundColor: DarkPalette.background,
+      // Realce por defecto para InkWell/InkResponse (menú inferior,
+      // tarjetas, filas de ajustes...) al recibir foco de D-pad/teclado —
+      // sin esto, Material usa un tinte casi imperceptible sobre fondos
+      // oscuros. Los botones Material tienen además su propio borde de
+      // foco explícito (ver `_withFocusRing`).
+      focusColor: DarkPalette.accent.withValues(alpha: 0.24),
       colorScheme: const ColorScheme.dark(
         primary: DarkPalette.primary,
         secondary: DarkPalette.secondary,
@@ -131,47 +160,56 @@ abstract class AppTheme {
       // minimumSize 48dp: objetivo táctil mínimo recomendado, más aún con
       // público infantil (ver hallazgo de accesibilidad en el plan).
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: DarkPalette.primary,
-          foregroundColor: DarkPalette.textOnPrimary,
-          elevation: 0,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+        style: _withFocusRing(
+          ElevatedButton.styleFrom(
+            backgroundColor: DarkPalette.primary,
+            foregroundColor: DarkPalette.textOnPrimary,
+            elevation: 0,
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+          DarkPalette.accent,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: DarkPalette.primary,
-          side: const BorderSide(color: DarkPalette.primary, width: 1.5),
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+        style: _withFocusRing(
+          OutlinedButton.styleFrom(
+            foregroundColor: DarkPalette.primary,
+            side: const BorderSide(color: DarkPalette.primary, width: 1.5),
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          DarkPalette.accent,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: DarkPalette.primary,
-          minimumSize: const Size(48, 48),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        style: _withFocusRing(
+          TextButton.styleFrom(
+            foregroundColor: DarkPalette.primary,
+            minimumSize: const Size(48, 48),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          DarkPalette.accent,
         ),
       ),
 
@@ -260,6 +298,7 @@ abstract class AppTheme {
       useMaterial3: true,
       brightness: Brightness.light,
       scaffoldBackgroundColor: LightPalette.background,
+      focusColor: LightPalette.accent.withValues(alpha: 0.20),
       colorScheme: const ColorScheme.light(
         primary: LightPalette.primary,
         secondary: LightPalette.secondary,
@@ -375,47 +414,56 @@ abstract class AppTheme {
 
       // ── Buttons ──────────────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: LightPalette.primary,
-          foregroundColor: LightPalette.textOnPrimary,
-          elevation: 0,
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+        style: _withFocusRing(
+          ElevatedButton.styleFrom(
+            backgroundColor: LightPalette.primary,
+            foregroundColor: LightPalette.textOnPrimary,
+            elevation: 0,
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+            ),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
+          LightPalette.accent,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: LightPalette.primary,
-          side: const BorderSide(color: LightPalette.primary, width: 1.5),
-          minimumSize: const Size(48, 48),
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+        style: _withFocusRing(
+          OutlinedButton.styleFrom(
+            foregroundColor: LightPalette.primary,
+            side: const BorderSide(color: LightPalette.primary, width: 1.5),
+            minimumSize: const Size(48, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppConstants.buttonRadius),
+            ),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
           ),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          LightPalette.accent,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          foregroundColor: LightPalette.primary,
-          minimumSize: const Size(48, 48),
-          textStyle: const TextStyle(
-            fontFamily: 'Nunito',
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        style: _withFocusRing(
+          TextButton.styleFrom(
+            foregroundColor: LightPalette.primary,
+            minimumSize: const Size(48, 48),
+            textStyle: const TextStyle(
+              fontFamily: 'Nunito',
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          LightPalette.accent,
         ),
       ),
 

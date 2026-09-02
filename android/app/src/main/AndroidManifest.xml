@@ -29,6 +29,38 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
     <uses-permission android:name="android.permission.READ_PHONE_STATE" tools:node="remove"/>
 
+    <!-- Compatibilidad Android TV / tablets / pantallas sin táctil: Google
+         Play asume por defecto que toda app requiere táctil
+         (android.hardware.touchscreen) y, además, deriva de los permisos
+         de arriba android.hardware.camera + .autofocus (por CAMERA) y
+         android.hardware.location.gps/.network (por ACCESS_FINE/COARSE_
+         LOCATION, solo si targetSdk<=20 — aquí no aplica, pero se declara
+         explícito igualmente). Sin esto, Play filtra la ficha de Play Store
+         y la app queda "no disponible para tu dispositivo" en cualquier
+         Android TV/Google TV, exactamente el síntoma reportado en un
+         MediaTek AndroidTV: "This item is not compatible with your
+         device" / "No eligible devices for app install".
+         Ninguna de estas features es imprescindible: la foto del
+         avistamiento es opcional (ver sighting_form_screen.dart), y la
+         ubicación ya cae a un punto aleatorio dentro de la ciudad del
+         perfil si no hay GPS (randomPointNear, ver sighting_geocoding.dart)
+         — por eso todas van con required="false", nunca "true". -->
+    <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
+    <uses-feature android:name="android.hardware.faketouch" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.any" android:required="false"/>
+    <uses-feature android:name="android.hardware.camera.autofocus" android:required="false"/>
+    <uses-feature android:name="android.hardware.location" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.gps" android:required="false"/>
+    <uses-feature android:name="android.hardware.location.network" android:required="false"/>
+    <uses-feature android:name="android.hardware.microphone" android:required="false"/>
+    <uses-feature android:name="android.hardware.telephony" android:required="false"/>
+    <uses-feature android:name="android.hardware.sensor.accelerometer" android:required="false"/>
+    <uses-feature android:name="android.hardware.sensor.gyroscope" android:required="false"/>
+    <uses-feature android:name="android.hardware.nfc" android:required="false"/>
+    <uses-feature android:name="android.hardware.bluetooth" android:required="false"/>
+    <uses-feature android:name="android.hardware.wifi" android:required="false"/>
+
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"

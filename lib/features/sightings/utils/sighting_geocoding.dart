@@ -26,7 +26,12 @@ Future<({double lat, double lng})?> forwardGeocodeCity(String query) async {
   final trimmed = query.trim();
   if (trimmed.isEmpty) return null;
   try {
-    final locations = await locationFromAddress(trimmed);
+    // El geocodificador del sistema puede no existir en absoluto en
+    // ciertos dispositivos (Android TV sin Play Services completos) y
+    // quedarse colgado en vez de lanzar — sin timeout, esto bloqueaba la
+    // resolución de la ciudad indefinidamente.
+    final locations = await locationFromAddress(trimmed)
+        .timeout(const Duration(seconds: 10));
     if (locations.isEmpty) return null;
     final loc = locations.first;
     return (

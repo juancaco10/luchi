@@ -23,6 +23,8 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     required this.cardShadow,
     required this.glowShadow,
     required this.greenGlowShadow,
+    required this.focusRing,
+    required this.focusShadow,
   });
 
   final Color glow;
@@ -41,6 +43,14 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
   final List<BoxShadow> glowShadow;
   final List<BoxShadow> greenGlowShadow;
 
+  /// Borde de foco para navegación con D-pad/teclado/mando: debe leerse
+  /// con claridad desde el sofá, así que es un color aparte de `accent`
+  /// (mismo tono, opacidad plena) en vez del tinte translúcido por
+  /// defecto de Material, que sobre un fondo oscuro/degradado es
+  /// prácticamente invisible.
+  final Color focusRing;
+  final List<BoxShadow> focusShadow;
+
   static final dark = FireflyColors(
     glow: DarkPalette.primaryGlow,
     greenGlow: DarkPalette.secondaryGlow,
@@ -57,6 +67,14 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     cardShadow: DarkPalette.cardShadow,
     glowShadow: DarkPalette.primaryGlowShadow,
     greenGlowShadow: DarkPalette.greenGlowShadow,
+    focusRing: DarkPalette.accent,
+    focusShadow: [
+      BoxShadow(
+        color: DarkPalette.accent.withValues(alpha: 0.55),
+        blurRadius: 12,
+        spreadRadius: 1,
+      ),
+    ],
   );
 
   static final light = FireflyColors(
@@ -75,6 +93,14 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     cardShadow: LightPalette.cardShadow,
     glowShadow: LightPalette.primaryGlowShadow,
     greenGlowShadow: LightPalette.greenGlowShadow,
+    focusRing: LightPalette.accent,
+    focusShadow: [
+      BoxShadow(
+        color: LightPalette.accent.withValues(alpha: 0.45),
+        blurRadius: 10,
+        spreadRadius: 1,
+      ),
+    ],
   );
 
   @override
@@ -94,6 +120,8 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
     List<BoxShadow>? cardShadow,
     List<BoxShadow>? glowShadow,
     List<BoxShadow>? greenGlowShadow,
+    Color? focusRing,
+    List<BoxShadow>? focusShadow,
   }) {
     return FireflyColors(
       glow: glow ?? this.glow,
@@ -111,6 +139,8 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
       cardShadow: cardShadow ?? this.cardShadow,
       glowShadow: glowShadow ?? this.glowShadow,
       greenGlowShadow: greenGlowShadow ?? this.greenGlowShadow,
+      focusRing: focusRing ?? this.focusRing,
+      focusShadow: focusShadow ?? this.focusShadow,
     );
   }
 
@@ -135,6 +165,8 @@ class FireflyColors extends ThemeExtension<FireflyColors> {
       cardShadow: t < 0.5 ? cardShadow : other.cardShadow,
       glowShadow: t < 0.5 ? glowShadow : other.glowShadow,
       greenGlowShadow: t < 0.5 ? greenGlowShadow : other.greenGlowShadow,
+      focusRing: Color.lerp(focusRing, other.focusRing, t)!,
+      focusShadow: t < 0.5 ? focusShadow : other.focusShadow,
     );
   }
 }

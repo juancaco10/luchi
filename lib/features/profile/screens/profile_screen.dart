@@ -327,9 +327,13 @@ class _ProfileAvatar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final image = avatarImageFor(user?.avatarUrl);
 
-    return GestureDetector(
-      onTap: () => AvatarPickerSheet.show(context),
-      child: Stack(
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: () => AvatarPickerSheet.show(context),
+        customBorder: const CircleBorder(),
+        child: Stack(
         children: [
           Container(
             width: size,
@@ -369,6 +373,7 @@ class _ProfileAvatar extends ConsumerWidget {
             ),
           ),
         ],
+        ),
       ),
     );
   }

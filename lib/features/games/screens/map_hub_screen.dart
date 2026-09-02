@@ -138,6 +138,7 @@ class _GameCardState extends State<_GameCard>
     CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
   );
   bool _pressed = false;
+  bool _focused = false;
 
   @override
   void dispose() {
@@ -166,7 +167,18 @@ class _GameCardState extends State<_GameCard>
   @override
   Widget build(BuildContext context) {
     final info = widget.info;
-    return GestureDetector(
+    // FocusableActionDetector añade foco de D-pad/teclado sobre el mismo
+    // GestureDetector táctil: ENTER/OK dispara la misma animación de
+    // pulsado y el mismo _open() que un tap.
+    return FocusableActionDetector(
+      onShowFocusHighlight: (focused) => setState(() => _focused = focused),
+      actions: {
+        ActivateIntent: CallbackAction<Intent>(onInvoke: (_) {
+          _open();
+          return null;
+        }),
+      },
+      child: GestureDetector(
       onTapDown: (_) {
         _controller.forward();
         setState(() => _pressed = true);
@@ -191,6 +203,9 @@ class _GameCardState extends State<_GameCard>
           height: 200,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(24),
+            border: _focused
+                ? Border.all(color: context.firefly.focusRing, width: 3)
+                : null,
             boxShadow: [
               BoxShadow(
                 color: _pressed
@@ -200,6 +215,7 @@ class _GameCardState extends State<_GameCard>
                 spreadRadius: _pressed ? 2 : 0,
                 offset: const Offset(0, 8),
               ),
+              if (_focused) ...context.firefly.focusShadow,
             ],
           ),
           child: ClipRRect(
@@ -273,6 +289,7 @@ class _GameCardState extends State<_GameCard>
             ),
           ),
         ),
+      ),
       ),
     );
   }

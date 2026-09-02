@@ -108,13 +108,27 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               // Basemap de OpenStreetMap: gratis y sin API key. Antes usaba
               // CartoDB (basemaps.cartocdn.com), que pasó a exigir key y
               // rompía el mapa con "API key required". OSM no la pide.
-              // La `key` fuerza a flutter_map a reconstruir la capa al
-              // alternar el tema.
-              TileLayer(
-                key: ValueKey(context.isDark),
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                maxZoom: 19,
-                userAgentPackageName: 'com.guardianes.luciernagas',
+              //
+              // `ColorFiltered` con una matriz de inversión convierte el
+              // mapa claro de OSM en uno oscuro (fondo casi negro, calles
+              // claras) sin depender de un segundo proveedor de teselas
+              // (que es justo lo que rompió antes): los puntos amarillos de
+              // avistamientos (`context.colors.primary` en el tema oscuro,
+              // ver `_SightingMarker`) se perdían contra el fondo claro
+              // original y ahora resaltan con claridad.
+              ColorFiltered(
+                colorFilter: const ColorFilter.matrix(<double>[
+                  -1, 0, 0, 0, 255,
+                  0, -1, 0, 0, 255,
+                  0, 0, -1, 0, 255,
+                  0, 0, 0, 1, 0,
+                ]),
+                child: TileLayer(
+                  urlTemplate:
+                      'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  maxZoom: 19,
+                  userAgentPackageName: 'com.guardianes.luciernagas',
+                ),
               ),
 
               // Sighting markers

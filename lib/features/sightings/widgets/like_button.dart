@@ -69,9 +69,14 @@ class _LikeButtonState extends ConsumerState<LikeButton>
         ? const Color(0xFFFF5C7A)
         : (widget.overlay ? Colors.white : unlikedColor);
 
-    return GestureDetector(
+    // Material propio (no se apoya en el de la tarjeta contenedora): el
+    // botón se usa también fuera de una tarjeta con Material ancestro.
+    return Material(
+      color: Colors.transparent,
+      shape: const StadiumBorder(),
+      child: InkWell(
       onTap: _tap,
-      behavior: HitTestBehavior.opaque,
+      customBorder: const StadiumBorder(),
       child: Padding(
         // Área táctil un poco mayor que el icono visible, sin desplazar el
         // layout — el icono real ya ronda los 14px.
@@ -105,6 +110,7 @@ class _LikeButtonState extends ConsumerState<LikeButton>
             ],
           ),
         ),
+      ),
       ),
     );
   }

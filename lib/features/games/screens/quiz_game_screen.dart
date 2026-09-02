@@ -302,11 +302,21 @@ class _QuizGameScreenState extends ConsumerState<QuizGameScreen> {
                       }
                     }
 
-                    return GestureDetector(
-                      onTap: () => _answer(idx),
+                    // Material+InkWell: cada opción es enfocable con
+                    // D-pad/teclado (antes GestureDetector crudo). El
+                    // margin de la opción queda fuera del InkWell para
+                    // que el ripple/borde de foco no invada la separación
+                    // entre opciones.
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: Material(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                        child: InkWell(
+                      onTap: _isAnswered ? null : () => _answer(idx),
+                      borderRadius: BorderRadius.circular(16),
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
-                        margin: const EdgeInsets.only(bottom: 10),
                         padding: const EdgeInsets.symmetric(
                             horizontal: 16, vertical: 14),
                         decoration: BoxDecoration(
@@ -347,6 +357,8 @@ class _QuizGameScreenState extends ConsumerState<QuizGameScreen> {
                               ),
                             ),
                           ],
+                        ),
+                      ),
                         ),
                       ),
                     );

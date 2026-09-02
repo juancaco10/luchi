@@ -154,8 +154,12 @@ class _EmptyState extends StatelessWidget {
         ),
       );
     }
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
       onTap: () => context.go('/sightings/new'),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -183,6 +187,7 @@ class _EmptyState extends StatelessWidget {
           ],
         ),
       ),
+      ),
     );
   }
 }
@@ -208,8 +213,12 @@ class _SightingCard extends ConsumerWidget {
         ? avatarImageFor(user?.avatarUrl)
         : avatarImageFor(sighting.authorAvatar);
 
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
       onTap: () => SightingDetailsModal.show(context, sighting, locationFull, ref.read(sightingsProvider).sightings.length),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 135,
         decoration: BoxDecoration(
@@ -397,6 +406,7 @@ class _SightingCard extends ConsumerWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }

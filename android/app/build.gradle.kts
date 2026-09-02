@@ -80,6 +80,15 @@ android {
     }
 }
 
+dependencies {
+    // GoogleApiAvailability, usada por MainActivity.kt para exponer
+    // hasPlayServices al canal de capacidades de dispositivo
+    // (luchi/device_capabilities). Se declara explícita en vez de confiar
+    // en que google_mobile_ads/google_sign_in la arrastren transitivamente
+    // con la versión que a MainActivity le haga falta.
+    implementation("com.google.android.gms:play-services-base:18.5.0")
+}
+
 flutter {
     source = "../.."
 }

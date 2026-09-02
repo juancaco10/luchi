@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/device/device_capabilities_provider.dart';
 import '../../../core/theme/firefly_colors.dart';
 import '../../../core/utils/constants.dart';
 import '../models/sighting_model.dart';
@@ -121,6 +122,12 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
 
   Future<({double lat, double lng})?> _tryGetGpsPosition() async {
     try {
+      // Sin proveedor de ubicación en el dispositivo (Android TV, algunos
+      // emuladores): salir ya, no hay nada que esperar. Antes de esto no
+      // había ninguna comprobación de hardware — solo de permiso/servicio.
+      final caps = ref.read(deviceCapabilitiesProvider);
+      if (!caps.hasAnyLocation) return null;
+
       if (!await Geolocator.isLocationServiceEnabled()) return null;
 
       var permission = await Geolocator.checkPermission();
@@ -132,8 +139,14 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
         return null;
       }
 
+      // `timeLimit` es la corrección real: sin él, en un dispositivo que
+      // reporta el servicio activo pero nunca consigue un fix (proveedor
+      // solo de red, hardware sin GPS real), este Future no resolvía
+      // nunca y el botón de guardar quedaba deshabilitado para siempre.
       final pos = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 10),
+      );
       // Difuminado a 3 decimales (~100 m) antes de que la coordenada salga
       // del dispositivo — igual criterio que el resto de la app.
       return (
@@ -149,6 +162,14 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
   /// diálogo nativo de permiso de cámara/galería, en lenguaje apto para
   /// niños — no basta con dejar que el sistema operativo lo pida solo.
   Future<void> _choosePhotoSource() async {
+    final caps = ref.read(deviceCapabilitiesProvider);
+
+    // Sin cámara física (Android TV, algunos tablets), la hoja se abre
+    // igual con la galería y un texto que lo explica — antes se ofrecía
+    // "Tomar foto" sin comprobar nada, así que el diálogo de cámara del
+    // sistema fallaba silenciosamente o el usuario tocaba un botón que no
+    // podía funcionar. La foto ya es opcional en el modelo: si tampoco hay
+    // galería usable, "Omitir" cierra la hoja sin foto.
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: context.colors.surface,
@@ -173,7 +194,9 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Usaremos tu cámara o tus fotos solo para esta imagen. Es opcional.',
+                caps.hasCamera
+                    ? 'Usaremos tu cámara o tus fotos solo para esta imagen. Es opcional.'
+                    : 'Este dispositivo no tiene cámara. Puedes elegir una foto o continuar sin ella.',
                 style: TextStyle(
                   fontFamily: 'Nunito',
                   fontSize: 13,
@@ -181,17 +204,24 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              ListTile(
-                leading: const Icon(Icons.photo_camera_outlined),
-                title: const Text('Tomar foto',
-                    style: TextStyle(fontFamily: 'Nunito')),
-                onTap: () => Navigator.pop(context, ImageSource.camera),
-              ),
+              if (caps.hasCamera)
+                ListTile(
+                  leading: const Icon(Icons.photo_camera_outlined),
+                  title: const Text('Tomar foto',
+                      style: TextStyle(fontFamily: 'Nunito')),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
               ListTile(
                 leading: const Icon(Icons.photo_library_outlined),
                 title: const Text('Elegir de la galería',
                     style: TextStyle(fontFamily: 'Nunito')),
                 onTap: () => Navigator.pop(context, ImageSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.not_interested),
+                title: const Text('Continuar sin foto',
+                    style: TextStyle(fontFamily: 'Nunito')),
+                onTap: () => Navigator.pop(context),
               ),
             ],
           ),
@@ -232,8 +262,16 @@ class _SightingFormScreenState extends ConsumerState<SightingFormScreen> {
         _pickedPhoto = file;
         _existingPhotoUrl = null; // se reemplaza la que hubiera
       });
-    } catch (_) {
-      if (mounted) _showSnack('No se pudo acceder a la cámara o galería');
+    } on Object catch (e) {
+      if (!mounted) return;
+      // El picker distingue "no hay cámara/no soportado" del resto de
+      // fallos con PlatformException(code: 'no_available_camera') en
+      // Android — antes todo esto colapsaba en un único mensaje genérico.
+      final noCamera = source == ImageSource.camera &&
+          e.toString().toLowerCase().contains('camera');
+      _showSnack(noCamera
+          ? 'Este dispositivo no tiene cámara disponible'
+          : 'No se pudo acceder a la cámara o galería');
     }
   }
 
@@ -573,8 +611,12 @@ class _PhotoPicker extends StatelessWidget {
     final hasPhoto = pickedFile != null || existingUrl != null;
 
     if (!hasPhoto) {
-      return GestureDetector(
+      return Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
         child: Container(
           width: double.infinity,
           height: 120,
@@ -624,13 +666,18 @@ class _PhotoPicker extends StatelessWidget {
                   ),
           ),
         ),
+        ),
       );
     }
 
     return Stack(
       children: [
-        GestureDetector(
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          child: InkWell(
           onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(16),
             child: SizedBox(
@@ -653,6 +700,7 @@ class _PhotoPicker extends StatelessWidget {
                     ),
             ),
           ),
+          ),
         ),
         if (isUploading)
           Positioned.fill(
@@ -669,16 +717,21 @@ class _PhotoPicker extends StatelessWidget {
         Positioned(
           top: 8,
           right: 8,
-          child: GestureDetector(
-            onTap: onRemove,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: const BoxDecoration(
-                color: Colors.black54,
-                shape: BoxShape.circle,
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onRemove,
+              customBorder: const CircleBorder(),
+              child: Container(
+                padding: const EdgeInsets.all(6),
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close_rounded,
+                    color: Colors.white, size: 16),
               ),
-              child: const Icon(Icons.close_rounded,
-                  color: Colors.white, size: 16),
             ),
           ),
         ),
@@ -848,8 +901,12 @@ class _QuantitySelector extends StatelessWidget {
           child: Wrap(
             spacing: 8,
             children: [5, 10, 20, 50].map((v) {
-              return GestureDetector(
+              return Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                child: InkWell(
                 onTap: () => onChanged(v),
+                borderRadius: BorderRadius.circular(10),
                 child: Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -876,6 +933,7 @@ class _QuantitySelector extends StatelessWidget {
                     ),
                   ),
                 ),
+                ),
               );
             }).toList(),
           ),
@@ -893,8 +951,12 @@ class _QtyButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+      child: InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
       child: Container(
         width: 44,
         height: 44,
@@ -916,6 +978,7 @@ class _QtyButton extends StatelessWidget {
               : context.text.bodySmall?.color,
           size: 20,
         ),
+      ),
       ),
     );
   }

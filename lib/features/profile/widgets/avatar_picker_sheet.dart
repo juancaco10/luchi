@@ -130,9 +130,13 @@ class _AvatarTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
+    return Material(
+      color: Colors.transparent,
+      shape: const CircleBorder(),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const CircleBorder(),
+        child: Stack(
         alignment: Alignment.center,
         children: [
           Container(
@@ -182,6 +186,7 @@ class _AvatarTile extends StatelessWidget {
               ),
             ),
         ],
+        ),
       ),
     );
   }

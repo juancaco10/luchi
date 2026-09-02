@@ -383,19 +383,34 @@ class _SyncNode extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: AnimatedScale(
-        scale: lit ? 1.25 : 1.0,
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOut,
-        child: FireflySpriteDot(
-          size: 46,
-          color: color,
-          lit: lit,
-          // Apagados quedan quietos; cuando el bosque los llama (secuencia
-          // o acierto) parpadean y baten las alas.
-          animate: lit,
+    // Los nodos están en un anillo (coordenadas polares, ver el
+    // `Transform.translate` de más arriba), así que la travesía
+    // direccional de foco por defecto no sigue el círculo — pero sí
+    // permite alcanzar cada nodo con Tab/D-pad en el orden en que se
+    // generan, que es preferible a que queden completamente
+    // inalcanzables como GestureDetector.
+    return FocusableActionDetector(
+      enabled: enabled,
+      actions: {
+        ActivateIntent: CallbackAction<Intent>(onInvoke: (_) {
+          if (enabled) onTap();
+          return null;
+        }),
+      },
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: AnimatedScale(
+          scale: lit ? 1.25 : 1.0,
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          child: FireflySpriteDot(
+            size: 46,
+            color: color,
+            lit: lit,
+            // Apagados quedan quietos; cuando el bosque los llama (secuencia
+            // o acierto) parpadean y baten las alas.
+            animate: lit,
+          ),
         ),
       ),
     );
